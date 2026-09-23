@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.4 "Mixing Station"
+ STOMPBOX REMOTE — v3.5 "Mixing Station + Repertório"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -81,6 +81,13 @@
         nesse teto por design ("nunca passe de 256... só pra reduzir,
         não pra aumentar"), o que já bate com a lógica de passo extra no
         topo que a página usa desde a v3.2 — só o número estava errado.
+
+ v3.5 — REORGANIZAÇÃO e repertório: presets movidos para logo abaixo
+        dos timbres; andamento ganhou campo numérico com seleção automática,
+        botão Enviar e repertório completo baseado no Tap Tempo Trainer.
+        O repertório usa a mesma chave localStorage do Tap Tempo, com busca,
+        cores por faixa de BPM, inclusão, edição, exclusão, CSV e backup JSON.
+        Selecionar uma música envia Txxx diretamente à StompBox.
 
  NOTA: ao publicar, subir também o sw.js com o número do cache
  trocado, senão o app instalado continua servindo a versão antiga.
@@ -360,6 +367,33 @@ input[type=text]{flex:1;min-width:0}
 textarea{width:100%;height:230px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5}
 .note{font-size:10px;color:#65717c;margin:0}
 
+
+/* ---------- andamento manual / repertório ---------- */
+.tempo-box{overflow:hidden}
+.tempo-manual{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.tempo-manual input{flex:1;min-width:0;height:44px;font-size:22px;font-weight:600;text-align:center;background:#12171c;border-color:#40505e;color:#eef2f5;font-variant-numeric:tabular-nums}
+.tempo-manual input:focus{border-color:#4da3ff;box-shadow:0 0 0 2px rgba(77,163,255,.12)}
+.tempo-unit{font-size:10px;color:#71808d;letter-spacing:.08em;margin-left:-48px;pointer-events:none}
+#bpmSend{height:44px;min-width:76px}
+.tempo-rep{width:44px!important;padding:0!important;color:#9bcfff!important;border-color:#347bb2!important;background:#1b3b55!important;font-size:20px!important}
+
+/* ---------- repertório (baseado no Tap Tempo Trainer) ---------- */
+#repertorioFundo,#gerenciarFundo{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:14px}
+#repertorioFundo.aberto,#gerenciarFundo.aberto{display:flex}
+#repertorioCaixa,#gerenciarCaixa{display:flex;flex-direction:column;width:100%;max-width:440px;max-height:90vh;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.7)}
+#repertorioTopo{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+#repertorioTopo span{font-size:12px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+#repertorioFechar,#gerenciarFechar{margin:0;padding:0 10px;font-size:22px;line-height:1;background:transparent;border:0}
+#repertorioFiltro,#gerenciarFiltro{width:100%;font-size:14px;padding:8px 10px;margin-bottom:10px;background:#12171c;color:var(--ink);border:1px solid #35404b;border-radius:6px}
+#repertorioLista{flex:1;overflow-y:auto;min-height:60px}
+.repItem{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #303a44;cursor:pointer}
+.repItem:active{background:#202831}
+.repTexto{flex:1;min-width:0}.repNome{font-size:15px;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.repDescricao{display:block;font-size:12px;font-weight:normal;color:#7a8793;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.repBpm{font-size:15px;font-weight:bold;font-variant-numeric:tabular-nums}.repCompasso{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dim);min-width:28px;text-align:right}.repEditar,.repRemover{margin:0;padding:2px 7px;font-size:15px;line-height:1;color:var(--dim);background:transparent;border:0}.repEditar:hover,.repRemover:hover{color:#eef2f5}
+#gerenciarCaixa{overflow-y:auto}.gerSecao{border-top:1px solid var(--line);padding-top:12px;margin-top:14px}.gerSecao:first-of-type{border-top:0;padding-top:0;margin-top:0}.gerSecao.editando{background:#141a20;border-radius:10px;padding:10px;margin-left:-10px;margin-right:-10px}.gerTitulo{font-size:11px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px}.gerDica{font-size:11px;color:#71808d;line-height:1.45}.gerSecao input[type=text],.gerSecao input[type=number],.repSelect{width:100%;font-size:14px;padding:8px 10px;margin-bottom:7px;background:#12171c;color:var(--ink);border:1px solid #35404b;border-radius:6px}.repLinha{display:grid;grid-template-columns:minmax(110px,1fr) auto minmax(80px,1fr);align-items:center;gap:7px;margin:2px 0 7px}.repCampo{position:relative}.repCampo input{margin:0!important;padding-right:42px!important}.sufixo{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:#687582;pointer-events:none}.repCheck{font-size:11px;color:#a5b0ba;white-space:nowrap;display:flex;align-items:center;gap:4px}.repSelect{margin:0}.repAcoes{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}.repAcoes .btn{padding:8px 6px;font-size:11px}.gerSecao #gerenciarLista{max-height:34vh;overflow-y:auto}.gerSecao #repertorioAdd,.gerSecao #repertorioCancelar{width:100%;margin-top:2px}.gerSecao.editando #repertorioCancelar{margin-top:7px}
+#repertorioVazio{padding:18px 4px;font-size:13px;color:#65717c;text-align:center}
+@media(max-width:420px){.repLinha{grid-template-columns:1fr 1fr}.repSelect{grid-column:1/-1}.tempo-unit{display:none}}
+
 /* Dialogs */
 dialog{
   border:1px solid #46515d;border-radius:10px;background:#1a2027;color:var(--ink);
@@ -427,18 +461,24 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   </div>
 </section>
 
+<h2><span>Presets</span><button id="editPre">editar nomes</button></h2>
+<section class="presets" id="presets"></section>
+
 <h2>Andamento</h2>
-<section class="box">
-  <div class="head">
+<section class="box tempo-box">
+  <div class="tempo-manual">
+    <input type="number" id="bpmInput" min="30" max="300" step="1" value="120" inputmode="numeric" aria-label="Andamento em BPM">
+    <span class="tempo-unit">BPM</span>
+    <button class="btn primary" id="bpmSend">Enviar</button>
+  </div>
+  <div class="head" style="margin-top:7px">
     <button data-bpm="-" aria-label="Menos 1 BPM">–</button>
     <div class="read"><b class="mono" id="bpmVal">—</b><i>BPM</i></div>
     <button data-bpm="+" aria-label="Mais 1 BPM">+</button>
     <button id="tap">Tap</button>
+    <button id="repertorioBtn" class="tempo-rep" title="Repertório" aria-label="Abrir repertório">☰</button>
   </div>
 </section>
-
-<h2><span>Presets</span><button id="editPre">editar nomes</button></h2>
-<section class="presets" id="presets"></section>
 
 <h2>Disparo</h2>
 <section class="fire" id="fire"></section>
@@ -463,7 +503,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
       <label for="reassert">Reafirmar o slot antes dos comandos V</label>
       <input type="checkbox" id="reassert" checked>
     </div>
-    <p class="note">StompBox Remote v3.4 · Mixing Station UI v2 · protocolo v29.0</p>
+    <p class="note">StompBox Remote v3.5 · Mixing Station UI v2 · protocolo v29.0</p>
   </div>
 </details>
 
@@ -488,6 +528,65 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
     <button class="btn primary" id="catSave">Salvar</button>
   </div>
 </dialog>
+
+<!-- ============ REPERTÓRIO ============ -->
+<div id="repertorioFundo">
+  <div id="repertorioCaixa">
+    <div id="repertorioTopo">
+      <span>Repertório</span>
+      <button id="repertorioFechar" title="Fechar">&times;</button>
+    </div>
+    <input type="text" id="repertorioFiltro" placeholder="Buscar…" autocomplete="off">
+    <div id="repertorioLista"></div>
+    <button class="btn" id="gerenciarBtn">Gerenciar repertório</button>
+  </div>
+</div>
+
+<!-- ============ GERENCIAR REPERTÓRIO ============ -->
+<div id="gerenciarFundo">
+  <div id="gerenciarCaixa">
+    <div id="repertorioTopo">
+      <span>Gerenciar repertório</span>
+      <button id="gerenciarFechar" title="Fechar">&times;</button>
+    </div>
+
+    <div class="gerSecao" id="secaoAdicionar">
+      <div class="gerTitulo">Adicionar música</div>
+      <input type="text" id="novaMusica" placeholder="Nome da música" maxlength="60" autocomplete="off">
+      <input type="text" id="novaDescricao" placeholder="Descrição (versão, artista…) — opcional" maxlength="80" autocomplete="off">
+      <div class="repLinha">
+        <span class="repCampo"><input type="number" id="novoBpm" min="30" max="300" step="1" value="120" inputmode="numeric"><span class="sufixo">BPM</span></span>
+        <label class="repCheck"><input type="checkbox" id="novoUsarCompasso"> compasso</label>
+        <select id="novoCompasso" class="repSelect" disabled>
+          <option value="1/4">1/4</option><option value="2/4">2/4</option><option value="3/4">3/4</option><option value="4/4">4/4</option>
+          <option value="5/4">5/4</option><option value="6/4">6/4</option><option value="7/4">7/4</option><option value="3/8">3/8</option>
+          <option value="5/8">5/8</option><option value="6/8">6/8</option><option value="7/8">7/8</option><option value="9/8">9/8</option><option value="12/8">12/8</option>
+        </select>
+      </div>
+      <button class="btn primary" id="repertorioAdd">Adicionar</button>
+      <button class="btn" id="repertorioCancelar" style="display:none">Cancelar edição</button>
+    </div>
+
+    <div class="gerSecao">
+      <div class="gerTitulo">Músicas <span id="gerContagem"></span></div>
+      <input type="text" id="gerenciarFiltro" placeholder="Buscar…" autocomplete="off">
+      <div id="gerenciarLista"></div>
+    </div>
+
+    <div class="gerSecao">
+      <div class="gerTitulo">Backup e planilha</div>
+      <div class="gerDica">O backup JSON é compatível com o repertório do Tap Tempo Trainer. CSV abre no Excel ou Google Planilhas.</div>
+      <div class="repAcoes">
+        <button class="btn" id="salvarBackupRep">Salvar backup</button>
+        <button class="btn" id="restaurarBackupRep">Restaurar backup</button>
+        <button class="btn" id="exportarCsvRep">Exportar CSV</button>
+        <button class="btn" id="importarCsvRep">Importar CSV</button>
+      </div>
+      <input type="file" id="arquivoBackupRep" accept=".json,application/json" style="display:none">
+      <input type="file" id="arquivoCsvRep" accept=".csv,text/csv" style="display:none">
+    </div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -719,7 +818,7 @@ function renderGrid(){
   });
 }
 
-function renderTempo(){ $('#bpmVal').textContent = state.bpm ? state.bpm : '—'; }
+function renderTempo(){ const bpm = state.bpm ? state.bpm : null; $('#bpmVal').textContent = bpm || '—'; if (bpm) $('#bpmInput').value = bpm; }
 
 function renderMaster(){
   $('#mVal').textContent = state.master ? (state.master + '/16') : '—';
@@ -867,6 +966,104 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && rx) keepAwake();
 });
 
+
+/* ---------- repertório ---------- */
+const CHAVE_REPERTORIO = 'tapTempoTrainer.repertorio.v1';
+let repertorio = [];
+let musicaEmEdicao = null;
+
+const repertorioBtn = $('#repertorioBtn'), repertorioFundo = $('#repertorioFundo'), repertorioFechar = $('#repertorioFechar'), repertorioLista = $('#repertorioLista'), repertorioFiltro = $('#repertorioFiltro');
+const gerenciarBtn = $('#gerenciarBtn'), gerenciarFundo = $('#gerenciarFundo'), gerenciarFechar = $('#gerenciarFechar'), gerenciarCaixa = $('#gerenciarCaixa'), gerenciarLista = $('#gerenciarLista'), gerenciarFiltro = $('#gerenciarFiltro'), gerContagem = $('#gerContagem');
+const secaoAdicionar = $('#secaoAdicionar'), novaMusica = $('#novaMusica'), novaDescricao = $('#novaDescricao'), novoBpm = $('#novoBpm'), novoUsarCompasso = $('#novoUsarCompasso'), novoCompasso = $('#novoCompasso'), repertorioAdd = $('#repertorioAdd'), repertorioCancelar = $('#repertorioCancelar');
+
+function sanearBpmRep(v){
+  let n = Math.round(Number(String(v ?? '').trim().replace(',', '.')));
+  if (!isFinite(n)) n = state.bpm || 120;
+  return Math.max(30, Math.min(300, n));
+}
+function normalizarMusica(m){
+  if (!m || typeof m !== 'object') return null;
+  const nome = String(m.nome ?? '').trim();
+  if (!nome) return null;
+  return {nome:nome.slice(0,60), descricao:String(m.descricao ?? '').trim().slice(0,80), bpm:sanearBpmRep(m.bpm), compasso:String(m.compasso ?? '').trim().slice(0,10)};
+}
+function normalizarRepertorio(lista){
+  if (!Array.isArray(lista)) return [];
+  return lista.map(normalizarMusica).filter(Boolean);
+}
+function carregarRepertorio(){
+  try { repertorio = normalizarRepertorio(JSON.parse(localStorage.getItem(CHAVE_REPERTORIO) || '[]')); }
+  catch(e){ repertorio=[]; }
+}
+function salvarRepertorio(){
+  try { localStorage.setItem(CHAVE_REPERTORIO, JSON.stringify(repertorio)); return true; }
+  catch(e){ alert('Não consegui salvar o repertório no navegador.'); return false; }
+}
+function ordenarRepertorio(){ repertorio.sort((a,b)=>String(a?.nome||'').localeCompare(String(b?.nome||''),'pt-BR',{sensitivity:'base'})); }
+function corDoBpm(bpm){
+  const v=Number(bpm); if(!isFinite(v)) return '#eee';
+  if(v<66) return '#4da3ff'; if(v<90) return '#00ff88'; if(v<120) return '#ffd23f'; if(v<150) return '#ff9a3c'; if(v<180) return '#ff4d4d'; return '#b57cff';
+}
+function desenharListaEm(container,busca,opcoes={}){
+  const termo=(busca||'').trim().toLowerCase();
+  const visiveis=repertorio.filter(m=>m && (!termo || String(m.nome||'').toLowerCase().includes(termo) || String(m.descricao||'').toLowerCase().includes(termo)));
+  if(!visiveis.length){ container.innerHTML='<div id="repertorioVazio">'+(repertorio.length?'Nada encontrado.':'Nenhuma música ainda.')+'</div>'; return; }
+  container.innerHTML='';
+  visiveis.forEach(m=>{
+    const linha=document.createElement('div'); linha.className='repItem';
+    const texto=document.createElement('span'); texto.className='repTexto';
+    const nome=document.createElement('span'); nome.className='repNome'; nome.textContent=m.nome; texto.appendChild(nome);
+    if(m.descricao){const desc=document.createElement('small');desc.className='repDescricao';desc.textContent=m.descricao;texto.appendChild(desc)}
+    const bpm=document.createElement('span');bpm.className='repBpm';bpm.textContent=m.bpm;bpm.style.color=corDoBpm(m.bpm);
+    const comp=document.createElement('span');comp.className='repCompasso';comp.textContent=m.compasso||'';
+    linha.append(texto,bpm,comp);
+    if(opcoes.comRemover){
+      const editar=document.createElement('button');editar.className='repEditar';editar.textContent='✎';editar.title='Editar';editar.onclick=e=>{e.stopPropagation();comecarEdicao(m)};linha.appendChild(editar);
+      const remover=document.createElement('button');remover.className='repRemover';remover.textContent='×';remover.title='Remover';remover.onclick=e=>{e.stopPropagation();if(!confirm('Remover "'+m.nome+'" do repertório?'))return;repertorio=repertorio.filter(x=>x!==m);if(musicaEmEdicao===m)encerrarEdicao();salvarRepertorio();desenharGerenciar()};linha.appendChild(remover);
+    }
+    if(opcoes.aoClicar) linha.onclick=()=>opcoes.aoClicar(m); else linha.style.cursor='default';
+    container.appendChild(linha);
+  });
+}
+function desenharRepertorio(){ desenharListaEm(repertorioLista,repertorioFiltro.value,{aoClicar:aplicarMusica}); }
+function desenharGerenciar(){ desenharListaEm(gerenciarLista,gerenciarFiltro.value,{comRemover:true}); gerContagem.textContent=repertorio.length?'('+repertorio.length+')':''; }
+function aplicarMusica(m){
+  const bpm=sanearBpmRep(m.bpm); state.bpm=bpm; renderTempo(); send('T'+pad(bpm,3)); fecharRepertorio(); setStatus('BPM '+bpm+' enviado — '+m.nome,'on');
+}
+function abrirRepertorio(){ carregarRepertorio();ordenarRepertorio();repertorioFiltro.value='';desenharRepertorio();repertorioFundo.classList.add('aberto');repertorioFiltro.focus(); }
+function fecharRepertorio(){ repertorioFundo.classList.remove('aberto'); }
+function abrirGerenciar(){ carregarRepertorio();ordenarRepertorio();gerenciarFiltro.value='';encerrarEdicao();novoBpm.value=state.bpm||120;desenharGerenciar();gerenciarFundo.classList.add('aberto'); }
+function fecharGerenciar(){ gerenciarFundo.classList.remove('aberto'); }
+function comecarEdicao(m){ musicaEmEdicao=m;novaMusica.value=m.nome;novaDescricao.value=m.descricao||'';novoBpm.value=m.bpm;novoUsarCompasso.checked=!!m.compasso;novoCompasso.disabled=!m.compasso;if(m.compasso)novoCompasso.value=m.compasso;repertorioAdd.textContent='Salvar alteração';repertorioCancelar.style.display='';secaoAdicionar.classList.add('editando');gerenciarCaixa.scrollTop=0;novaMusica.focus(); }
+function encerrarEdicao(){ musicaEmEdicao=null;novaMusica.value='';novaDescricao.value='';novoBpm.value=state.bpm||120;novoUsarCompasso.checked=false;novoCompasso.disabled=true;repertorioAdd.textContent='Adicionar';repertorioCancelar.style.display='none';secaoAdicionar.classList.remove('editando'); }
+function escaparCsv(valor){const txt=String(valor??'');return /[;,"\n\r]/.test(txt)?'"'+txt.replace(/"/g,'""')+'"':txt;}
+function dividirLinhaCsv(linha,sep){const campos=[];let atual='',asp=false;for(let i=0;i<linha.length;i++){const c=linha[i];if(asp){if(c==='"'){if(linha[i+1]==='"'){atual+='"';i++}else asp=false}else atual+=c}else{if(c==='"')asp=true;else if(c===sep){campos.push(atual);atual=''}else atual+=c}}campos.push(atual);return campos;}
+
+function salvarBackupRepertorio(){
+  if(!repertorio.length){alert('Não há músicas salvas para incluir no backup.');return;}
+  const pacote={app:'StompBox Remote',formato:2,data:new Date().toISOString(),repertorio:repertorio};
+  const blob=new Blob([JSON.stringify(pacote)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='stompbox_repertorio_backup_'+new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')+'.json';a.click();URL.revokeObjectURL(url);
+}
+function restaurarBackupRepertorio(){ $('#arquivoBackupRep').value='';$('#arquivoBackupRep').click(); }
+$('#arquivoBackupRep').onchange=()=>{
+  const arquivo=$('#arquivoBackupRep').files?.[0];if(!arquivo)return;const leitor=new FileReader();
+  leitor.onload=()=>{let pacote;try{pacote=JSON.parse(leitor.result)}catch(e){alert('Arquivo inválido: não é um backup JSON válido.');return}
+    if(!Array.isArray(pacote?.repertorio)){alert('Arquivo inválido: não encontrei um repertório dentro dele.');return}
+    const novas=normalizarRepertorio(pacote.repertorio);if(!novas.length){alert('O backup não contém músicas válidas.');return}
+    const somar=repertorio.length>0 && confirm('Você já tem '+repertorio.length+' música(s).\n\nOK = juntar as do backup às atuais\nCancelar = substituir tudo pelo backup');
+    repertorio=somar?repertorio.concat(novas):novas;ordenarRepertorio();salvarRepertorio();desenharGerenciar();alert('Restaurado: '+novas.length+' música(s).');
+  };leitor.readAsText(arquivo);
+};
+$('#salvarBackupRep').onclick=salvarBackupRepertorio;$('#restaurarBackupRep').onclick=restaurarBackupRepertorio;
+$('#exportarCsvRep').onclick=()=>{if(!repertorio.length){alert('O repertório está vazio.');return}const linhas=['nome;descricao;bpm;compasso'];repertorio.forEach(m=>linhas.push([escaparCsv(m.nome),escaparCsv(m.descricao),escaparCsv(m.bpm),escaparCsv(m.compasso)].join(';')));const blob=new Blob(['\ufeff'+linhas.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='repertorio_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url)};
+$('#importarCsvRep').onclick=()=>{$('#arquivoCsvRep').value='';$('#arquivoCsvRep').click()};
+$('#arquivoCsvRep').onchange=()=>{const arquivo=$('#arquivoCsvRep').files?.[0];if(!arquivo)return;const leitor=new FileReader();leitor.onload=()=>{const texto=String(leitor.result).replace(/^\ufeff/,'');const linhas=texto.split(/\r?\n/).filter(l=>l.trim());if(!linhas.length){alert('Arquivo vazio.');return}const sep=(linhas[0].split(';').length>=linhas[0].split(',').length)?';':',';let inicio=0;const primeira=dividirLinhaCsv(linhas[0],sep);if((primeira[0]||'').trim().toLowerCase()==='nome')inicio=1;const novas=[];let ignoradas=0;for(let i=inicio;i<linhas.length;i++){const c=dividirLinhaCsv(linhas[i],sep),nome=(c[0]||'').trim(),b=(c[2]||'').trim();if(!nome||!b){ignoradas++;continue}const m=normalizarMusica({nome,descricao:c[1]||'',bpm:b,compasso:c[3]||''});if(m)novas.push(m);else ignoradas++}if(!novas.length){alert('Não encontrei nenhuma música válida no arquivo.\n\nCada linha precisa ter ao menos nome e BPM.');return}const somar=repertorio.length>0&&confirm('Você já tem '+repertorio.length+' música(s).\n\nOK = juntar as do arquivo às atuais\nCancelar = substituir tudo pelas do arquivo');repertorio=somar?repertorio.concat(novas):novas;ordenarRepertorio();salvarRepertorio();desenharGerenciar();alert('Importado: '+novas.length+' música(s).'+(ignoradas?'\n'+ignoradas+' linha(s) ignorada(s).':''))};leitor.readAsText(arquivo)};
+
+repertorioBtn.onclick=abrirRepertorio;repertorioFechar.onclick=fecharRepertorio;repertorioFundo.onclick=e=>{if(e.target===repertorioFundo)fecharRepertorio()};repertorioFiltro.addEventListener('input',desenharRepertorio);
+gerenciarBtn.onclick=abrirGerenciar;gerenciarFechar.onclick=fecharGerenciar;gerenciarFundo.onclick=e=>{if(e.target===gerenciarFundo)fecharGerenciar()};gerenciarFiltro.addEventListener('input',desenharGerenciar);
+novoUsarCompasso.onchange=()=>{novoCompasso.disabled=!novoUsarCompasso.checked};repertorioCancelar.onclick=encerrarEdicao;
+repertorioAdd.onclick=()=>{const nome=novaMusica.value.trim();if(!nome){alert('Dê um nome à música.');novaMusica.focus();return}const dados={nome:nome.slice(0,60),descricao:novaDescricao.value.trim().slice(0,80),bpm:sanearBpmRep(novoBpm.value),compasso:novoUsarCompasso.checked?novoCompasso.value:''};if(musicaEmEdicao){Object.assign(musicaEmEdicao,dados)}else repertorio.push(dados);ordenarRepertorio();salvarRepertorio();encerrarEdicao();gerenciarFiltro.value='';desenharGerenciar();};
+
 /* ---------- eventos ---------- */
 $('#btnConn').onclick = () => (rx ? disconnect() : connect());
 document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => send(String(state.active) + b.dataset.nudge));
@@ -881,6 +1078,12 @@ document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
 $('#mAsk').onclick = () => send('M?');
 $('#vAsk').onclick = () => { if (vpt.slot != null){ reafirmaSlot(vpt.slot); send('V?'); } };
 $('#tap').onclick = tap;
+const bpmInput = $('#bpmInput');
+function selecionarBpm(){ setTimeout(()=>{ try{ bpmInput.select(); bpmInput.setSelectionRange(0,bpmInput.value.length); }catch(e){} },0); }
+bpmInput.addEventListener('focus', selecionarBpm);
+bpmInput.addEventListener('pointerdown', selecionarBpm);
+$('#bpmSend').onclick = () => { const bpm=sanearBpmRep(bpmInput.value); state.bpm=bpm; renderTempo(); send('T'+pad(bpm,3)); setStatus('BPM '+bpm+' enviado','on'); };
+bpmInput.addEventListener('keydown', e => { if(e.key==='Enter') $('#bpmSend').click(); });
 
 const mF = $('#mFader');
 mF.addEventListener('input', () => { $('#mVal').textContent = mF.value + '/16'; });
@@ -952,7 +1155,7 @@ function pintarFader(id){
 });
 
 /* ---------- boot ---------- */
-loadCat(); loadPresets();
+loadCat(); loadPresets(); carregarRepertorio(); ordenarRepertorio();
 $('#term').value = localStorage.getItem('sb_term') || '';
 $('#reassert').checked = localStorage.getItem('sb_reassert') !== '0';
 ticks($('#mTicks'), MAX_M);
