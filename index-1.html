@@ -1,0 +1,977 @@
+<!doctype html>
+<!--
+ ============================================================
+ STOMPBOX REMOTE — v3.4 "Mixing Station"
+ ============================================================
+ Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
+ Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
+ na tela inicial e funcional offline pelo service worker.
+
+ PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth").
+
+ ------------------------------------------------------------
+ CHANGELOG
+ ------------------------------------------------------------
+ v1.0 — Primeira versão. Conexão BLE (NUS), leitura de estado pela
+        característica TX, cartões dos slots, grade de 31 timbres,
+        BPM com tap tempo, presets, disparo 9999/8888, console com
+        envio manual, wake lock e seletor de fim de linha.
+
+ v2.0 — Protocolo atualizado: disparo por D1–D4 no lugar do
+        9999/8888, volume geral M+/M-/M1–M16/M?. Catálogo de timbres
+        passou a ser editável dentro da página e guardado no
+        localStorage — acrescentar timbres não exige republicar.
+        Grade se estende sozinha se o pedal reportar timbre além
+        da lista.
+
+ v3.0 — Alinhada ao documento de comandos da v29.0:
+        - NOVO: volume por timbre (V+/V-/V++/V--/V?). Fluxo de duas
+          etapas: escolhe o slot, a página pergunta o volume ao pedal
+          (V?) e só então libera o fader.
+        - NOVO: faders horizontais estilo mesa para o volume geral e
+          para o volume por timbre, no lugar da régua de blocos.
+        - IMPORTANTE: como os comandos V agem no ÚLTIMO SLOT USADO e
+          não aceitam valor absoluto, a página (a) reafirma o slot
+          reenviando o timbre atual dele antes de qualquer V, e
+          (b) traduz o alvo do fader numa sequência de V++/V+ (±32/±8),
+          confirmando com V? no fim. Passo do fader = 8, por isso.
+        - CORREÇÃO: parser das respostas TX reais —
+          "VOL GERAL 12/16 -4dB" e "VOL 06 CARRIL=230".
+        - CORREÇÃO: slot 5 é o timbre do metrônomo (somente leitura;
+          nos modos 01 e 11 quem o altera é o comando do slot 1).
+        - CORREÇÃO: faixa de BPM do tap passou a 30–300.
+        - Botão de largada remota do automático (8888) no disparo.
+
+ v3.1 — Presets passaram a mostrar número E nome. Como o pedal só
+        informa o nome ao carregar um preset (resposta "P03 SAMBA")
+        e não há comando que liste os dez, os nomes vêm de dois
+        lados: uma tela de edição (igual à do catálogo, guardada no
+        localStorage) e o aprendizado automático — todo "Pnn NOME"
+        que chega pela TX grava o nome daquele preset.
+
+ v3.2 — CORREÇÃO do fader de volume por timbre, que não chegava ao
+        máximo. Duas causas: (a) o input tinha step=8 a partir de 0,
+        então o último ponto alcançável era 248, nunca 255; (b) os
+        comandos V andam de 8 em 8 A PARTIR DO VALOR ATUAL, então os
+        valores possíveis dependem do resto da divisão — de 230 só se
+        chega a 238, 246, 254. Agora o fader anda de 1 em 1 e a página
+        traduz a posição solta para o alvo alcançável mais próximo.
+        No topo, manda um passo a mais de propósito, contando com o
+        limite do firmware, pra fechar em 255. No fundo NÃO faz isso:
+        se o firmware der a volta em vez de limitar, um passo a mais
+        abaixo de 0 viraria volume máximo — erro silencioso no topo,
+        estouro no fundo.
+
+ v3.3 — Interface redesenhada como console de mesa: paleta escura
+        azulada, faixa colorida por canal nos slots, trilho dos
+        faders com escala de cor e marcas de nível, presets com
+        marca de RECALL. (Redesenho feito pelo Saulo.)
+        - CORREÇÃO: o preenchimento colorido do trilho (--level) só
+          era repintado no evento 'input', que o navegador não dispara
+          quando o valor é mudado por código. Resultado: ao conectar,
+          o M? movia o cursor do fader mas a barra de nível continuava
+          onde estava, e a leitura do V? deixava a barra em zero com o
+          cursor em 230. Agora renderMaster() e renderVpt() repintam.
+
+ v3.4 — CORREÇÃO do teto do volume por timbre: era 255 (chute meu, como
+        se fosse um byte 0-255). O real é 256 — não um limite de byte,
+        e sim a marca de 100% na escala de ponto fixo do firmware
+        (VOLUME_TIMBRE: "0-256, 256 = 100%, volume original"; mesma
+        base usada no volume geral, 256 × 10^(-dB/20)). O firmware trava
+        nesse teto por design ("nunca passe de 256... só pra reduzir,
+        não pra aumentar"), o que já bate com a lógica de passo extra no
+        topo que a página usa desde a v3.2 — só o número estava errado.
+
+ NOTA: ao publicar, subir também o sw.js com o número do cache
+ trocado, senão o app instalado continua servindo a versão antiga.
+ ============================================================
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>StompBox Remote</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#171310">
+<style>
+:root{
+  --base:#11151a;--base2:#0b0e12;
+  --panel:#1a2027;--panel2:#222a33;--panel3:#29323c;
+  --line:#343e49;--line2:#46515d;
+  --ink:#eef2f5;--dim:#8995a2;--muted:#64707d;
+  --blue:#4da3ff;--cyan:#42d9d0;--green:#45d483;
+  --amber:#ffb84d;--red:#ff5c68;--purple:#a98cff;
+  --slot1:#4da3ff;--slot2:#42d9d0;--slot3:#a98cff;--slot4:#ffb84d;
+  --r:8px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--base2)}
+body{
+  margin:0;
+  background:radial-gradient(circle at 50% -10%,#26303a 0,transparent 38%),linear-gradient(180deg,#11151a 0%,#0d1115 100%);
+  color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:15px;line-height:1.35;
+  padding:0 9px 30px;max-width:720px;margin-inline:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button[disabled]{opacity:.42}
+button,.btn{user-select:none;-webkit-user-select:none;transition:background .1s,border-color .1s,transform .06s}
+button:active{transform:translateY(1px)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+
+/* Topo */
+.bar{
+  display:flex;align-items:center;gap:10px;padding:10px 3px 9px;
+  position:sticky;top:0;
+  background:rgba(13,17,21,.94);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  z-index:5;border-bottom:1px solid rgba(70,81,93,.45);
+}
+.dot{width:9px;height:9px;border-radius:50%;background:#4a535d;box-shadow:0 0 0 3px rgba(74,83,93,.12);flex:none}
+.dot.on{background:var(--green);box-shadow:0 0 10px rgba(69,212,131,.55)}
+.dot.busy{background:var(--amber);box-shadow:0 0 10px rgba(255,184,77,.4)}
+.dot.err{background:var(--red);box-shadow:0 0 10px rgba(255,92,104,.4)}
+#status{flex:1;color:var(--dim);font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{
+  background:linear-gradient(180deg,#27313b,#202831);
+  border:1px solid var(--line2);border-radius:7px;padding:8px 13px;
+  box-shadow:0 2px 5px rgba(0,0,0,.22);
+}
+.btn.primary{border-color:#3d89c9;color:#d9edff;background:linear-gradient(180deg,#205c8e,#174b76)}
+.btn:active{transform:translateY(1px)}
+
+/* Slots / canais */
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+.slot{
+  background:linear-gradient(180deg,#1c232b,#171d24);
+  border:1px solid var(--line);border-radius:8px;
+  padding:9px 10px 8px 13px;text-align:left;display:block;
+  min-height:82px;box-shadow:0 2px 7px rgba(0,0,0,.2);
+  position:relative;overflow:hidden;
+}
+.slot::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#4b5662;
+}
+.slot:nth-child(1)::before{background:var(--slot1)}
+.slot:nth-child(2)::before{background:var(--slot2)}
+.slot:nth-child(3)::before{background:var(--slot3)}
+.slot:nth-child(4)::before{background:var(--slot4)}
+.slot::after{
+  content:"";position:absolute;width:6px;height:6px;border-radius:50%;
+  right:9px;top:10px;background:#4a535d;
+}
+.slot[aria-pressed="true"]{
+  border-color:#5a7186;background:linear-gradient(180deg,#222d38,#1b252f);
+  box-shadow:inset 0 0 0 1px rgba(77,163,255,.16),0 3px 9px rgba(0,0,0,.28);
+}
+.slot[aria-pressed="true"]::after{
+  background:var(--green);box-shadow:0 0 8px rgba(69,212,131,.7);
+}
+.slot .lbl{font-size:9px;color:var(--dim);display:block;text-transform:uppercase;letter-spacing:.1em}
+.slot .num{font-size:27px;line-height:1.05;letter-spacing:-.02em;font-weight:600;color:#74808c;display:block}
+.slot[aria-pressed="true"] .num{color:var(--blue)}
+.slot .nm{font-size:12px;color:#d8dee4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:2px}
+.slot.ro{opacity:.78;grid-column:1/-1;min-height:48px}
+.slot.ro .num{font-size:18px;display:inline;margin-right:8px}
+.slot.ro .nm{display:inline;font-size:13px}
+
+/* Navegação */
+.nudge{display:flex;align-items:center;gap:7px;margin:7px 0 13px}
+.nudge button{
+  flex:none;width:52px;height:42px;background:#1b222a;
+  border:1px solid var(--line);border-radius:7px;font-size:22px;color:#d9e0e6;
+}
+.nudge button:active{background:#29343e;border-color:var(--line2)}
+.nudge span{flex:1;text-align:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* Títulos */
+h2{
+  font-size:11px;font-weight:700;color:#7e8a97;margin:18px 2px 7px;
+  display:flex;align-items:center;gap:8px;
+  text-transform:uppercase;letter-spacing:.08em;
+  border-bottom:1px solid #2c353e;padding-bottom:6px;
+}
+h2::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--blue);opacity:.8}
+h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#35414c,transparent);opacity:.65}
+h2 button{
+  margin-left:auto;font-size:10px;color:#7199bb;
+  border-bottom:1px solid #46647e;padding:0;text-transform:none;letter-spacing:0;
+}
+
+/* Timbres */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+@media(min-width:420px){.grid{grid-template-columns:repeat(3,1fr)}}
+.tim{
+  background:#181e25;border:1px solid #303a44;border-radius:7px;
+  padding:8px 9px;text-align:left;position:relative;min-height:54px;
+}
+.tim:active{background:#27313a}
+.tim .n{font-size:10px;color:#687582;display:block}
+.tim .t{font-size:13px;color:#dbe1e6;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tim.cur{
+  border-color:#4b89ba;background:linear-gradient(180deg,#1e3344,#192934);
+  box-shadow:inset 3px 0 var(--blue),0 0 12px rgba(77,163,255,.06);
+}
+.tim.cur .n,.tim.cur .t{color:#b9ddfb}
+.tim .badge{position:absolute;top:6px;right:7px;font-size:10px;color:#7891a7}
+
+/* Caixas / mixer */
+.box{
+  background:linear-gradient(180deg,#1a2128,#171d23);
+  border:1px solid var(--line);border-radius:8px;padding:11px;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);position:relative;
+}
+.box::before{
+  content:"MIX";position:absolute;right:9px;top:7px;
+  font-size:8px;letter-spacing:.13em;color:#46525e;pointer-events:none;
+}
+.head{display:flex;align-items:center;gap:7px}
+.head .read{flex:1;text-align:center}
+.head .read b{font-size:28px;font-weight:500;display:block;line-height:1;color:#f0f4f7;text-shadow:0 0 14px rgba(255,255,255,.08)}
+.head .read i{font-size:10px;color:var(--muted);font-style:normal;display:block;margin-top:3px}
+.head button{
+  width:48px;height:44px;border:1px solid #394550;border-radius:7px;
+  font-size:19px;background:#222a33;color:#dce3e8;
+}
+.head button:active{background:#2c3843;border-color:#566676}
+#tap{width:auto;padding:0 17px;min-width:70px;border-color:#347bb2;color:#bfe2ff;background:#1b3b55;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+#mAsk,#vAsk{width:auto;padding:0 12px;font-size:13px;color:#9db0c0}
+
+/* Faders */
+.fader-zone{position:relative;padding:0 2px}
+.fader-zone::before{
+  content:"";position:absolute;left:13px;right:13px;top:25px;height:7px;
+  border-radius:5px;
+  background:linear-gradient(90deg,#245b83 0 20%,#257f79 20% 58%,#788331 58% 78%,#8b632e 78% 90%,#7b343c 90% 100%);
+  opacity:.22;pointer-events:none;z-index:0;
+}
+.fader-zone::after{
+  content:"";position:absolute;left:13px;top:25px;
+  width:var(--level,0%);max-width:calc(100% - 26px);height:7px;
+  border-radius:5px;background:linear-gradient(90deg,#328fd0,#38bcb2 65%,#d3aa42 88%,#d55b62);
+  opacity:var(--level-alpha,.1);pointer-events:none;z-index:0;
+}
+.fader-zone .level-markers{
+  position:absolute;left:13px;right:13px;top:17px;height:22px;
+  pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(6.25% - 1px),rgba(150,165,178,.3) calc(6.25% - 1px),rgba(150,165,178,.3) 6.25%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 8%,#000 92%,transparent 100%);
+  z-index:1;
+}
+.fader{
+  -webkit-appearance:none;appearance:none;width:100%;height:46px;
+  background:transparent;margin:8px 0 0;display:block;position:relative;z-index:2;
+}
+.fader:disabled{opacity:.35}
+.fader::-webkit-slider-runnable-track{
+  height:7px;border-radius:4px;border:1px solid #0b0e11;
+  background:linear-gradient(90deg,rgba(77,163,255,.22),rgba(77,163,255,.08)),linear-gradient(180deg,#090c0f,#151a1f);
+}
+.fader::-webkit-slider-thumb{
+  -webkit-appearance:none;width:25px;height:38px;margin-top:-16px;border-radius:4px;
+  background:linear-gradient(90deg,transparent 0 44%,#62b7ff 45% 55%,transparent 56%),linear-gradient(180deg,#697681 0%,#3b4650 43%,#252e36 50%,#4b5863 57%,#303a43 100%);
+  border:1px solid #11161a;box-shadow:0 2px 5px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05) inset;
+}
+.fader::-moz-range-track{height:7px;border-radius:4px;border:1px solid #0b0e11;background:linear-gradient(90deg,rgba(77,163,255,.22),rgba(77,163,255,.08)),#10151a}
+.fader::-moz-range-thumb{
+  width:25px;height:38px;border-radius:4px;border:1px solid #11161a;
+  background:linear-gradient(180deg,#697681 0%,#3b4650 43%,#252e36 50%,#4b5863 57%,#303a43 100%);
+}
+.ticks{height:11px;margin:0 13px;background-repeat:repeat-x;opacity:.5}
+.scale{display:flex;justify-content:space-between;font-size:10px;color:#697682;margin:2px 12px 0}
+
+/* Volume por timbre */
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
+.pick button{
+  min-height:39px;background:#202831;border:1px solid #35404b;border-radius:6px;
+  padding:9px 0;font-size:11px;color:#b9c3cc;font-weight:500;
+}
+.pick button.cur{
+  border-color:#4e8ebd;color:#c9e7ff;background:#1d3547;
+  box-shadow:inset 0 -2px 0 var(--blue);
+}
+.pick button.cur::before{content:"● ";color:var(--green)}
+.vlabel{text-align:center;font-size:11px;color:var(--muted);min-height:19px}
+.vlabel b{color:#e4ebf0;font-size:13px}
+
+/* Presets */
+.presets{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.presets button{
+  background:#181f26;border:1px solid #303a44;border-radius:7px;
+  padding:8px 10px;text-align:left;min-height:55px;position:relative;
+}
+.presets .n{font-size:10px;color:#687582;display:block;letter-spacing:.08em}
+.presets .t{font-size:13px;color:#dbe1e6;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.presets button.cur{
+  border-color:#5b88aa;background:#1d2c38;box-shadow:inset 3px 0 var(--blue);
+}
+.presets button.cur .n,.presets button.cur .t{color:#b9ddfb}
+.presets button.cur::after{
+  content:"RECALL";position:absolute;right:8px;top:8px;
+  font-size:7px;color:#6da7d1;letter-spacing:.08em;
+}
+
+/* Disparo */
+.fire{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.fire button{
+  min-height:58px;background:linear-gradient(180deg,#202831,#1a2027);
+  border:1px solid #394550;border-radius:7px;padding:16px 0;
+  font-size:13px;color:#d5dce2;font-weight:500;letter-spacing:.02em;
+  position:relative;overflow:hidden;
+}
+.fire button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:#35414c}
+.fire button:active::after{background:var(--cyan)}
+.fire button.wide{
+  grid-column:1/-1;border-color:#735e39;color:#ffd38a;
+  background:linear-gradient(180deg,#2a271f,#211f1a);
+  padding:13px 0;font-size:12px;
+}
+
+/* Console */
+.panel{
+  border:1px solid #303a44;border-radius:8px;margin-top:17px;
+  overflow:hidden;background:#151b21;
+}
+.panel summary{
+  padding:11px 12px;color:#7e8a97;font-size:11px;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.panel .body{padding:0 11px 11px;display:grid;gap:9px}
+#log{
+  background:#090c10;border:1px solid #29323b;border-radius:6px;
+  padding:8px;height:150px;overflow:auto;font-size:11px;
+  white-space:pre-wrap;color:#75818d;
+}
+#log .tx{color:#c7d0d8}#log .rx{color:#62b7ff}#log .er{color:#ff707b}
+.row{display:flex;gap:7px;align-items:center}
+.row label{font-size:11px;color:#7f8b97;flex:1}
+select,input[type=text],textarea{
+  background:#202831;color:var(--ink);border:1px solid #35404b;
+  border-radius:6px;padding:8px;font:inherit;
+}
+input[type=text]{flex:1;min-width:0}
+textarea{width:100%;height:230px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5}
+.note{font-size:10px;color:#65717c;margin:0}
+
+/* Dialogs */
+dialog{
+  border:1px solid #46515d;border-radius:10px;background:#1a2027;color:var(--ink);
+  width:min(560px,94vw);padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.55);
+}
+dialog::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(3px)}
+dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
+.dlgbar{display:flex;gap:7px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+
+@media(min-width:560px){
+  body{max-width:760px;padding-left:12px;padding-right:12px}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .presets{grid-template-columns:repeat(5,1fr)}
+  .fire{grid-template-columns:repeat(4,1fr)}
+  .fire button.wide{grid-column:1/-1}
+}
+::selection{background:#2b618d;color:white}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <span class="dot" id="dot"></span>
+  <span id="status">Desconectado</span>
+  <button class="btn primary" id="btnConn">Conectar</button>
+</header>
+
+<section class="slots" id="slots"></section>
+
+<div class="nudge">
+  <button data-nudge="-" aria-label="Timbre anterior">–</button>
+  <span id="nudgeLabel">anterior / próximo no slot ativo</span>
+  <button data-nudge="+" aria-label="Próximo timbre">+</button>
+</div>
+
+<h2><span id="gridTitle">Timbres</span><button id="editCat">editar catálogo</button></h2>
+<section class="grid" id="grid"></section>
+
+<h2>Volume geral</h2>
+<section class="box">
+  <div class="head">
+    <button data-m="-" aria-label="Abaixar volume geral">–</button>
+    <div class="read"><b class="mono" id="mVal">—</b><i id="mDb">nível de 1 a 16</i></div>
+    <button data-m="+" aria-label="Aumentar volume geral">+</button>
+    <button class="mono" id="mAsk">M?</button>
+  </div>
+  <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="mFader" min="1" max="16" step="1" value="16" aria-label="Volume geral"></div>
+  <div class="ticks" id="mTicks"></div>
+  <div class="scale"><span>1 · −15 dB</span><span>16 · 0 dB</span></div>
+</section>
+
+<h2>Volume por timbre</h2>
+<section class="box">
+  <div class="pick" id="vPick"></div>
+  <div class="vlabel" id="vLabel">Escolha um slot — a página pergunta o volume ao pedal</div>
+  <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="vFader" min="0" max="256" step="1" value="0" disabled aria-label="Volume do timbre"></div>
+  <div class="ticks" id="vTicks"></div>
+  <div class="scale"><span>0</span><span id="vNow" class="mono">—</span><span>256</span></div>
+  <div class="head" style="margin-top:6px">
+    <button data-v="-" aria-label="Menos 8">–8</button>
+    <button data-v="--" aria-label="Menos 32">–32</button>
+    <button data-v="+" aria-label="Mais 8">+8</button>
+    <button data-v="++" aria-label="Mais 32">+32</button>
+    <button class="mono" id="vAsk">V?</button>
+  </div>
+</section>
+
+<h2>Andamento</h2>
+<section class="box">
+  <div class="head">
+    <button data-bpm="-" aria-label="Menos 1 BPM">–</button>
+    <div class="read"><b class="mono" id="bpmVal">—</b><i>BPM</i></div>
+    <button data-bpm="+" aria-label="Mais 1 BPM">+</button>
+    <button id="tap">Tap</button>
+  </div>
+</section>
+
+<h2><span>Presets</span><button id="editPre">editar nomes</button></h2>
+<section class="presets" id="presets"></section>
+
+<h2>Disparo</h2>
+<section class="fire" id="fire"></section>
+
+<details class="panel">
+  <summary>Console e ajustes</summary>
+  <div class="body">
+    <div id="log"></div>
+    <div class="row">
+      <input type="text" id="cmd" placeholder="comando manual, ex. 312" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="btn" id="cmdSend">Enviar</button>
+    </div>
+    <div class="row">
+      <label for="term">Fim de linha enviado</label>
+      <select id="term">
+        <option value="">nenhum</option>
+        <option value="\n">LF (\n)</option>
+        <option value="\r\n">CR+LF (\r\n)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="reassert">Reafirmar o slot antes dos comandos V</label>
+      <input type="checkbox" id="reassert" checked>
+    </div>
+    <p class="note">StompBox Remote v3.4 · Mixing Station UI v2 · protocolo v29.0</p>
+  </div>
+</details>
+
+<dialog id="preDlg">
+  <h3>Nomes dos presets</h3>
+  <p class="note">Um nome por linha, do preset 01 ao 10. Linha vazia deixa o preset sem nome.</p>
+  <textarea id="preText" spellcheck="false" style="height:180px"></textarea>
+  <div class="dlgbar">
+    <button class="btn" id="preCancel">Cancelar</button>
+    <button class="btn primary" id="preSave">Salvar</button>
+  </div>
+</dialog>
+
+<dialog id="catDlg">
+  <h3>Catálogo de timbres</h3>
+  <p class="note">Um nome por linha. A primeira linha é o timbre 01. Para acrescentar timbres novos, é só continuar a lista.</p>
+  <textarea id="catText" spellcheck="false"></textarea>
+  <div class="dlgbar">
+    <button class="btn" id="catReset">Restaurar padrão</button>
+    <button class="btn" id="catCopy">Copiar</button>
+    <button class="btn" id="catCancel">Cancelar</button>
+    <button class="btn primary" id="catSave">Salvar</button>
+  </div>
+</dialog>
+
+<script>
+'use strict';
+
+const SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const CH_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+const CH_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+const MAX_M = 16, VOL_MAX = 256, PASSO = 8, PASSAO = 32;   // 256 = 100% (ganho unitário), não um teto de byte
+
+const CAT_PADRAO = [
+ 'B Cajon','Bumbo 24','Bumbo 22','Bumbo 20','Bumbo 808','Carrilhão','Pandeirola','Cowbell',
+ 'Afoxé','Aro de caixa','Chimbal','Bloco L','Bloco H','Tri aberto','Tri abafado','Maraca',
+ 'Surdo','Crash 16','Splash 10','Crash 18','Bumbo FSA','Violão B','Violão A','Caixa reverb',
+ 'Caixa Zezé','Carrilhão 2','Cajón+Cr16','Cajón+Cr18','Cajón+Pand','Blocos S','Triângulo S'
+];
+const SLOT_NAMES = {1:'Pedal 1', 2:'Pedal 2', 3:'Pele', 4:'Aro', 5:'Metrônomo'};
+
+const enc = new TextEncoder(), dec = new TextDecoder();
+let dev=null, rx=null, tx=null, wl=null;
+let wantConnected=false, retries=0, listenersOn=false;
+let TIMBRES = [];
+let PRESETS = {};   // { 3:'SAMBA', ... } — digitados ou aprendidos pela TX
+const state = { slots:{1:{},2:{},3:{},4:{}}, active:1, bpm:null, preset:null, master:null, masterDb:'' };
+const vpt = { slot:null, timbre:null, nome:'', vol:null, busy:false, drag:false };
+
+const $ = s => document.querySelector(s);
+const pad = (n,w) => String(n).padStart(w,'0');
+const term = () => ($('#term').value || '').replace('\\n','\n').replace('\\r','\r');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- catálogo ---------- */
+function loadCat(){
+  let salvo = null;
+  try { salvo = JSON.parse(localStorage.getItem('sb_cat') || 'null'); } catch(e){}
+  TIMBRES = (Array.isArray(salvo) && salvo.length) ? salvo.slice() : CAT_PADRAO.slice();
+}
+function saveCat(lista){
+  TIMBRES = lista.slice();
+  try { localStorage.setItem('sb_cat', JSON.stringify(TIMBRES)); } catch(e){}
+  renderGrid(); renderSlots();
+}
+function loadPresets(){
+  try { PRESETS = JSON.parse(localStorage.getItem('sb_presets') || '{}') || {}; } catch(e){ PRESETS = {}; }
+}
+function savePresets(){
+  try { localStorage.setItem('sb_presets', JSON.stringify(PRESETS)); } catch(e){}
+}
+function garanteTamanho(n){
+  let mudou = false;
+  while (TIMBRES.length < n){ TIMBRES.push('Timbre ' + pad(TIMBRES.length + 1, 2)); mudou = true; }
+  if (mudou) renderGrid();
+}
+
+/* ---------- log / status ---------- */
+function log(txt, cls){
+  const el = $('#log'), atEnd = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+  const line = document.createElement('div');
+  line.className = cls || ''; line.textContent = txt;
+  el.appendChild(line);
+  while (el.childElementCount > 120) el.removeChild(el.firstChild);
+  if (atEnd) el.scrollTop = el.scrollHeight;
+}
+function setStatus(txt, kind){
+  $('#status').textContent = txt;
+  $('#dot').className = 'dot' + (kind ? ' ' + kind : '');
+}
+
+/* ---------- conexão ---------- */
+async function connect(){
+  if (!navigator.bluetooth){
+    setStatus('Web Bluetooth indisponível neste navegador', 'err');
+    log('Use o Chrome no Android, com a página em HTTPS.', 'er');
+    return;
+  }
+  try{
+    if (!dev){
+      setStatus('Escolha a StompBox na lista…', 'busy');
+      dev = await navigator.bluetooth.requestDevice({
+        filters:[{namePrefix:'StompBox'}], optionalServices:[SVC]
+      });
+    }
+    wantConnected = true; retries = 0;
+    await openGatt();
+  }catch(err){
+    if (err && err.name === 'NotFoundError') setStatus('Nenhum dispositivo escolhido');
+    else { setStatus('Falhou: ' + (err.message||err), 'err'); log('ERRO ' + (err.message||err), 'er'); }
+  }
+}
+
+async function openGatt(){
+  setStatus('Conectando…', 'busy');
+  const server = await dev.gatt.connect();
+  const svc = await server.getPrimaryService(SVC);
+  rx = await svc.getCharacteristic(CH_RX);
+  tx = await svc.getCharacteristic(CH_TX);
+  await tx.startNotifications();
+  if (!listenersOn){
+    tx.addEventListener('characteristicvaluechanged', onNotify);
+    dev.addEventListener('gattserverdisconnected', onDrop);
+    listenersOn = true;
+  }
+  retries = 0;
+  setStatus((dev.name || 'StompBox') + ' conectada', 'on');
+  $('#btnConn').textContent = 'Desconectar';
+  log('— conectado —');
+  keepAwake();
+  setTimeout(() => send('M?'), 600);
+}
+
+function onDrop(){
+  rx = tx = null; releaseWake();
+  $('#btnConn').textContent = 'Conectar';
+  if (wantConnected && retries < 5){
+    retries++;
+    setStatus('Caiu. Reconectando (' + retries + '/5)…', 'busy');
+    setTimeout(() => { if (wantConnected) openGatt().catch(()=>onDrop()); }, 1200);
+  } else {
+    setStatus(wantConnected ? 'Sem conexão — toque em Conectar' : 'Desconectado', wantConnected ? 'err' : '');
+    wantConnected = false;
+  }
+}
+
+function disconnect(){
+  wantConnected = false;
+  try { if (dev && dev.gatt.connected) dev.gatt.disconnect(); } catch(e){}
+  rx = tx = null; releaseWake();
+  $('#btnConn').textContent = 'Conectar';
+  setStatus('Desconectado');
+}
+
+/* ---------- envio ---------- */
+let queue = Promise.resolve();
+function send(cmd){
+  queue = queue.then(async () => {
+    if (!rx) { log('sem conexão: ' + cmd, 'er'); return; }
+    const data = enc.encode(cmd + term());
+    if (rx.properties.writeWithoutResponse) await rx.writeValueWithoutResponse(data);
+    else await rx.writeValue(data);
+    log('→ ' + cmd, 'tx');
+  }).catch(err => log('ERRO ao enviar ' + cmd + ': ' + (err.message||err), 'er'));
+  return queue;
+}
+
+/* ---------- recepção ---------- */
+function onNotify(ev){
+  dec.decode(ev.target.value).split(/[\r\n]+/).forEach(l => { if (l.trim()) handleLine(l.trim()); });
+}
+
+function handleLine(line){
+  log('← ' + line, 'rx');
+  let m;
+
+  // VOL GERAL 12/16 -4dB
+  if ((m = line.match(/^VOL\s+GERAL\s+(\d+)\s*\/\s*(\d+)\s*(.*)$/i))){
+    state.master = +m[1]; state.masterDb = m[3].trim();
+    renderMaster(); return;
+  }
+  // VOL 06 CARRIL=230
+  if ((m = line.match(/^VOL\s+(\d+)\s+(.*?)\s*=\s*(\d+)\s*$/i))){
+    vpt.timbre = +m[1]; vpt.nome = m[2].trim(); vpt.vol = +m[3];
+    renderVpt(); return;
+  }
+  // T3=12 BLOCO L
+  if ((m = line.match(/^T(\d)\s*=\s*(\d+)\s*(.*)$/i))){
+    const s = +m[1];
+    if (!state.slots[s]) state.slots[s] = {};
+    state.slots[s].n = +m[2];
+    state.slots[s].nm = m[3].trim();
+    garanteTamanho(+m[2]);
+    renderSlots(); renderGrid();
+    return;
+  }
+  if ((m = line.match(/^BPM\s*[:=]?\s*(\d+)/i))){ state.bpm = +m[1]; renderTempo(); return; }
+  if ((m = line.match(/^P(\d+)\s*(.*)$/i))){
+    state.preset = +m[1];
+    const nome = m[2].trim();
+    if (nome){ PRESETS[+m[1]] = nome; savePresets(); }
+    renderPresets(); return;
+  }
+  if (/^ERR/i.test(line)){ setStatus(line, 'err'); return; }
+}
+
+/* ---------- render ---------- */
+function renderSlots(){
+  const wrap = $('#slots');
+  wrap.innerHTML = '';
+  Object.keys(state.slots).map(Number).sort().forEach(s => {
+    const d = state.slots[s], ro = (s === 5);
+    const b = document.createElement('button');
+    b.className = 'slot' + (ro ? ' ro' : '');
+    b.setAttribute('aria-pressed', (!ro && state.active === s) ? 'true' : 'false');
+    b.innerHTML = '<span class="lbl"></span><span class="num mono"></span><span class="nm"></span>';
+    b.querySelector('.lbl').textContent = ro ? 'Metrônomo — altere pelo slot 1 nos modos 01/11' : (SLOT_NAMES[s] || ('Slot ' + s));
+    b.querySelector('.num').textContent = d.n ? pad(d.n, 2) : '--';
+    b.querySelector('.nm').textContent = d.nm || (d.n ? (TIMBRES[d.n-1] || '') : 'sem leitura');
+    if (!ro) b.onclick = () => { state.active = s; renderSlots(); renderGrid(); };
+    else b.disabled = true;
+    wrap.appendChild(b);
+  });
+  $('#nudgeLabel').textContent = (SLOT_NAMES[state.active] || 'Slot ' + state.active) + ' — anterior / próximo';
+  $('#gridTitle').textContent = 'Timbres — ' + (SLOT_NAMES[state.active] || 'Slot ' + state.active);
+}
+
+function renderGrid(){
+  const wrap = $('#grid');
+  wrap.innerHTML = '';
+  TIMBRES.forEach((nome, i) => {
+    const n = i + 1;
+    const b = document.createElement('button');
+    b.className = 'tim' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '');
+    b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
+    b.querySelector('.n').textContent = pad(n, 2);
+    b.querySelector('.t').textContent = nome;
+    const outros = Object.keys(state.slots).map(Number)
+      .filter(s => s !== state.active && s !== 5 && state.slots[s].n === n);
+    if (outros.length){
+      const tag = document.createElement('span');
+      tag.className = 'badge mono'; tag.textContent = outros.join('');
+      b.appendChild(tag);
+    }
+    b.onclick = () => {
+      const s = state.active;
+      if (!state.slots[s]) state.slots[s] = {};
+      state.slots[s].n = n; state.slots[s].nm = nome;
+      renderSlots(); renderGrid();
+      send(String(s) + pad(n, 2));
+    };
+    wrap.appendChild(b);
+  });
+}
+
+function renderTempo(){ $('#bpmVal').textContent = state.bpm ? state.bpm : '—'; }
+
+function renderMaster(){
+  $('#mVal').textContent = state.master ? (state.master + '/16') : '—';
+  $('#mDb').textContent = state.masterDb || 'nível de 1 a 16';
+  if (state.master) $('#mFader').value = state.master;
+  pintarFader('mFader');
+}
+
+function renderVpt(){
+  const f = $('#vFader');
+  if (vpt.vol == null){
+    f.disabled = true;
+    $('#vNow').textContent = '—';
+    $('#vLabel').textContent = vpt.slot
+      ? 'Lendo o volume do slot ' + (SLOT_NAMES[vpt.slot] || vpt.slot) + '…'
+      : 'Escolha um slot — a página pergunta o volume ao pedal';
+  } else {
+    f.disabled = false;
+    if (!vpt.drag) f.value = vpt.vol;
+    $('#vNow').textContent = vpt.vol;
+    $('#vLabel').innerHTML = '<b>' + pad(vpt.timbre || 0, 2) + ' ' + (vpt.nome || '') + '</b> no slot ' +
+      (SLOT_NAMES[vpt.slot] || vpt.slot);
+  }
+  document.querySelectorAll('[data-v]').forEach(b => b.disabled = (vpt.vol == null));
+  document.querySelectorAll('#vPick button').forEach(b => {
+    b.className = (+b.dataset.slot === vpt.slot) ? 'cur' : '';
+  });
+  pintarFader('vFader');
+}
+
+function renderPresets(){
+  const wrap = $('#presets');
+  wrap.innerHTML = '';
+  for (let n = 1; n <= 10; n++){
+    const b = document.createElement('button');
+    b.className = state.preset === n ? 'cur' : '';
+    b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
+    b.querySelector('.n').textContent = pad(n, 2);
+    b.querySelector('.t').textContent = PRESETS[n] || '—';
+    b.onclick = () => { state.preset = n; renderPresets(); send('P' + pad(n, 2)); };
+    wrap.appendChild(b);
+  }
+}
+
+function renderFire(){
+  const wrap = $('#fire');
+  wrap.innerHTML = '';
+  [1,2,3,4].forEach(s => {
+    const b = document.createElement('button');
+    b.textContent = SLOT_NAMES[s];
+    b.onclick = () => send('D' + s);
+    wrap.appendChild(b);
+  });
+  const l = document.createElement('button');
+  l.className = 'wide'; l.textContent = 'Largada do automático (8888)';
+  l.onclick = () => send('8888');
+  wrap.appendChild(l);
+}
+
+function renderPick(){
+  const wrap = $('#vPick');
+  wrap.innerHTML = '';
+  [1,2,3,4].forEach(s => {
+    const b = document.createElement('button');
+    b.dataset.slot = s; b.textContent = SLOT_NAMES[s];
+    b.onclick = () => lerVolume(s);
+    wrap.appendChild(b);
+  });
+}
+
+function ticks(el, n){
+  el.style.backgroundImage =
+    'repeating-linear-gradient(90deg,var(--dim) 0 1px,transparent 1px calc(100%/' + (n-1) + '))';
+  el.style.backgroundSize = 'calc(100% - 1px) 100%';
+}
+
+/* ---------- volume por timbre ---------- */
+function lerVolume(s){
+  vpt.slot = s; vpt.vol = null; vpt.timbre = null; vpt.nome = '';
+  renderVpt();
+  reafirmaSlot(s);
+  send('V?');
+}
+function reafirmaSlot(s){
+  // os comandos V agem no ÚLTIMO SLOT USADO; reenviar o timbre atual
+  // do slot é a única forma de garantir que é nele que vamos mexer.
+  if (!$('#reassert').checked) return;
+  const n = state.slots[s] && state.slots[s].n;
+  if (n) send(String(s) + pad(n, 2));
+}
+
+// Os comandos V andam de 8 em 8 a partir do valor atual, então nem todo
+// número entre 0 e 256 é alcançável. Traduz a posição do fader no alvo
+// possível mais próximo.
+function alvoAlcancavel(v){
+  if (vpt.vol == null) return v;
+  if (v >= VOL_MAX - PASSO/2) return VOL_MAX;          // topo: firmware limita
+  const alvo = vpt.vol + Math.round((v - vpt.vol) / PASSO) * PASSO;
+  return Math.max(0, Math.min(VOL_MAX, alvo));
+}
+
+async function irParaVolume(alvo){
+  if (vpt.slot == null || vpt.vol == null || vpt.busy) return;
+  vpt.busy = true;
+  reafirmaSlot(vpt.slot);
+  let d = Math.round(alvo) - vpt.vol;
+  let guarda = 0;
+  while (Math.abs(d) >= PASSAO && guarda++ < 40){
+    await send(d > 0 ? 'V++' : 'V--'); d += d > 0 ? -PASSAO : PASSAO; await sleep(40);
+  }
+  while (Math.abs(d) >= PASSO && guarda++ < 80){
+    await send(d > 0 ? 'V+' : 'V-'); d += d > 0 ? -PASSO : PASSO; await sleep(40);
+  }
+  // Só no topo: um passo extra pra encostar no teto, contando com o limite
+  // do firmware. No fundo não — se ele der a volta, viraria volume máximo.
+  if (alvo >= VOL_MAX && d > 0){ await send('V+'); await sleep(40); }
+  vpt.busy = false;
+  await sleep(60);
+  send('V?');   // o valor real do pedal manda — o fader se corrige por ele
+}
+
+/* ---------- tap tempo ---------- */
+let taps = [];
+function tap(){
+  const now = performance.now();
+  if (taps.length && now - taps[taps.length-1] > 2500) taps = [];
+  taps.push(now);
+  if (taps.length > 5) taps.shift();
+  if (taps.length < 2){ setStatus('Tap… continue batendo'); return; }
+  const int = [];
+  for (let i = 1; i < taps.length; i++) int.push(taps[i] - taps[i-1]);
+  const media = int.reduce((a,b) => a+b, 0) / int.length;
+  const bpm = Math.max(30, Math.min(300, Math.round(60000 / media)));
+  state.bpm = bpm; renderTempo();
+  send('T' + pad(bpm, 3));
+}
+
+/* ---------- tela acesa ---------- */
+async function keepAwake(){
+  if (!('wakeLock' in navigator)) return;
+  try { wl = await navigator.wakeLock.request('screen'); } catch(e){}
+}
+function releaseWake(){ try { if (wl){ wl.release(); wl = null; } } catch(e){} }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && rx) keepAwake();
+});
+
+/* ---------- eventos ---------- */
+$('#btnConn').onclick = () => (rx ? disconnect() : connect());
+document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => send(String(state.active) + b.dataset.nudge));
+document.querySelectorAll('[data-bpm]').forEach(b => b.onclick = () => send('T' + b.dataset.bpm));
+document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => send('M' + b.dataset.m));
+document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+  if (vpt.slot == null) return;
+  reafirmaSlot(vpt.slot);
+  send('V' + b.dataset.v);
+  setTimeout(() => send('V?'), 120);
+});
+$('#mAsk').onclick = () => send('M?');
+$('#vAsk').onclick = () => { if (vpt.slot != null){ reafirmaSlot(vpt.slot); send('V?'); } };
+$('#tap').onclick = tap;
+
+const mF = $('#mFader');
+mF.addEventListener('input', () => { $('#mVal').textContent = mF.value + '/16'; });
+mF.addEventListener('change', () => send('M' + mF.value));
+
+const vF = $('#vFader');
+vF.addEventListener('pointerdown', () => vpt.drag = true);
+vF.addEventListener('input', () => { $('#vNow').textContent = alvoAlcancavel(+vF.value); });
+vF.addEventListener('change', () => { vpt.drag = false; irParaVolume(alvoAlcancavel(+vF.value)); });
+
+$('#cmdSend').onclick = () => { const v = $('#cmd').value.trim(); if (v){ send(v); $('#cmd').value = ''; } };
+$('#cmd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#cmdSend').click(); });
+$('#term').onchange = () => localStorage.setItem('sb_term', $('#term').value);
+$('#reassert').onchange = () => localStorage.setItem('sb_reassert', $('#reassert').checked ? '1' : '0');
+
+const pdlg = $('#preDlg');
+$('#editPre').onclick = () => {
+  const linhas = [];
+  for (let n = 1; n <= 10; n++) linhas.push(PRESETS[n] || '');
+  $('#preText').value = linhas.join('\n');
+  pdlg.showModal();
+};
+$('#preCancel').onclick = () => pdlg.close();
+$('#preSave').onclick = () => {
+  const linhas = $('#preText').value.split('\n');
+  PRESETS = {};
+  for (let n = 1; n <= 10; n++){
+    const v = (linhas[n-1] || '').trim();
+    if (v) PRESETS[n] = v;
+  }
+  savePresets(); renderPresets(); pdlg.close();
+};
+
+const dlg = $('#catDlg');
+$('#editCat').onclick = () => { $('#catText').value = TIMBRES.join('\n'); dlg.showModal(); };
+$('#catCancel').onclick = () => dlg.close();
+$('#catReset').onclick = () => { $('#catText').value = CAT_PADRAO.join('\n'); };
+$('#catCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('#catText').value); setStatus('Catálogo copiado'); }
+  catch(e){ $('#catText').select(); }
+};
+$('#catSave').onclick = () => {
+  const lista = $('#catText').value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!lista.length) return;
+  saveCat(lista); dlg.close();
+  setStatus(lista.length + ' timbres no catálogo');
+};
+
+
+/* ---------- medidores dos faders (visual) ----------
+   O trilho colorido é pintado por --level. O navegador NÃO dispara
+   'input' quando o valor do range muda por código, então as funções
+   de render chamam pintarFader() diretamente — senão a barra fica
+   dessincronizada do cursor a cada M? ou V?. */
+function pintarFader(id){
+  const el = document.getElementById(id);
+  if (!el) return;
+  const zone = el.closest('.fader-zone');
+  if (!zone) return;
+  const min = +el.min || 0, max = +el.max || 100;
+  const p = Math.max(0, Math.min(1, (+el.value - min) / (max - min)));
+  zone.style.setProperty('--level', (p * 100) + '%');
+  zone.style.setProperty('--level-alpha', Math.max(.06, .16 + p * .22));
+}
+['mFader','vFader'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => pintarFader(id));
+  pintarFader(id);
+});
+
+/* ---------- boot ---------- */
+loadCat(); loadPresets();
+$('#term').value = localStorage.getItem('sb_term') || '';
+$('#reassert').checked = localStorage.getItem('sb_reassert') !== '0';
+ticks($('#mTicks'), MAX_M);
+ticks($('#vTicks'), 9);
+renderSlots(); renderGrid(); renderTempo(); renderMaster();
+renderVpt(); renderPick(); renderPresets(); renderFire();
+
+if (!navigator.bluetooth){
+  setStatus('Abra no Chrome do Android, em HTTPS', 'err');
+} else if (navigator.bluetooth.getDevices){
+  navigator.bluetooth.getDevices().then(ds => {
+    const d = ds.find(x => x.name && x.name.startsWith('StompBox'));
+    if (d && !dev){ dev = d; setStatus('StompBox já autorizada — toque em Conectar'); }
+  }).catch(()=>{});
+}
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
