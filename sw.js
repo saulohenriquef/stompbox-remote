@@ -1,6 +1,6 @@
 // StompBox Remote — cache offline.
 // Ao publicar uma versão nova, mude o número do CACHE para forçar a atualização.
-const CACHE = 'stompbox-v3.10';
+const CACHE = 'stompbox-v3.12';
 const ARQUIVOS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', ev => {
