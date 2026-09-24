@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.7 "Mixing Station + Repertório"
+ STOMPBOX REMOTE — v3.10 "Mixing Station + Repertório"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -103,6 +103,28 @@
         O cartão do metrônomo (slot 5, só leitura) saiu da linha fixa e
         virou uma faixa própria logo abaixo, sem participar da seleção.
 
+ v3.8 — Grade de timbres ganhou a cor do slot ativo: a borda de cada
+        botão pega um tom da cor do slot (azul/verde/roxo/laranja, as
+        mesmas 4 já usadas nos cartões), e o timbre que já está armado
+        naquele slot fica com preenchimento escurecido na mesma cor —
+        dá pra ver de longe qual slot está selecionado e o que já está
+        nele, sem ler o texto. A faixa colorida do cartão de slot saiu
+        da lateral esquerda e foi para embaixo. Usa color-mix() do CSS
+        (suportado no Chrome do Android há vários anos).
+
+ v3.9 — Cores dos slots trocadas por tons fortes e bem separados entre
+        si: azul, verde, vermelho e amarelo (era azul/ciano/roxo/laranja).
+        O roxo saiu — estava parecido demais com o azul de relance. Como
+        as cores são uma variável CSS só (--slot1..--slot4), a troca vale
+        pra tudo que usa a cor do slot: a faixa do cartão, a borda e o
+        preenchimento da grade de timbres.
+
+ v3.10 — Balões de timbre mais fortes: borda de 1px foi para 2px (nos
+        dois estados), e a mistura de cor no color-mix() subiu — borda
+        de 35% pra 55% de cor, preenchimento do selecionado de 30% pra
+        48%. Estava escuro demais e a cor viva da v3.9 quase não
+        aparecia, como se tivesse jogado preto por cima.
+
  NOTA: ao publicar, subir também o sw.js com o número do cache
  trocado, senão o app instalado continua servindo a versão antiga.
  ============================================================
@@ -123,7 +145,7 @@
   --ink:#eef2f5;--dim:#8995a2;--muted:#64707d;
   --blue:#4da3ff;--cyan:#42d9d0;--green:#45d483;
   --amber:#ffb84d;--red:#ff5c68;--purple:#a98cff;
-  --slot1:#4da3ff;--slot2:#42d9d0;--slot3:#a98cff;--slot4:#ffb84d;
+  --slot1:#0a84ff;--slot2:#30d158;--slot3:#ff3b30;--slot4:#ffd60a;
   --r:8px;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -174,12 +196,12 @@ button:active{transform:translateY(1px)}
 .slot{
   background:linear-gradient(180deg,#1c232b,#171d24);
   border:1px solid var(--line);border-radius:8px;
-  padding:7px 6px 6px 9px;text-align:left;display:block;
+  padding:7px 6px 9px 6px;text-align:left;display:block;
   min-height:64px;box-shadow:0 2px 7px rgba(0,0,0,.2);
   position:relative;overflow:hidden;
 }
 .slot::before{
-  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#4b5662;
+  content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:#4b5662;
 }
 .slot:nth-child(1)::before{background:var(--slot1)}
 .slot:nth-child(2)::before{background:var(--slot2)}
@@ -234,20 +256,24 @@ h2 button{
 }
 
 /* Timbres */
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;--activeColor:var(--blue)}
 @media(min-width:420px){.grid{grid-template-columns:repeat(3,1fr)}}
 .tim{
-  background:#181e25;border:1px solid #303a44;border-radius:7px;
-  padding:8px 9px;text-align:left;position:relative;min-height:54px;
+  background:#181e25;
+  border:2px solid color-mix(in srgb, var(--activeColor) 55%, #303a44 45%);
+  border-radius:7px;
+  padding:7px 8px;text-align:left;position:relative;min-height:54px;
+  transition:border-color .12s;
 }
 .tim:active{background:#27313a}
 .tim .n{font-size:10px;color:#687582;display:block}
 .tim .t{font-size:13px;color:#dbe1e6;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tim.cur{
-  border-color:#4b89ba;background:linear-gradient(180deg,#1e3344,#192934);
-  box-shadow:inset 3px 0 var(--blue),0 0 12px rgba(77,163,255,.06);
+  border-color:var(--activeColor);
+  background:color-mix(in srgb, var(--activeColor) 48%, #12161b 52%);
+  box-shadow:inset 3px 0 var(--activeColor),0 0 14px color-mix(in srgb, var(--activeColor) 40%, transparent 60%);
 }
-.tim.cur .n,.tim.cur .t{color:#b9ddfb}
+.tim.cur .n,.tim.cur .t{color:var(--activeColor)}
 .tim .badge{position:absolute;top:6px;right:7px;font-size:10px;color:#7891a7}
 
 /* Caixas / mixer */
@@ -527,7 +553,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
       <label for="reassert">Reafirmar o slot antes dos comandos V</label>
       <input type="checkbox" id="reassert" checked>
     </div>
-    <p class="note">StompBox Remote v3.7 · Mixing Station UI v2 · protocolo v29.0</p>
+    <p class="note">StompBox Remote v3.10 · Mixing Station UI v2 · protocolo v29.0</p>
   </div>
 </details>
 
@@ -627,6 +653,7 @@ const CAT_PADRAO = [
  'Caixa Zezé','Carrilhão 2','Cajón+Cr16','Cajón+Cr18','Cajón+Pand','Blocos S','Triângulo S'
 ];
 const SLOT_NAMES = {1:'Pedal 1', 2:'Pedal 2', 3:'Pele', 4:'Aro', 5:'Metrônomo'};
+const SLOT_COLORS = {1:'var(--slot1)', 2:'var(--slot2)', 3:'var(--slot3)', 4:'var(--slot4)'};
 
 const enc = new TextEncoder(), dec = new TextDecoder();
 let dev=null, rx=null, tx=null, wl=null;
@@ -827,6 +854,7 @@ function renderSlots(){
 
 function renderGrid(){
   const wrap = $('#grid');
+  wrap.style.setProperty('--activeColor', SLOT_COLORS[state.active] || 'var(--blue)');
   wrap.innerHTML = '';
   TIMBRES.forEach((nome, i) => {
     const n = i + 1;
