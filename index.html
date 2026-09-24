@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.5 "Mixing Station + Repertório"
+ STOMPBOX REMOTE — v3.7 "Mixing Station + Repertório"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -82,12 +82,26 @@
         não pra aumentar"), o que já bate com a lógica de passo extra no
         topo que a página usa desde a v3.2 — só o número estava errado.
 
- v3.5 — REORGANIZAÇÃO e repertório: presets movidos para logo abaixo
-        dos timbres; andamento ganhou campo numérico com seleção automática,
-        botão Enviar e repertório completo baseado no Tap Tempo Trainer.
-        O repertório usa a mesma chave localStorage do Tap Tempo, com busca,
-        cores por faixa de BPM, inclusão, edição, exclusão, CSV e backup JSON.
-        Selecionar uma música envia Txxx diretamente à StompBox.
+ v3.5 — REORGANIZAÇÃO e repertório: andamento ganhou campo numérico com
+        seleção automática, botão Enviar e repertório completo baseado no
+        Tap Tempo Trainer. O repertório usa a mesma chave localStorage do
+        Tap Tempo, com busca, cores por faixa de BPM, inclusão, edição,
+        exclusão, CSV e backup JSON. Selecionar uma música envia Txxx
+        diretamente à StompBox.
+        (O changelog original desta versão dizia que os presets tinham
+        sido movidos para logo abaixo dos timbres — não foi o caso; a
+        seção continuou no lugar antigo. Corrigido na v3.6.)
+
+ v3.6 — CORREÇÃO de posição: Presets agora fica de fato logo abaixo dos
+        Timbres, antes do Volume geral — o que a v3.5 já devia ter feito.
+
+ v3.7 — REORGANIZAÇÃO: Volume por timbre foi para depois do Disparo, no
+        fim da página. Os 4 cartões de slot (Pedal 1, Pedal 2, Pele, Aro)
+        passaram a caber numa linha só, em vez de 2x2, e agora ficam FIXOS
+        no topo (junto com a barra de conexão) — visíveis o tempo todo,
+        mesmo rolando a página pra escolher timbre, preset ou disparar.
+        O cartão do metrônomo (slot 5, só leitura) saiu da linha fixa e
+        virou uma faixa própria logo abaixo, sem participar da seleção.
 
  NOTA: ao publicar, subir também o sw.js com o número do cache
  trocado, senão o app instalado continua servindo a versão antiga.
@@ -134,13 +148,14 @@ button:active{transform:translateY(1px)}
 .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
 
 /* Topo */
-.bar{
-  display:flex;align-items:center;gap:10px;padding:10px 3px 9px;
-  position:sticky;top:0;
+.topStack{
+  position:sticky;top:0;z-index:6;
   background:rgba(13,17,21,.94);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  z-index:5;border-bottom:1px solid rgba(70,81,93,.45);
+  border-bottom:1px solid rgba(70,81,93,.45);
+  padding-bottom:7px;margin:0 -10px;padding-left:10px;padding-right:10px;
 }
+.bar{display:flex;align-items:center;gap:10px;padding:10px 3px 9px;}
 .dot{width:9px;height:9px;border-radius:50%;background:#4a535d;box-shadow:0 0 0 3px rgba(74,83,93,.12);flex:none}
 .dot.on{background:var(--green);box-shadow:0 0 10px rgba(69,212,131,.55)}
 .dot.busy{background:var(--amber);box-shadow:0 0 10px rgba(255,184,77,.4)}
@@ -155,12 +170,12 @@ button:active{transform:translateY(1px)}
 .btn:active{transform:translateY(1px)}
 
 /* Slots / canais */
-.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
 .slot{
   background:linear-gradient(180deg,#1c232b,#171d24);
   border:1px solid var(--line);border-radius:8px;
-  padding:9px 10px 8px 13px;text-align:left;display:block;
-  min-height:82px;box-shadow:0 2px 7px rgba(0,0,0,.2);
+  padding:7px 6px 6px 9px;text-align:left;display:block;
+  min-height:64px;box-shadow:0 2px 7px rgba(0,0,0,.2);
   position:relative;overflow:hidden;
 }
 .slot::before{
@@ -172,7 +187,7 @@ button:active{transform:translateY(1px)}
 .slot:nth-child(4)::before{background:var(--slot4)}
 .slot::after{
   content:"";position:absolute;width:6px;height:6px;border-radius:50%;
-  right:9px;top:10px;background:#4a535d;
+  right:7px;top:7px;background:#4a535d;
 }
 .slot[aria-pressed="true"]{
   border-color:#5a7186;background:linear-gradient(180deg,#222d38,#1b252f);
@@ -181,13 +196,19 @@ button:active{transform:translateY(1px)}
 .slot[aria-pressed="true"]::after{
   background:var(--green);box-shadow:0 0 8px rgba(69,212,131,.7);
 }
-.slot .lbl{font-size:9px;color:var(--dim);display:block;text-transform:uppercase;letter-spacing:.1em}
-.slot .num{font-size:27px;line-height:1.05;letter-spacing:-.02em;font-weight:600;color:#74808c;display:block}
+.slot .lbl{font-size:8px;color:var(--dim);display:block;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .num{font-size:19px;line-height:1.15;letter-spacing:-.02em;font-weight:600;color:#74808c;display:block}
 .slot[aria-pressed="true"] .num{color:var(--blue)}
-.slot .nm{font-size:12px;color:#d8dee4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:2px}
-.slot.ro{opacity:.78;grid-column:1/-1;min-height:48px}
-.slot.ro .num{font-size:18px;display:inline;margin-right:8px}
-.slot.ro .nm{display:inline;font-size:13px}
+.slot .nm{font-size:10px;color:#d8dee4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:1px}
+
+/* Metrônomo (slot 5) — leitura fora da barra fixa, não faz parte da linha dos 4 pedais */
+.slotMetro{
+  background:linear-gradient(180deg,#1c232b,#171d24);border:1px solid var(--line);
+  border-radius:8px;padding:7px 10px;margin-top:6px;opacity:.78;
+  font-size:12px;color:#d8dee4;display:none;
+}
+.slotMetro b{color:var(--dim);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
+.slotMetro .num{color:#74808c;font-weight:600;margin-right:6px}
 
 /* Navegação */
 .nudge{display:flex;align-items:center;gap:7px;margin:7px 0 13px}
@@ -415,13 +436,16 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 </head>
 <body>
 
-<header class="bar">
-  <span class="dot" id="dot"></span>
-  <span id="status">Desconectado</span>
-  <button class="btn primary" id="btnConn">Conectar</button>
-</header>
+<div class="topStack">
+  <header class="bar">
+    <span class="dot" id="dot"></span>
+    <span id="status">Desconectado</span>
+    <button class="btn primary" id="btnConn">Conectar</button>
+  </header>
+  <section class="slots" id="slots"></section>
+</div>
 
-<section class="slots" id="slots"></section>
+<section class="slotMetro" id="slotMetro"></section>
 
 <div class="nudge">
   <button data-nudge="-" aria-label="Timbre anterior">–</button>
@@ -431,6 +455,9 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 
 <h2><span id="gridTitle">Timbres</span><button id="editCat">editar catálogo</button></h2>
 <section class="grid" id="grid"></section>
+
+<h2><span>Presets</span><button id="editPre">editar nomes</button></h2>
+<section class="presets" id="presets"></section>
 
 <h2>Volume geral</h2>
 <section class="box">
@@ -444,25 +471,6 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   <div class="ticks" id="mTicks"></div>
   <div class="scale"><span>1 · −15 dB</span><span>16 · 0 dB</span></div>
 </section>
-
-<h2>Volume por timbre</h2>
-<section class="box">
-  <div class="pick" id="vPick"></div>
-  <div class="vlabel" id="vLabel">Escolha um slot — a página pergunta o volume ao pedal</div>
-  <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="vFader" min="0" max="256" step="1" value="0" disabled aria-label="Volume do timbre"></div>
-  <div class="ticks" id="vTicks"></div>
-  <div class="scale"><span>0</span><span id="vNow" class="mono">—</span><span>256</span></div>
-  <div class="head" style="margin-top:6px">
-    <button data-v="-" aria-label="Menos 8">–8</button>
-    <button data-v="--" aria-label="Menos 32">–32</button>
-    <button data-v="+" aria-label="Mais 8">+8</button>
-    <button data-v="++" aria-label="Mais 32">+32</button>
-    <button class="mono" id="vAsk">V?</button>
-  </div>
-</section>
-
-<h2><span>Presets</span><button id="editPre">editar nomes</button></h2>
-<section class="presets" id="presets"></section>
 
 <h2>Andamento</h2>
 <section class="box tempo-box">
@@ -482,6 +490,22 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 
 <h2>Disparo</h2>
 <section class="fire" id="fire"></section>
+
+<h2>Volume por timbre</h2>
+<section class="box">
+  <div class="pick" id="vPick"></div>
+  <div class="vlabel" id="vLabel">Escolha um slot — a página pergunta o volume ao pedal</div>
+  <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="vFader" min="0" max="256" step="1" value="0" disabled aria-label="Volume do timbre"></div>
+  <div class="ticks" id="vTicks"></div>
+  <div class="scale"><span>0</span><span id="vNow" class="mono">—</span><span>256</span></div>
+  <div class="head" style="margin-top:6px">
+    <button data-v="-" aria-label="Menos 8">–8</button>
+    <button data-v="--" aria-label="Menos 32">–32</button>
+    <button data-v="+" aria-label="Mais 8">+8</button>
+    <button data-v="++" aria-label="Mais 32">+32</button>
+    <button class="mono" id="vAsk">V?</button>
+  </div>
+</section>
 
 <details class="panel">
   <summary>Console e ajustes</summary>
@@ -503,7 +527,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
       <label for="reassert">Reafirmar o slot antes dos comandos V</label>
       <input type="checkbox" id="reassert" checked>
     </div>
-    <p class="note">StompBox Remote v3.5 · Mixing Station UI v2 · protocolo v29.0</p>
+    <p class="note">StompBox Remote v3.7 · Mixing Station UI v2 · protocolo v29.0</p>
   </div>
 </details>
 
@@ -773,19 +797,30 @@ function handleLine(line){
 function renderSlots(){
   const wrap = $('#slots');
   wrap.innerHTML = '';
-  Object.keys(state.slots).map(Number).sort().forEach(s => {
-    const d = state.slots[s], ro = (s === 5);
+  [1,2,3,4].forEach(s => {
+    const d = state.slots[s] || {};
     const b = document.createElement('button');
-    b.className = 'slot' + (ro ? ' ro' : '');
-    b.setAttribute('aria-pressed', (!ro && state.active === s) ? 'true' : 'false');
+    b.className = 'slot';
+    b.setAttribute('aria-pressed', state.active === s ? 'true' : 'false');
     b.innerHTML = '<span class="lbl"></span><span class="num mono"></span><span class="nm"></span>';
-    b.querySelector('.lbl').textContent = ro ? 'Metrônomo — altere pelo slot 1 nos modos 01/11' : (SLOT_NAMES[s] || ('Slot ' + s));
+    b.querySelector('.lbl').textContent = SLOT_NAMES[s] || ('Slot ' + s);
     b.querySelector('.num').textContent = d.n ? pad(d.n, 2) : '--';
     b.querySelector('.nm').textContent = d.nm || (d.n ? (TIMBRES[d.n-1] || '') : 'sem leitura');
-    if (!ro) b.onclick = () => { state.active = s; renderSlots(); renderGrid(); };
-    else b.disabled = true;
+    b.onclick = () => { state.active = s; renderSlots(); renderGrid(); };
     wrap.appendChild(b);
   });
+
+  // Slot 5 (metrônomo) fica fora da linha fixa — só leitura, não navega/seleciona.
+  const metro = $('#slotMetro'), d5 = state.slots[5];
+  if (d5){
+    metro.style.display = 'block';
+    metro.innerHTML = '<b>Metrônomo</b><span class="num mono"></span><span class="nm"></span> — altere pelo slot 1 nos modos 01/11';
+    metro.querySelector('.num').textContent = d5.n ? pad(d5.n, 2) : '--';
+    metro.querySelector('.nm').textContent = d5.nm || (d5.n ? (TIMBRES[d5.n-1] || '') : '');
+  } else {
+    metro.style.display = 'none';
+  }
+
   $('#nudgeLabel').textContent = (SLOT_NAMES[state.active] || 'Slot ' + state.active) + ' — anterior / próximo';
   $('#gridTitle').textContent = 'Timbres — ' + (SLOT_NAMES[state.active] || 'Slot ' + state.active);
 }
