@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.12 "Mixing Station + Repertório"
+ STOMPBOX REMOTE — v3.13 "Mixing Station + Repertório"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -140,6 +140,25 @@
         e o pontinho de status deixou de ser verde fixo — virou um ponto
         escuro discreto, já que o preenchimento inteiro basta pra mostrar
         qual está selecionado.
+
+ v3.13 — Três coisas:
+        1) ORDENAR A GRADE: botões Índice / A-Z / Minha ordem acima dos
+           timbres. A ordem é só de EXIBIÇÃO — o número enviado ao pedal
+           nunca muda, não importa a posição na tela. "Minha ordem" abre
+           um editor com setas ▲▼ por item (guardado à parte, sobrevive
+           a troca de catálogo: item removido some da ordem, item novo
+           entra no fim).
+        2) FAVORITOS: barra de até 6 timbres fixos, numa linha só, logo
+           acima da grade de Timbres. "editar favoritos" abre uma grade
+           com todo o catálogo pra marcar/desmarcar (trava em 6). Posição
+           vazia mostra "+" e já abre o editor ao tocar. Favorito
+           manda o mesmo comando que a grade normal e acompanha a cor do
+           slot ativo do mesmo jeito.
+        3) COR DO SLOT nos outros lugares onde os nomes aparecem: os 4
+           botões do seletor de "Volume por timbre" e os botões D1-D4 do
+           Disparo ganharam a mesma cor de cada slot (borda tingida, e no
+           seletor de volume preenchimento cheio + texto escuro quando
+           selecionado — mesmo padrão de contraste da v3.11/v3.12).
 
  NOTA: ao publicar, subir também o sw.js com o número do cache
  trocado, senão o app instalado continua servindo a versão antiga.
@@ -302,6 +321,39 @@ h2 button{
 .tim .badge{position:absolute;top:6px;right:7px;font-size:10px;color:#7891a7}
 .tim.cur .badge{color:#12161b;opacity:.7}
 
+/* Ordenar timbres */
+.sortBar{display:flex;gap:5px;margin-bottom:8px;align-items:stretch}
+.sortBar button{
+  flex:1;min-height:32px;background:#202831;border:1px solid #35404b;border-radius:6px;
+  font-size:11px;color:#b9c3cc;padding:0 4px;
+}
+.sortBar button.cur{border-color:#4e8ebd;color:#c9e7ff;background:#1d3547}
+.sortEdit{
+  flex:0 0 auto;font-size:10px;color:#7199bb;background:none;border:none;
+  border-bottom:1px solid #46647e;padding:0 2px;min-height:auto;
+}
+
+/* Favoritos */
+.favbar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;--activeColor:var(--blue)}
+.favbar .tim{padding:6px 4px;min-height:48px}
+.favbar .tim .n{font-size:9px}
+.favbar .tim .t{font-size:9.5px}
+.favbar .tim .badge{font-size:8px;top:3px;right:4px}
+.tim.vazio{
+  background:transparent;border:2px dashed #3a4753;display:flex;
+  align-items:center;justify-content:center;color:#5a6672;font-size:18px;font-weight:300;
+}
+.tim.chosen{border-color:var(--amber);background:color-mix(in srgb, var(--amber) 30%, #12161b 70%)}
+.tim.chosen .n,.tim.chosen .t{color:var(--amber)}
+
+/* Modal de reordenar */
+#orderList{max-height:50vh;overflow:auto;display:grid;gap:5px;margin:8px 0}
+.orderRow{display:flex;align-items:center;gap:8px;background:#202831;border:1px solid #35404b;border-radius:6px;padding:7px 9px}
+.orderRow .num{font-size:11px;color:#7891a7;width:20px;flex:none}
+.orderRow .nome{flex:1;font-size:13px;color:#dbe1e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orderRow button{width:32px;height:32px;background:#29323c;border:1px solid #3a4753;border-radius:6px;font-size:15px;color:#b9c3cc;flex:none}
+.orderRow button:disabled{opacity:.28}
+
 /* Caixas / mixer */
 .box{
   background:linear-gradient(180deg,#1a2128,#171d23);
@@ -370,14 +422,18 @@ h2 button{
 /* Volume por timbre */
 .pick{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
 .pick button{
-  min-height:39px;background:#202831;border:1px solid #35404b;border-radius:6px;
-  padding:9px 0;font-size:11px;color:#b9c3cc;font-weight:500;
+  min-height:39px;background:#202831;border:2px solid #35404b;border-radius:6px;
+  padding:8px 0;font-size:11px;color:#b9c3cc;font-weight:500;
 }
-.pick button.cur{
-  border-color:#4e8ebd;color:#c9e7ff;background:#1d3547;
-  box-shadow:inset 0 -2px 0 var(--blue);
-}
-.pick button.cur::before{content:"● ";color:var(--green)}
+.pick button:nth-child(1){border-color:color-mix(in srgb, var(--slot1) 50%, #35404b 50%)}
+.pick button:nth-child(2){border-color:color-mix(in srgb, var(--slot2) 50%, #35404b 50%)}
+.pick button:nth-child(3){border-color:color-mix(in srgb, var(--slot3) 50%, #35404b 50%)}
+.pick button:nth-child(4){border-color:color-mix(in srgb, var(--slot4) 50%, #35404b 50%)}
+.pick button:nth-child(1).cur{background:var(--slot1);border-color:color-mix(in srgb, var(--slot1) 75%, black 25%)}
+.pick button:nth-child(2).cur{background:var(--slot2);border-color:color-mix(in srgb, var(--slot2) 75%, black 25%)}
+.pick button:nth-child(3).cur{background:var(--slot3);border-color:color-mix(in srgb, var(--slot3) 75%, black 25%)}
+.pick button:nth-child(4).cur{background:var(--slot4);border-color:color-mix(in srgb, var(--slot4) 75%, black 25%)}
+.pick button.cur{color:#12161b;font-weight:700}
 .vlabel{text-align:center;font-size:11px;color:var(--muted);min-height:19px}
 .vlabel b{color:#e4ebf0;font-size:13px}
 
@@ -406,8 +462,16 @@ h2 button{
   font-size:13px;color:#d5dce2;font-weight:500;letter-spacing:.02em;
   position:relative;overflow:hidden;
 }
-.fire button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:#35414c}
+.fire button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:#35414c}
 .fire button:active::after{background:var(--cyan)}
+.fire button:nth-child(1)::after{background:var(--slot1)}
+.fire button:nth-child(2)::after{background:var(--slot2)}
+.fire button:nth-child(3)::after{background:var(--slot3)}
+.fire button:nth-child(4)::after{background:var(--slot4)}
+.fire button:nth-child(1):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot1) 30%, #202831 70%),#1a2027)}
+.fire button:nth-child(2):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot2) 30%, #202831 70%),#1a2027)}
+.fire button:nth-child(3):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot3) 30%, #202831 70%),#1a2027)}
+.fire button:nth-child(4):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot4) 30%, #202831 70%),#1a2027)}
 .fire button.wide{
   grid-column:1/-1;border-color:#735e39;color:#ffd38a;
   background:linear-gradient(180deg,#2a271f,#211f1a);
@@ -505,7 +569,16 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   <button data-nudge="+" aria-label="Próximo timbre">+</button>
 </div>
 
+<h2><span>Favoritos</span><button id="editFav">editar favoritos</button></h2>
+<section class="favbar" id="favbar"></section>
+
 <h2><span id="gridTitle">Timbres</span><button id="editCat">editar catálogo</button></h2>
+<div class="sortBar" id="sortBar">
+  <button data-sort="indice">Índice</button>
+  <button data-sort="alfabetica">A–Z</button>
+  <button data-sort="personalizada">Minha ordem</button>
+</div>
+<button class="sortEdit" id="editOrder" style="display:none">editar minha ordem</button>
 <section class="grid" id="grid"></section>
 
 <h2><span>Presets</span><button id="editPre">editar nomes</button></h2>
@@ -579,7 +652,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
       <label for="reassert">Reafirmar o slot antes dos comandos V</label>
       <input type="checkbox" id="reassert" checked>
     </div>
-    <p class="note">StompBox Remote v3.12 · Mixing Station UI v2 · protocolo v29.0</p>
+    <p class="note">StompBox Remote v3.13 · Mixing Station UI v2 · protocolo v29.0</p>
   </div>
 </details>
 
@@ -602,6 +675,27 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
     <button class="btn" id="catCopy">Copiar</button>
     <button class="btn" id="catCancel">Cancelar</button>
     <button class="btn primary" id="catSave">Salvar</button>
+  </div>
+</dialog>
+
+<dialog id="orderDlg">
+  <h3>Minha ordem dos timbres</h3>
+  <p class="note">Use as setas pra reorganizar. Isso muda só a ordem que aparece na grade — o número enviado ao pedal continua o mesmo.</p>
+  <div id="orderList"></div>
+  <div class="dlgbar">
+    <button class="btn" id="orderReset">Restaurar ordem do índice</button>
+    <button class="btn" id="orderCancel">Cancelar</button>
+    <button class="btn primary" id="orderSave">Salvar</button>
+  </div>
+</dialog>
+
+<dialog id="favDlg">
+  <h3>Timbres favoritos <span id="favContagem" class="note"></span></h3>
+  <p class="note">Toque pra marcar ou desmarcar. Máximo de 6 — eles aparecem em ordem de número na barra.</p>
+  <div class="grid" id="favEditGrid" style="max-height:50vh;overflow:auto"></div>
+  <div class="dlgbar">
+    <button class="btn" id="favCancel">Cancelar</button>
+    <button class="btn primary" id="favSave">Salvar</button>
   </div>
 </dialog>
 
@@ -686,6 +780,9 @@ let dev=null, rx=null, tx=null, wl=null;
 let wantConnected=false, retries=0, listenersOn=false;
 let TIMBRES = [];
 let PRESETS = {};   // { 3:'SAMBA', ... } — digitados ou aprendidos pela TX
+let SORT_MODE = 'indice';   // 'indice' | 'alfabetica' | 'personalizada'
+let CUSTOM_ORDER = [];      // índices de TIMBRES na ordem escolhida à mão
+let FAVORITOS = [];         // até 6 índices de TIMBRES
 const state = { slots:{1:{},2:{},3:{},4:{}}, active:1, bpm:null, preset:null, master:null, masterDb:'' };
 const vpt = { slot:null, timbre:null, nome:'', vol:null, busy:false, drag:false };
 
@@ -703,6 +800,8 @@ function loadCat(){
 function saveCat(lista){
   TIMBRES = lista.slice();
   try { localStorage.setItem('sb_cat', JSON.stringify(TIMBRES)); } catch(e){}
+  sanitizeCustomOrder(); saveCustomOrder();
+  sanitizeFavoritos(); saveFavoritos();
   renderGrid(); renderSlots();
 }
 function loadPresets(){
@@ -715,6 +814,44 @@ function garanteTamanho(n){
   let mudou = false;
   while (TIMBRES.length < n){ TIMBRES.push('Timbre ' + pad(TIMBRES.length + 1, 2)); mudou = true; }
   if (mudou) renderGrid();
+}
+
+/* ---------- ordenação da grade ---------- */
+function loadSort(){
+  SORT_MODE = localStorage.getItem('sb_sortMode') || 'indice';
+  if (!['indice','alfabetica','personalizada'].includes(SORT_MODE)) SORT_MODE = 'indice';
+  try { CUSTOM_ORDER = JSON.parse(localStorage.getItem('sb_customOrder') || '[]'); } catch(e){ CUSTOM_ORDER = []; }
+  sanitizeCustomOrder();
+}
+function saveSortMode(){ try { localStorage.setItem('sb_sortMode', SORT_MODE); } catch(e){} }
+function saveCustomOrder(){ try { localStorage.setItem('sb_customOrder', JSON.stringify(CUSTOM_ORDER)); } catch(e){} }
+function sanitizeCustomOrder(){
+  const vistos = new Set();
+  CUSTOM_ORDER = CUSTOM_ORDER.filter(i => Number.isInteger(i) && i >= 0 && i < TIMBRES.length && !vistos.has(i) && vistos.add(i));
+  for (let i = 0; i < TIMBRES.length; i++) if (!vistos.has(i)) CUSTOM_ORDER.push(i);
+}
+function ordemExibicao(){
+  if (SORT_MODE === 'alfabetica'){
+    return TIMBRES.map((_, i) => i).sort((a, b) => TIMBRES[a].localeCompare(TIMBRES[b], 'pt-BR', {sensitivity:'base'}));
+  }
+  if (SORT_MODE === 'personalizada'){
+    sanitizeCustomOrder();
+    return CUSTOM_ORDER.slice();
+  }
+  return TIMBRES.map((_, i) => i);
+}
+
+/* ---------- favoritos ---------- */
+function loadFavoritos(){
+  try { FAVORITOS = JSON.parse(localStorage.getItem('sb_favoritos') || '[]'); } catch(e){ FAVORITOS = []; }
+  sanitizeFavoritos();
+}
+function saveFavoritos(){ try { localStorage.setItem('sb_favoritos', JSON.stringify(FAVORITOS)); } catch(e){} }
+function sanitizeFavoritos(){
+  const vistos = new Set();
+  FAVORITOS = FAVORITOS
+    .filter(i => Number.isInteger(i) && i >= 0 && i < TIMBRES.length && !vistos.has(i) && vistos.add(i))
+    .slice(0, 6);
 }
 
 /* ---------- log / status ---------- */
@@ -878,33 +1015,63 @@ function renderSlots(){
   $('#gridTitle').textContent = 'Timbres — ' + (SLOT_NAMES[state.active] || 'Slot ' + state.active);
 }
 
+// Botão de um timbre (índice 0-based em TIMBRES) — usado na grade e na barra de favoritos.
+function criarBotaoTimbre(i){
+  const n = i + 1, nome = TIMBRES[i];
+  const b = document.createElement('button');
+  b.className = 'tim' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '');
+  b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
+  b.querySelector('.n').textContent = pad(n, 2);
+  b.querySelector('.t').textContent = nome;
+  const outros = Object.keys(state.slots).map(Number)
+    .filter(s => s !== state.active && s !== 5 && state.slots[s].n === n);
+  if (outros.length){
+    const tag = document.createElement('span');
+    tag.className = 'badge mono'; tag.textContent = outros.join('');
+    b.appendChild(tag);
+  }
+  b.onclick = () => {
+    const s = state.active;
+    if (!state.slots[s]) state.slots[s] = {};
+    state.slots[s].n = n; state.slots[s].nm = nome;
+    renderSlots(); renderGrid();
+    send(String(s) + pad(n, 2));
+  };
+  return b;
+}
+function criarBotaoVazio(){
+  const b = document.createElement('button');
+  b.className = 'tim vazio';
+  b.textContent = '+';
+  b.title = 'Editar favoritos';
+  b.onclick = () => abrirEditorFavoritos();
+  return b;
+}
+
 function renderGrid(){
   const wrap = $('#grid');
   wrap.style.setProperty('--activeColor', SLOT_COLORS[state.active] || 'var(--blue)');
   wrap.innerHTML = '';
-  TIMBRES.forEach((nome, i) => {
-    const n = i + 1;
-    const b = document.createElement('button');
-    b.className = 'tim' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '');
-    b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
-    b.querySelector('.n').textContent = pad(n, 2);
-    b.querySelector('.t').textContent = nome;
-    const outros = Object.keys(state.slots).map(Number)
-      .filter(s => s !== state.active && s !== 5 && state.slots[s].n === n);
-    if (outros.length){
-      const tag = document.createElement('span');
-      tag.className = 'badge mono'; tag.textContent = outros.join('');
-      b.appendChild(tag);
-    }
-    b.onclick = () => {
-      const s = state.active;
-      if (!state.slots[s]) state.slots[s] = {};
-      state.slots[s].n = n; state.slots[s].nm = nome;
-      renderSlots(); renderGrid();
-      send(String(s) + pad(n, 2));
-    };
-    wrap.appendChild(b);
+  ordemExibicao().forEach(i => wrap.appendChild(criarBotaoTimbre(i)));
+  renderFavoritos();
+}
+
+function renderFavoritos(){
+  const wrap = $('#favbar');
+  if (!wrap) return;
+  wrap.style.setProperty('--activeColor', SLOT_COLORS[state.active] || 'var(--blue)');
+  wrap.innerHTML = '';
+  for (let slot = 0; slot < 6; slot++){
+    const i = FAVORITOS[slot];
+    wrap.appendChild((i != null && i < TIMBRES.length) ? criarBotaoTimbre(i) : criarBotaoVazio());
+  }
+}
+
+function renderSortBar(){
+  document.querySelectorAll('#sortBar [data-sort]').forEach(b => {
+    b.classList.toggle('cur', b.dataset.sort === SORT_MODE);
   });
+  $('#editOrder').style.display = (SORT_MODE === 'personalizada') ? '' : 'none';
 }
 
 function renderTempo(){ const bpm = state.bpm ? state.bpm : null; $('#bpmVal').textContent = bpm || '—'; if (bpm) $('#bpmInput').value = bpm; }
@@ -1221,6 +1388,86 @@ $('#catSave').onclick = () => {
   setStatus(lista.length + ' timbres no catálogo');
 };
 
+/* ---------- ordenar timbres ---------- */
+document.querySelectorAll('#sortBar [data-sort]').forEach(b => {
+  b.onclick = () => { SORT_MODE = b.dataset.sort; saveSortMode(); renderSortBar(); renderGrid(); };
+});
+
+let ordemTrabalho = [];
+function renderOrderList(){
+  const wrap = $('#orderList');
+  wrap.innerHTML = '';
+  ordemTrabalho.forEach((i, pos) => {
+    const row = document.createElement('div');
+    row.className = 'orderRow';
+    row.innerHTML = '<span class="num mono"></span><span class="nome"></span>' +
+      '<button data-dir="up" aria-label="Mover para cima">▲</button>' +
+      '<button data-dir="down" aria-label="Mover para baixo">▼</button>';
+    row.querySelector('.num').textContent = pad(i + 1, 2);
+    row.querySelector('.nome').textContent = TIMBRES[i];
+    const up = row.querySelector('[data-dir="up"]'), down = row.querySelector('[data-dir="down"]');
+    up.disabled = (pos === 0);
+    down.disabled = (pos === ordemTrabalho.length - 1);
+    up.onclick = () => { [ordemTrabalho[pos-1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos-1]]; renderOrderList(); };
+    down.onclick = () => { [ordemTrabalho[pos+1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos+1]]; renderOrderList(); };
+    wrap.appendChild(row);
+  });
+}
+const orderDlg = $('#orderDlg');
+function abrirEditorOrdem(){
+  sanitizeCustomOrder();
+  ordemTrabalho = CUSTOM_ORDER.slice();
+  renderOrderList();
+  orderDlg.showModal();
+}
+$('#editOrder').onclick = abrirEditorOrdem;
+$('#orderCancel').onclick = () => orderDlg.close();
+$('#orderReset').onclick = () => { ordemTrabalho = TIMBRES.map((_, i) => i); renderOrderList(); };
+$('#orderSave').onclick = () => {
+  CUSTOM_ORDER = ordemTrabalho.slice();
+  saveCustomOrder();
+  if (SORT_MODE === 'personalizada') renderGrid();
+  orderDlg.close();
+  setStatus('Ordem personalizada salva');
+};
+
+/* ---------- editar favoritos ---------- */
+let favTrabalho = new Set();
+function renderFavEditGrid(){
+  const wrap = $('#favEditGrid');
+  wrap.innerHTML = '';
+  TIMBRES.forEach((nome, i) => {
+    const b = document.createElement('button');
+    b.className = 'tim' + (favTrabalho.has(i) ? ' chosen' : '');
+    b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
+    b.querySelector('.n').textContent = pad(i + 1, 2);
+    b.querySelector('.t').textContent = nome;
+    b.onclick = () => {
+      if (favTrabalho.has(i)) favTrabalho.delete(i);
+      else if (favTrabalho.size < 6) favTrabalho.add(i);
+      else { setStatus('Máximo de 6 favoritos'); return; }
+      renderFavEditGrid();
+      $('#favContagem').textContent = '(' + favTrabalho.size + '/6)';
+    };
+    wrap.appendChild(b);
+  });
+}
+const favDlg = $('#favDlg');
+function abrirEditorFavoritos(){
+  favTrabalho = new Set(FAVORITOS);
+  renderFavEditGrid();
+  $('#favContagem').textContent = '(' + favTrabalho.size + '/6)';
+  favDlg.showModal();
+}
+$('#editFav').onclick = abrirEditorFavoritos;
+$('#favCancel').onclick = () => favDlg.close();
+$('#favSave').onclick = () => {
+  FAVORITOS = [...favTrabalho].sort((a, b) => a - b);
+  saveFavoritos();
+  renderFavoritos();
+  favDlg.close();
+};
+
 
 /* ---------- medidores dos faders (visual) ----------
    O trilho colorido é pintado por --level. O navegador NÃO dispara
@@ -1244,11 +1491,12 @@ function pintarFader(id){
 });
 
 /* ---------- boot ---------- */
-loadCat(); loadPresets(); carregarRepertorio(); ordenarRepertorio();
+loadCat(); loadSort(); loadFavoritos(); loadPresets(); carregarRepertorio(); ordenarRepertorio();
 $('#term').value = localStorage.getItem('sb_term') || '';
 $('#reassert').checked = localStorage.getItem('sb_reassert') !== '0';
 ticks($('#mTicks'), MAX_M);
 ticks($('#vTicks'), 9);
+renderSortBar();
 renderSlots(); renderGrid(); renderTempo(); renderMaster();
 renderVpt(); renderPick(); renderPresets(); renderFire();
 
