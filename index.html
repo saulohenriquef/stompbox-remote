@@ -1,13 +1,15 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.13 "Mixing Station + Repertório"
+ STOMPBOX REMOTE — v3.14 "Mixing Station + Repertório"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
  na tela inicial e funcional offline pelo service worker.
 
- PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth").
+ PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth"), mais o que
+ a página usa das versões seguintes, sem depender delas: "BOOT=" (v32) e
+ "E?" (v33). Firmware mais antigo ignora os dois.
 
  ------------------------------------------------------------
  CHANGELOG
@@ -159,6 +161,79 @@
            Disparo ganharam a mesma cor de cada slot (borda tingida, e no
            seletor de volume preenchimento cheio + texto escuro quando
            selecionado — mesmo padrão de contraste da v3.11/v3.12).
+
+ v3.14 — Revisão contra o firmware v33 — correções e acréscimos:
+        1) RECONEXÃO: o ouvinte das mensagens do pedal era preso UMA vez,
+           no primeiro objeto da característica TX. O Chrome cria objetos
+           novos a cada conexão: depois de uma queda (ou de desconectar e
+           conectar sem recarregar), os comandos saíam, mas nada voltava.
+           Agora o ouvinte é preso a cada conexão, ANTES de assinar as
+           notificações (prender de novo no mesmo objeto não duplica). A
+           reconexão ganhou trava: uma queda durante uma tentativa não abre
+           um segundo laço, e dois pedidos de conexão juntos viram um só.
+        2) TROCA DE TIMBRE SÓ VALE COM A CONFIRMAÇÃO DO PEDAL. A página
+           pintava o cartão na hora, antes da resposta — e o pedal nem
+           sempre aplica: nos modos 01/11 o "1nn" vai pro METRÔNOMO e os
+           slots 2-4 são ignorados; no 10, com o automático rodando, tudo
+           é ignorado. Agora o pedido fica PENDENTE (cartão esmaecido com
+           "aguardando o pedal…", balão tracejado na grade) até chegar
+           "T<slot>=". Sem resposta em 0,8 s, volta ao que era e avisa. Se
+           o "1nn" voltar como "T5=" (metrônomo), a página diz isso.
+        3) TAP: média da frase INTEIRA (era dos últimos 5 toques) e UM
+           Tnnn só, quando a frase fecha — 1,5 tempo de silêncio, entre
+           250 ms e 2 s, a mesma regra dos pedais (2 s enquanto a frase
+           tem menos de 3 toques). Antes, cada toque a partir do segundo
+           mandava um Tnnn: nos modos 01/10/11 cada um parava e rearmava o
+           metrônomo do pedal, e no 00 cada um voltava "ERR Tnnn modo 00".
+           O BPM aparece ao vivo enquanto se bate; frase com menos de 3
+           toques não envia nada (e o andamento de antes volta à tela).
+        4) O botão do 8888 virou "Largada / reset do metrônomo", com nota
+           embaixo: o 8888 só larga (ou reseta, com ele tocando) nos modos
+           01 e 11 — no 00 e no 10 ele dispara o Pedal 2. O nome antigo,
+           "Largada do automático", sugeria o Auto StompBox (modo 10), onde
+           ele faz justamente outra coisa.
+        5) "E?" AO CONECTAR (firmware v33): o pacote de estado que o pedal
+           manda no instante da conexão pode se perder (o celular ainda
+           não assinou as notificações), e os cartões ficavam "sem
+           leitura". Agora a página pede o estado depois de assinar.
+           Firmware anterior à v33 ignora o comando.
+        6) "BOOT=" (firmware v32): se o último reset do pedal não foi um
+           liga normal (POWERON), a barra avisa "Último reset do pedal:
+           BROWNOUT" (ou PANIC, WDT…) e o console registra. O texto fala do
+           ÚLTIMO reset, e não de um agora: numa simples queda do Bluetooth
+           o pedal responde o mesmo motivo de antes, a cada conexão. Logo
+           depois de gravar pelo USB também aparece um motivo: é o reset da
+           própria gravação.
+        7) VOLUME POR TIMBRE NO PISO DA v32: o firmware passou a travar em
+           1 — antes, chegar a 0 devolvia o timbre ao volume CHEIO. O
+           fader agora vai de 1 a 256 e a página nunca comanda um 0.
+           - Com firmware v32+ (reconhecido pelo BOOT= recebido), o fundo
+             ganha o mesmo passo extra que o topo sempre teve: o pedal
+             trava em 1 e o fader encosta no piso.
+           - Sem BOOT= (firmware anterior, ou pacote perdido), o fundo
+             continua conservador como na v3.2, e os botões −8/−32 não
+             descem abaixo de 1 — nesses firmwares, o 0 é volume cheio.
+           - Desde a v32, o volume dos smart (BLOCOS, TRI S) funciona.
+        8) Miudezas: o id "repertorioTopo" aparecia duas vezes (o do
+           Gerenciar virou "gerenciarTopo"); e a barra de status ficava
+           presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
+           enviado, catálogo salvo…) somem sozinhos e a barra volta ao
+           estado da conexão.
+
+ ------------------------------------------------------------
+ PENDÊNCIAS
+ ------------------------------------------------------------
+ - REAFIRMAR O SLOT SEM EFEITO COLATERAL (depende do firmware).
+   Pra apontar o slot antes dos comandos V, a página reenvia o timbre
+   atual dele ("snn"), porque não existe comando que só selecione o
+   slot. Efeitos: nos modos 01 e 11, reafirmar o slot 1 troca o
+   timbre do METRÔNOMO pelo do Pedal 1; no modo 00, num timbre smart,
+   volta o smart pro passo 1. Solução combinada: um comando novo no
+   firmware que só aponta o slot, sem trocar nada (ex.: "S1"-"S4",
+   que só faz bleUltimoSlot = n). O firmware atual ignora "Sn" (cai
+   na extração de dígitos com menos de 3), então a página pode passar
+   a usar o comando novo sem quebrar nada com firmware antigo. Até
+   lá, dá pra desligar a reafirmação em "Console e ajustes".
 
  NOTA: ao publicar, subir também o sw.js com o número do cache
  trocado, senão o app instalado continua servindo a versão antiga.
@@ -319,6 +394,9 @@ h2 button{
 .tim.cur .n{color:#12161b;opacity:.75}
 .tim.cur .t{color:#12161b;font-weight:700}
 .tim .badge{position:absolute;top:6px;right:7px;font-size:10px;color:#7891a7}
+/* v3.14 — timbre PEDIDO, esperando a confirmação do pedal ("T<slot>=") */
+.tim.pend{border-style:dashed;border-color:var(--activeColor)}
+.slot.pend .num,.slot.pend .nm{opacity:.55}
 .tim.cur .badge{color:#12161b;opacity:.7}
 
 /* Ordenar timbres */
@@ -503,6 +581,7 @@ select,input[type=text],textarea{
 input[type=text]{flex:1;min-width:0}
 textarea{width:100%;height:230px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5}
 .note{font-size:10px;color:#65717c;margin:0}
+.fireNota{margin-top:7px}   /* v3.14 — o que o 8888 faz em cada modo */
 
 
 /* ---------- andamento manual / repertório ---------- */
@@ -518,8 +597,8 @@ textarea{width:100%;height:230px;font-family:ui-monospace,Menlo,Consolas,monospa
 #repertorioFundo,#gerenciarFundo{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:14px}
 #repertorioFundo.aberto,#gerenciarFundo.aberto{display:flex}
 #repertorioCaixa,#gerenciarCaixa{display:flex;flex-direction:column;width:100%;max-width:440px;max-height:90vh;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.7)}
-#repertorioTopo{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-#repertorioTopo span{font-size:12px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+#repertorioTopo,#gerenciarTopo{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+#repertorioTopo span,#gerenciarTopo span{font-size:12px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
 #repertorioFechar,#gerenciarFechar{margin:0;padding:0 10px;font-size:22px;line-height:1;background:transparent;border:0}
 #repertorioFiltro,#gerenciarFiltro{width:100%;font-size:14px;padding:8px 10px;margin-bottom:10px;background:#12171c;color:var(--ink);border:1px solid #35404b;border-radius:6px}
 #repertorioLista{flex:1;overflow-y:auto;min-height:60px}
@@ -615,14 +694,15 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 
 <h2>Disparo</h2>
 <section class="fire" id="fire"></section>
+<p class="note fireNota">O 8888 só larga o metrônomo (ou reseta, com ele tocando) nos modos 01 e 11. No 00 e no 10, ele dispara o Pedal 2.</p>
 
 <h2>Volume por timbre</h2>
 <section class="box">
   <div class="pick" id="vPick"></div>
   <div class="vlabel" id="vLabel">Escolha um slot — a página pergunta o volume ao pedal</div>
-  <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="vFader" min="0" max="256" step="1" value="0" disabled aria-label="Volume do timbre"></div>
+  <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="vFader" min="1" max="256" step="1" value="1" disabled aria-label="Volume do timbre"></div>
   <div class="ticks" id="vTicks"></div>
-  <div class="scale"><span>0</span><span id="vNow" class="mono">—</span><span>256</span></div>
+  <div class="scale"><span>1</span><span id="vNow" class="mono">—</span><span>256</span></div>
   <div class="head" style="margin-top:6px">
     <button data-v="-" aria-label="Menos 8">–8</button>
     <button data-v="--" aria-label="Menos 32">–32</button>
@@ -652,7 +732,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
       <label for="reassert">Reafirmar o slot antes dos comandos V</label>
       <input type="checkbox" id="reassert" checked>
     </div>
-    <p class="note">StompBox Remote v3.13 · Mixing Station UI v2 · protocolo v29.0</p>
+    <p class="note">StompBox Remote v3.14 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33)</p>
   </div>
 </details>
 
@@ -715,7 +795,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 <!-- ============ GERENCIAR REPERTÓRIO ============ -->
 <div id="gerenciarFundo">
   <div id="gerenciarCaixa">
-    <div id="repertorioTopo">
+    <div id="gerenciarTopo">
       <span>Gerenciar repertório</span>
       <button id="gerenciarFechar" title="Fechar">&times;</button>
     </div>
@@ -765,6 +845,8 @@ const SVC = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const CH_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 const CH_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 const MAX_M = 16, VOL_MAX = 256, PASSO = 8, PASSAO = 32;   // 256 = 100% (ganho unitário), não um teto de byte
+const VOL_MIN = 1;          // v3.14 — piso do volume por timbre desde o firmware v32 (0 = "nunca ajustado" = cheio)
+const PENDENTE_MS = 800;    // v3.14 — quanto a troca de timbre espera a confirmação (resposta T<slot>=)
 
 const CAT_PADRAO = [
  'B Cajon','Bumbo 24','Bumbo 22','Bumbo 20','Bumbo 808','Carrilhão','Pandeirola','Cowbell',
@@ -777,13 +859,19 @@ const SLOT_COLORS = {1:'var(--slot1)', 2:'var(--slot2)', 3:'var(--slot3)', 4:'va
 
 const enc = new TextEncoder(), dec = new TextDecoder();
 let dev=null, rx=null, tx=null, wl=null;
-let wantConnected=false, retries=0, listenersOn=false;
+let wantConnected=false, retries=0;
+let devComOuvinte = null;    // v3.14 — em qual dispositivo o gattserverdisconnected já está preso
+let reconectando = false;    // v3.14 — trava: um laço de reconexão de cada vez
+let abrindo = null;          // v3.14 — openGatt em andamento (pedidos juntos viram um só)
 let TIMBRES = [];
 let PRESETS = {};   // { 3:'SAMBA', ... } — digitados ou aprendidos pela TX
 let SORT_MODE = 'indice';   // 'indice' | 'alfabetica' | 'personalizada'
 let CUSTOM_ORDER = [];      // índices de TIMBRES na ordem escolhida à mão
 let FAVORITOS = [];         // até 6 índices de TIMBRES
-const state = { slots:{1:{},2:{},3:{},4:{}}, active:1, bpm:null, preset:null, master:null, masterDb:'' };
+const state = { slots:{1:{},2:{},3:{},4:{}}, active:1, bpm:null, preset:null, master:null, masterDb:'', boot:null };
+// v3.14 — trocas de timbre pedidas e ainda não confirmadas: { slot: {n, timer} }
+const pendentes = {};
+let bootAvisado = false;     // v3.14 — o aviso do BOOT= sai uma vez por conexão
 const vpt = { slot:null, timbre:null, nome:'', vol:null, busy:false, drag:false };
 
 const $ = s => document.querySelector(s);
@@ -863,9 +951,25 @@ function log(txt, cls){
   while (el.childElementCount > 120) el.removeChild(el.firstChild);
   if (atEnd) el.scrollTop = el.scrollHeight;
 }
-function setStatus(txt, kind){
+/* v3.14 — DOIS TIPOS DE STATUS.
+   setStatus()   → o estado da CONEXÃO: é o que fica na barra.
+   avisoStatus() → aviso de passagem (erro, BPM enviado…): some sozinho e a
+                   barra volta ao estado da conexão. Antes, um "ERR" vermelho
+                   ficava preso na barra até a próxima mudança de conexão. */
+let statusBase = { txt:'Desconectado', kind:'' }, statusTimer = null;
+function pintarStatus(txt, kind){
   $('#status').textContent = txt;
   $('#dot').className = 'dot' + (kind ? ' ' + kind : '');
+}
+function setStatus(txt, kind){
+  statusBase = { txt: txt, kind: kind || '' };
+  if (statusTimer){ clearTimeout(statusTimer); statusTimer = null; }
+  pintarStatus(txt, kind);
+}
+function avisoStatus(txt, kind, ms){
+  if (statusTimer) clearTimeout(statusTimer);
+  pintarStatus(txt, kind);
+  statusTimer = setTimeout(() => { statusTimer = null; pintarStatus(statusBase.txt, statusBase.kind); }, ms || 3000);
 }
 
 /* ---------- conexão ---------- */
@@ -890,33 +994,66 @@ async function connect(){
   }
 }
 
-async function openGatt(){
+/* v3.14 — dois pedidos juntos (reconexão automática + toque em Conectar)
+   viram UM só: o segundo espera o primeiro. */
+function openGatt(){
+  if (!abrindo) abrindo = abrirGatt().finally(() => { abrindo = null; });
+  return abrindo;
+}
+
+async function abrirGatt(){
   setStatus('Conectando…', 'busy');
   const server = await dev.gatt.connect();
   const svc = await server.getPrimaryService(SVC);
-  rx = await svc.getCharacteristic(CH_RX);
-  tx = await svc.getCharacteristic(CH_TX);
-  await tx.startNotifications();
-  if (!listenersOn){
-    tx.addEventListener('characteristicvaluechanged', onNotify);
+  const novoRx = await svc.getCharacteristic(CH_RX);
+  const novoTx = await svc.getCharacteristic(CH_TX);
+  /* v3.14 — O OUVINTE VAI NO OBJETO DESTA CONEXÃO, e antes de assinar.
+     O Chrome cria objetos novos a cada conexão: preso só no primeiro, a
+     página reconectava e deixava de receber. Prender de novo no mesmo
+     objeto não duplica (é a mesma função). */
+  novoTx.addEventListener('characteristicvaluechanged', onNotify);
+  if (devComOuvinte !== dev){
     dev.addEventListener('gattserverdisconnected', onDrop);
-    listenersOn = true;
+    devComOuvinte = dev;
   }
+  rx = novoRx; tx = novoTx;
+  await tx.startNotifications();
   retries = 0;
+  bootAvisado = false; state.boot = null;   // v3.14 — o BOOT= desta conexão
   setStatus((dev.name || 'StompBox') + ' conectada', 'on');
   $('#btnConn').textContent = 'Desconectar';
   log('— conectado —');
   keepAwake();
+  /* v3.14 — pede o estado completo (T1..T5, BOOT=) DEPOIS de assinar: o
+     pacote que o pedal manda no instante da conexão pode se perder.
+     Firmware anterior à v33 ignora. */
+  send('E?');
   setTimeout(() => send('M?'), 600);
 }
 
 function onDrop(){
   rx = tx = null; releaseWake();
   $('#btnConn').textContent = 'Conectar';
+  limparPendentes();   // v3.14 — sem conexão, nenhum pedido vai ser confirmado
+  /* v3.14 — um laço de reconexão de cada vez: a queda de uma tentativa que
+     falhou também dispara este evento, e sem a trava abriria um segundo. */
+  if (reconectando) return;
   if (wantConnected && retries < 5){
     retries++;
+    reconectando = true;
     setStatus('Caiu. Reconectando (' + retries + '/5)…', 'busy');
-    setTimeout(() => { if (wantConnected) openGatt().catch(()=>onDrop()); }, 1200);
+    setTimeout(async () => {
+      try {
+        if (wantConnected) await openGatt();
+        reconectando = false;
+        // caiu de novo bem no fim da tentativa (o aviso chegou com a trava
+        // fechada e foi ignorado): trata agora
+        if (wantConnected && !(dev && dev.gatt.connected)) onDrop();
+      } catch(e){
+        reconectando = false;
+        onDrop();
+      }
+    }, 1200);
   } else {
     setStatus(wantConnected ? 'Sem conexão — toque em Conectar' : 'Desconectado', wantConnected ? 'err' : '');
     wantConnected = false;
@@ -927,6 +1064,7 @@ function disconnect(){
   wantConnected = false;
   try { if (dev && dev.gatt.connected) dev.gatt.disconnect(); } catch(e){}
   rx = tx = null; releaseWake();
+  limparPendentes();   // v3.14
   $('#btnConn').textContent = 'Conectar';
   setStatus('Desconectado');
 }
@@ -953,6 +1091,21 @@ function handleLine(line){
   log('← ' + line, 'rx');
   let m;
 
+  // BOOT=BROWNOUT (v32) — motivo do último reset do pedal. Vem no pacote de
+  // estado (conexão e E?). POWERON é o liga normal: não avisa.
+  if ((m = line.match(/^BOOT\s*=\s*(\S+)/i))){
+    const motivo = m[1].toUpperCase();
+    state.boot = motivo;   // também diz que o firmware é v32+ (ver volume por timbre)
+    if (motivo !== 'POWERON' && !bootAvisado){
+      bootAvisado = true;
+      // "último reset", e não "acabou de reiniciar": depois de uma simples
+      // queda do Bluetooth o pedal responde o mesmo motivo de antes
+      avisoStatus('Último reset do pedal: ' + motivo, 'err', 10000);
+      log('⚠ último reset do pedal: ' + motivo + ' (depois de gravar pelo USB é normal)', 'er');
+    }
+    return;
+  }
+
   // VOL GERAL 12/16 -4dB
   if ((m = line.match(/^VOL\s+GERAL\s+(\d+)\s*\/\s*(\d+)\s*(.*)$/i))){
     state.master = +m[1]; state.masterDb = m[3].trim();
@@ -965,11 +1118,18 @@ function handleLine(line){
   }
   // T3=12 BLOCO L
   if ((m = line.match(/^T(\d)\s*=\s*(\d+)\s*(.*)$/i))){
-    const s = +m[1];
+    const s = +m[1], n = +m[2];
     if (!state.slots[s]) state.slots[s] = {};
-    state.slots[s].n = +m[2];
+    state.slots[s].n = n;
     state.slots[s].nm = m[3].trim();
-    garanteTamanho(+m[2]);
+    garanteTamanho(n);
+    // v3.14 — é ESTA resposta que confirma a troca pedida
+    if (pendentes[s] && pendentes[s].n === n) resolverPendente(s);
+    // nos modos 01/11 o "1nn" volta como T5 (metrônomo), não como T1
+    if (s === 5 && pendentes[1] && pendentes[1].n === n){
+      resolverPendente(1);
+      avisoStatus('Modo metrônomo: o timbre ' + pad(n, 2) + ' foi pro metrônomo, não pro Pedal 1', '', 5000);
+    }
     renderSlots(); renderGrid();
     return;
   }
@@ -980,7 +1140,7 @@ function handleLine(line){
     if (nome){ PRESETS[+m[1]] = nome; savePresets(); }
     renderPresets(); return;
   }
-  if (/^ERR/i.test(line)){ setStatus(line, 'err'); return; }
+  if (/^ERR/i.test(line)){ avisoStatus(line, 'err', 4000); return; }   // v3.14 — some sozinho
 }
 
 /* ---------- render ---------- */
@@ -994,8 +1154,11 @@ function renderSlots(){
     b.setAttribute('aria-pressed', state.active === s ? 'true' : 'false');
     b.innerHTML = '<span class="lbl"></span><span class="num mono"></span><span class="nm"></span>';
     b.querySelector('.lbl').textContent = SLOT_NAMES[s] || ('Slot ' + s);
-    b.querySelector('.num').textContent = d.n ? pad(d.n, 2) : '--';
-    b.querySelector('.nm').textContent = d.nm || (d.n ? (TIMBRES[d.n-1] || '') : 'sem leitura');
+    const p = pendentes[s];   // v3.14 — pedido esperando a confirmação
+    b.classList.toggle('pend', !!p);
+    b.querySelector('.num').textContent = p ? pad(p.n, 2) : (d.n ? pad(d.n, 2) : '--');
+    b.querySelector('.nm').textContent = p ? 'aguardando o pedal…'
+      : (d.nm || (d.n ? (TIMBRES[d.n-1] || '') : 'sem leitura'));
     b.onclick = () => { state.active = s; renderSlots(); renderGrid(); };
     wrap.appendChild(b);
   });
@@ -1019,7 +1182,9 @@ function renderSlots(){
 function criarBotaoTimbre(i){
   const n = i + 1, nome = TIMBRES[i];
   const b = document.createElement('button');
-  b.className = 'tim' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '');
+  const pedido = pendentes[state.active];   // v3.14
+  b.className = 'tim' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '')
+                      + (pedido && pedido.n === n ? ' pend' : '');
   b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
   b.querySelector('.n').textContent = pad(n, 2);
   b.querySelector('.t').textContent = nome;
@@ -1030,14 +1195,44 @@ function criarBotaoTimbre(i){
     tag.className = 'badge mono'; tag.textContent = outros.join('');
     b.appendChild(tag);
   }
-  b.onclick = () => {
-    const s = state.active;
-    if (!state.slots[s]) state.slots[s] = {};
-    state.slots[s].n = n; state.slots[s].nm = nome;
-    renderSlots(); renderGrid();
-    send(String(s) + pad(n, 2));
-  };
+  b.onclick = () => pedirTimbre(state.active, n);   // v3.14 — só vale com a confirmação
   return b;
+}
+
+/* v3.14 — TROCA DE TIMBRE SÓ VALE QUANDO O PEDAL CONFIRMA.
+   O pedal sempre responde "T<slot>=NN NOME" a uma troca que aplicou — e nem
+   sempre aplica: nos modos 01/11 o "1nn" vai pro metrônomo e os slots 2-4
+   são ignorados; no 10, com o automático rodando, tudo é ignorado. Então o
+   pedido fica PENDENTE até a resposta; sem ela em PENDENTE_MS, a tela volta
+   ao que o pedal de fato tem, e a barra avisa. */
+function pedirTimbre(s, n){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (pendentes[s]) clearTimeout(pendentes[s].timer);
+  const pedido = { n: n, timer: null };
+  pendentes[s] = pedido;
+  renderSlots(); renderGrid();
+  send(String(s) + pad(n, 2)).then(() => {
+    // o prazo só começa quando a escrita SAIU: na fila atrás de outros
+    // comandos (uma escada de V+, por exemplo), ele venceria antes da hora
+    if (pendentes[s] === pedido) pedido.timer = setTimeout(() => expirarPendente(s), PENDENTE_MS);
+  });
+}
+function resolverPendente(s){
+  if (!pendentes[s]) return;
+  clearTimeout(pendentes[s].timer);
+  delete pendentes[s];
+}
+function expirarPendente(s){
+  const p = pendentes[s];
+  if (!p) return;
+  delete pendentes[s];
+  renderSlots(); renderGrid();
+  avisoStatus((SLOT_NAMES[s] || 'Slot ' + s) + ': o pedal não trocou pro ' + pad(p.n, 2) +
+              ' — neste modo ele não aceita troca nesse slot', 'err', 5000);
+}
+function limparPendentes(){
+  Object.keys(pendentes).forEach(s => resolverPendente(+s));
+  renderSlots(); renderGrid();
 }
 function criarBotaoVazio(){
   const b = document.createElement('button');
@@ -1129,7 +1324,7 @@ function renderFire(){
     wrap.appendChild(b);
   });
   const l = document.createElement('button');
-  l.className = 'wide'; l.textContent = 'Largada do automático (8888)';
+  l.className = 'wide'; l.textContent = 'Largada / reset do metrônomo (8888)';   // v3.14 — ver nota abaixo do Disparo
   l.onclick = () => send('8888');
   wrap.appendChild(l);
 }
@@ -1167,13 +1362,21 @@ function reafirmaSlot(s){
 }
 
 // Os comandos V andam de 8 em 8 a partir do valor atual, então nem todo
-// número entre 0 e 256 é alcançável. Traduz a posição do fader no alvo
+// número entre 1 e 256 é alcançável. Traduz a posição do fader no alvo
 // possível mais próximo.
+//
+// v3.14 — PISO 1, NÃO 0. No firmware até a v31, chegar a 0 devolvia o timbre
+// ao volume CHEIO (0 = "nunca ajustado"); a v32 passou a travar em 1. A página
+// nunca comanda um 0: o alvo mínimo é VOL_MIN, e a escada de passos para antes
+// de cruzar ele. O passo extra no fundo (irParaVolume) só vale com firmware
+// v32+ — reconhecido pelo BOOT=, que só existe a partir dela.
+function firmwareComPiso(){ return !!state.boot; }
 function alvoAlcancavel(v){
   if (vpt.vol == null) return v;
   if (v >= VOL_MAX - PASSO/2) return VOL_MAX;          // topo: firmware limita
+  if (v <= VOL_MIN + PASSO/2 && firmwareComPiso()) return VOL_MIN;   // fundo: v32+ trava em 1
   const alvo = vpt.vol + Math.round((v - vpt.vol) / PASSO) * PASSO;
-  return Math.max(0, Math.min(VOL_MAX, alvo));
+  return Math.max(VOL_MIN, Math.min(VOL_MAX, alvo));
 }
 
 async function irParaVolume(alvo){
@@ -1188,28 +1391,60 @@ async function irParaVolume(alvo){
   while (Math.abs(d) >= PASSO && guarda++ < 80){
     await send(d > 0 ? 'V+' : 'V-'); d += d > 0 ? -PASSO : PASSO; await sleep(40);
   }
-  // Só no topo: um passo extra pra encostar no teto, contando com o limite
-  // do firmware. No fundo não — se ele der a volta, viraria volume máximo.
+  // No topo: um passo extra pra encostar no teto, contando com o limite do
+  // firmware. No fundo, SÓ com firmware v32+ (piso 1): nos anteriores, o
+  // passo a mais chegaria a 0 — que neles é volume cheio.
   if (alvo >= VOL_MAX && d > 0){ await send('V+'); await sleep(40); }
+  if (alvo <= VOL_MIN && d < 0 && firmwareComPiso()){ await send('V-'); await sleep(40); }
   vpt.busy = false;
   await sleep(60);
   send('V?');   // o valor real do pedal manda — o fader se corrige por ele
 }
 
-/* ---------- tap tempo ---------- */
-let taps = [];
+/* ---------- tap tempo ----------
+   v3.14 — MÉDIA DA FRASE INTEIRA e UM Tnnn só, quando a frase fecha.
+   Antes, cada toque a partir do segundo mandava um Tnnn — e no pedal cada
+   Tnnn PARA o metrônomo (ou o automático) e rearma; no modo 00, cada um
+   voltava "ERR Tnnn modo 00". Agora a frase fecha com 1,5 tempo de silêncio,
+   entre 250 ms e 2 s — a mesma regra dos pedais —, e enquanto ela tem menos
+   de 3 toques espera o teto (2 s). Frase curta não envia nada. */
+const TAP_FIM_BATIDAS = 1.5, TAP_FIM_MIN_MS = 250, TAP_FIM_MAX_MS = 2000, TAP_MIN_INTERVALO = 100;
+let tapTempos = [], tapTimer = null, bpmAntesDoTap = null;
+function bpmDaFrase(){
+  if (tapTempos.length < 2) return null;
+  const dur = tapTempos[tapTempos.length - 1] - tapTempos[0];
+  return dur > 0 ? 60000 * (tapTempos.length - 1) / dur : null;
+}
+function esperaFimDaFrase(){
+  const bpm = bpmDaFrase();
+  if (tapTempos.length < 3 || !bpm) return TAP_FIM_MAX_MS;
+  return Math.max(TAP_FIM_MIN_MS, Math.min(TAP_FIM_MAX_MS, 60000 / bpm * TAP_FIM_BATIDAS));
+}
 function tap(){
-  const now = performance.now();
-  if (taps.length && now - taps[taps.length-1] > 2500) taps = [];
-  taps.push(now);
-  if (taps.length > 5) taps.shift();
-  if (taps.length < 2){ setStatus('Tap… continue batendo'); return; }
-  const int = [];
-  for (let i = 1; i < taps.length; i++) int.push(taps[i] - taps[i-1]);
-  const media = int.reduce((a,b) => a+b, 0) / int.length;
-  const bpm = Math.max(30, Math.min(300, Math.round(60000 / media)));
-  state.bpm = bpm; renderTempo();
-  send('T' + pad(bpm, 3));
+  const agora = performance.now();
+  // toque duplo acidental na tela: ignora
+  if (tapTempos.length && agora - tapTempos[tapTempos.length - 1] < TAP_MIN_INTERVALO) return;
+  if (!tapTempos.length) bpmAntesDoTap = state.bpm;
+  tapTempos.push(agora);
+  const bpm = bpmDaFrase();
+  if (bpm){ state.bpm = Math.max(30, Math.min(300, Math.round(bpm))); renderTempo(); }
+  else avisoStatus('Tap… continue batendo', '', 2000);
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(fecharFraseTap, esperaFimDaFrase());
+}
+function fecharFraseTap(){
+  tapTimer = null;
+  const n = tapTempos.length, bpm = bpmDaFrase();
+  tapTempos = [];
+  if (n < 3 || !bpm){
+    state.bpm = bpmAntesDoTap; renderTempo();
+    avisoStatus('Tap: poucos toques — nada enviado', '', 2500);
+    return;
+  }
+  const inteiro = Math.max(30, Math.min(300, Math.round(bpm)));
+  state.bpm = inteiro; renderTempo();
+  send('T' + pad(inteiro, 3));
+  avisoStatus('Tap: ' + inteiro + ' BPM enviado', 'on', 3000);
 }
 
 /* ---------- tela acesa ---------- */
@@ -1284,7 +1519,7 @@ function desenharListaEm(container,busca,opcoes={}){
 function desenharRepertorio(){ desenharListaEm(repertorioLista,repertorioFiltro.value,{aoClicar:aplicarMusica}); }
 function desenharGerenciar(){ desenharListaEm(gerenciarLista,gerenciarFiltro.value,{comRemover:true}); gerContagem.textContent=repertorio.length?'('+repertorio.length+')':''; }
 function aplicarMusica(m){
-  const bpm=sanearBpmRep(m.bpm); state.bpm=bpm; renderTempo(); send('T'+pad(bpm,3)); fecharRepertorio(); setStatus('BPM '+bpm+' enviado — '+m.nome,'on');
+  const bpm=sanearBpmRep(m.bpm); state.bpm=bpm; renderTempo(); send('T'+pad(bpm,3)); fecharRepertorio(); avisoStatus('BPM '+bpm+' enviado — '+m.nome,'on');
 }
 function abrirRepertorio(){ carregarRepertorio();ordenarRepertorio();repertorioFiltro.value='';desenharRepertorio();repertorioFundo.classList.add('aberto');repertorioFiltro.focus(); }
 function fecharRepertorio(){ repertorioFundo.classList.remove('aberto'); }
@@ -1327,6 +1562,13 @@ document.querySelectorAll('[data-bpm]').forEach(b => b.onclick = () => send('T' 
 document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => send('M' + b.dataset.m));
 document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
   if (vpt.slot == null) return;
+  /* v3.14 — sem saber se o firmware tem piso (BOOT= não chegou), −8/−32 não
+     descem abaixo de 1: até a v31, o 0 é volume CHEIO. */
+  const passo = b.dataset.v === '--' ? PASSAO : (b.dataset.v === '-' ? PASSO : 0);
+  if (passo && vpt.vol != null && vpt.vol - passo < VOL_MIN && !firmwareComPiso()){
+    avisoStatus('Abaixo de 1 o firmware antigo volta pro volume cheio — use o fader', 'err', 5000);
+    return;
+  }
   reafirmaSlot(vpt.slot);
   send('V' + b.dataset.v);
   setTimeout(() => send('V?'), 120);
@@ -1338,7 +1580,7 @@ const bpmInput = $('#bpmInput');
 function selecionarBpm(){ setTimeout(()=>{ try{ bpmInput.select(); bpmInput.setSelectionRange(0,bpmInput.value.length); }catch(e){} },0); }
 bpmInput.addEventListener('focus', selecionarBpm);
 bpmInput.addEventListener('pointerdown', selecionarBpm);
-$('#bpmSend').onclick = () => { const bpm=sanearBpmRep(bpmInput.value); state.bpm=bpm; renderTempo(); send('T'+pad(bpm,3)); setStatus('BPM '+bpm+' enviado','on'); };
+$('#bpmSend').onclick = () => { const bpm=sanearBpmRep(bpmInput.value); state.bpm=bpm; renderTempo(); send('T'+pad(bpm,3)); avisoStatus('BPM '+bpm+' enviado','on'); };
 bpmInput.addEventListener('keydown', e => { if(e.key==='Enter') $('#bpmSend').click(); });
 
 const mF = $('#mFader');
@@ -1378,14 +1620,14 @@ $('#editCat').onclick = () => { $('#catText').value = TIMBRES.join('\n'); dlg.sh
 $('#catCancel').onclick = () => dlg.close();
 $('#catReset').onclick = () => { $('#catText').value = CAT_PADRAO.join('\n'); };
 $('#catCopy').onclick = async () => {
-  try { await navigator.clipboard.writeText($('#catText').value); setStatus('Catálogo copiado'); }
+  try { await navigator.clipboard.writeText($('#catText').value); avisoStatus('Catálogo copiado'); }
   catch(e){ $('#catText').select(); }
 };
 $('#catSave').onclick = () => {
   const lista = $('#catText').value.split('\n').map(s => s.trim()).filter(Boolean);
   if (!lista.length) return;
   saveCat(lista); dlg.close();
-  setStatus(lista.length + ' timbres no catálogo');
+  avisoStatus(lista.length + ' timbres no catálogo');
 };
 
 /* ---------- ordenar timbres ---------- */
@@ -1428,7 +1670,7 @@ $('#orderSave').onclick = () => {
   saveCustomOrder();
   if (SORT_MODE === 'personalizada') renderGrid();
   orderDlg.close();
-  setStatus('Ordem personalizada salva');
+  avisoStatus('Ordem personalizada salva');
 };
 
 /* ---------- editar favoritos ---------- */
@@ -1445,7 +1687,7 @@ function renderFavEditGrid(){
     b.onclick = () => {
       if (favTrabalho.has(i)) favTrabalho.delete(i);
       else if (favTrabalho.size < 6) favTrabalho.add(i);
-      else { setStatus('Máximo de 6 favoritos'); return; }
+      else { avisoStatus('Máximo de 6 favoritos'); return; }
       renderFavEditGrid();
       $('#favContagem').textContent = '(' + favTrabalho.size + '/6)';
     };
