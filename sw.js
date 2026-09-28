@@ -1,6 +1,7 @@
 // StompBox Remote — cache offline.
 // Ao publicar uma versão nova, mude o número do CACHE para forçar a atualização.
 //
+// v3.15 — só o número (página com MUTE, cena e volume absoluto).
 // v3.14 — além do número, cinco ajustes:
 //  1) A instalação busca os arquivos PULANDO o cache HTTP do navegador
 //     (cache: 'reload'). O GitHub Pages manda o navegador guardar os
@@ -16,7 +17,7 @@
 //  5) Offline, uma navegação que não bate exatamente com o que está
 //     guardado (ex.: endereço com ?parâmetro) recebe o index.html do
 //     cache, em vez da página de erro do navegador.
-const CACHE = 'stompbox-v3.14';
+const CACHE = 'stompbox-v3.15';
 const ARQUIVOS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', ev => {
