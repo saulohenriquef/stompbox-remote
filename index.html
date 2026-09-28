@@ -1,15 +1,17 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.14 "Mixing Station + Repertório"
+ STOMPBOX REMOTE — v3.15 "Mixing Station + Repertório + Cena"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
  na tela inicial e funcional offline pelo service worker.
 
  PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth"), mais o que
- a página usa das versões seguintes, sem depender delas: "BOOT=" (v32) e
- "E?" (v33). Firmware mais antigo ignora os dois.
+ a página usa das versões seguintes: "BOOT=" (v32), "E?" (v33), e o MUTE
+ de slot "s00", o MUTE geral "M0" e o volume absoluto "Vnn=vvv"/"Vnn?"
+ (v34). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
+ é o antigo "volta um timbre" — a página mostra o que o pedal responder.
 
  ------------------------------------------------------------
  CHANGELOG
@@ -220,20 +222,49 @@
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
 
+ v3.15 — MUTE, cena e volume absoluto (casada com o firmware v34):
+        1) TIMBRE 00 MUTE, o primeiro balão da grade, fixo em qualquer
+           ordenação. Manda "s00": o pedal para de tocar aquele slot (é a
+           saída de segurança pra um pedal em curto). O cartão do slot
+           mostra "00 MUTE" em vermelho. No OLED o slot fica vazio. Nos
+           modos 01/11 o slot 1 é o metrônomo, que não aceita MUTE: a
+           troca expira com o aviso de sempre.
+        2) BOTÃO MUTE NO VOLUME GERAL. Manda "M0"; fica vermelho,
+           pressionado, enquanto o pedal responder "VOL GERAL 0/16 MUTE".
+           Tocar de novo volta ao nível de antes. O estado vem SEMPRE da
+           resposta do pedal — se o mudo for desfeito pelo botão físico do
+           pedal, o botão da página apaga sozinho. Sem resposta (firmware
+           anterior à v34), avisa.
+        3) VOLUME POR TIMBRE COM COMANDO ABSOLUTO. O painel pergunta com
+           "Vnn?" e define com "Vnn=vvv" — pelo NÚMERO do timbre, sem
+           depender do "último slot". Qualquer valor de 1 a 256 (acabou a
+           escada de 8 em 8), e os botões −8/−32/+8/+32 viraram contas
+           feitas aqui. Trocar o timbre do slot com o painel aberto relê o
+           volume do timbre novo. Slot em MUTE: painel desligado.
+           - A REAFIRMAÇÃO DO SLOT ACABOU (e a opção dela no Console): era
+             o efeito colateral anotado como PENDÊNCIA na v3.14 — resolvida.
+           - Sem resposta ao "Vnn?" em 1,5 s: o painel diz que precisa do
+             firmware v34.
+        4) CENA (o último balão). Guarda os timbres dos 4 slots, o nível
+           do volume geral e SÓ os volumes de timbre que a página mudou —
+           cada "Vnn=vvv" confirmado pelo pedal entra nessa lista, que fica
+           guardada no aparelho e aparece no balão.
+           - CARREGAR: primeiro os volumes, depois o volume geral, por fim
+             os slots — um comando por vez, cada um esperando a resposta
+             do pedal (0,9 s de prazo). No fim, a barra diz o que não
+             confirmou. Slots só trocam no modo 00.
+           - Com o MUTE geral ligado, a cena NÃO mexe no volume geral: o
+             som não volta sem você pedir.
+           - Carregar uma cena faz da lista de volumes alterados a da
+             cena. "Esquecer volumes alterados" zera a lista (a cena salva
+             continua como está até o próximo "Salvar").
+           - O MUTE geral nunca entra na cena.
+
  ------------------------------------------------------------
  PENDÊNCIAS
  ------------------------------------------------------------
- - REAFIRMAR O SLOT SEM EFEITO COLATERAL (depende do firmware).
-   Pra apontar o slot antes dos comandos V, a página reenvia o timbre
-   atual dele ("snn"), porque não existe comando que só selecione o
-   slot. Efeitos: nos modos 01 e 11, reafirmar o slot 1 troca o
-   timbre do METRÔNOMO pelo do Pedal 1; no modo 00, num timbre smart,
-   volta o smart pro passo 1. Solução combinada: um comando novo no
-   firmware que só aponta o slot, sem trocar nada (ex.: "S1"-"S4",
-   que só faz bleUltimoSlot = n). O firmware atual ignora "Sn" (cai
-   na extração de dígitos com menos de 3), então a página pode passar
-   a usar o comando novo sem quebrar nada com firmware antigo. Até
-   lá, dá pra desligar a reafirmação em "Console e ajustes".
+ - Nenhuma. A da v3.14 (reafirmar o slot sem efeito colateral) foi
+   resolvida na v3.15 com o volume absoluto do firmware v34.
 
  NOTA: ao publicar, subir também o sw.js com o número do cache
  trocado, senão o app instalado continua servindo a versão antiga.
@@ -394,6 +425,20 @@ h2 button{
 .tim.cur .n{color:#12161b;opacity:.75}
 .tim.cur .t{color:#12161b;font-weight:700}
 .tim .badge{position:absolute;top:6px;right:7px;font-size:10px;color:#7891a7}
+/* v3.15 — o timbre 00 MUTE */
+.tim.mute .t{color:#ff8c95;font-weight:700}
+.tim.mute.cur{background:var(--red);border-color:var(--red)}
+.tim.mute.cur .t{color:#12161b}
+.slot.mudo .num,.slot.mudo .nm{color:var(--red)}
+/* v3.15 — botão MUTE do volume geral */
+#mMute{width:auto;padding:0 12px;font-size:12px;font-weight:700;letter-spacing:.06em;color:#ffb3b9;border-color:#5a3338;background:#2a1d20}
+#mMute.on{background:var(--red);border-color:var(--red);color:#12161b;box-shadow:0 0 12px rgba(255,92,104,.45)}
+/* v3.15 — balão da cena */
+.box.cena::before{content:"CENA"}
+.cenaTxt{font-size:13px;margin:0 0 4px;color:#dbe1e6}
+.cenaBtns{display:flex;gap:7px;margin-top:9px}
+.cenaBtns .btn{flex:1}
+#cenaLimpar{margin-top:9px;background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;padding:0}
 /* v3.14 — timbre PEDIDO, esperando a confirmação do pedal ("T<slot>=") */
 .tim.pend{border-style:dashed;border-color:var(--activeColor)}
 .slot.pend .num,.slot.pend .nm{opacity:.55}
@@ -670,6 +715,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
     <div class="read"><b class="mono" id="mVal">—</b><i id="mDb">nível de 1 a 16</i></div>
     <button data-m="+" aria-label="Aumentar volume geral">+</button>
     <button class="mono" id="mAsk">M?</button>
+    <button id="mMute" aria-pressed="false" aria-label="Mudo geral">MUTE</button>
   </div>
   <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="mFader" min="1" max="16" step="1" value="16" aria-label="Volume geral"></div>
   <div class="ticks" id="mTicks"></div>
@@ -728,13 +774,21 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <div class="row">
-      <label for="reassert">Reafirmar o slot antes dos comandos V</label>
-      <input type="checkbox" id="reassert" checked>
-    </div>
-    <p class="note">StompBox Remote v3.14 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33)</p>
+    <p class="note">StompBox Remote v3.15 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34)</p>
   </div>
 </details>
+
+<h2>Cena</h2>
+<section class="box cena">
+  <p class="cenaTxt" id="cenaResumo">Nenhuma cena salva.</p>
+  <p class="note" id="cenaMesa"></p>
+  <div class="cenaBtns">
+    <button class="btn" id="cenaSalvar">Salvar cena</button>
+    <button class="btn primary" id="cenaCarregar">Carregar cena</button>
+  </div>
+  <button id="cenaLimpar">esquecer volumes alterados</button>
+  <p class="note" style="margin-top:8px">Guarda os timbres dos 4 slots, o volume geral e só os volumes de timbre mudados pela página. Os slots só trocam no modo 00.</p>
+</section>
 
 <dialog id="preDlg">
   <h3>Nomes dos presets</h3>
@@ -872,7 +926,11 @@ const state = { slots:{1:{},2:{},3:{},4:{}}, active:1, bpm:null, preset:null, ma
 // v3.14 — trocas de timbre pedidas e ainda não confirmadas: { slot: {n, timer} }
 const pendentes = {};
 let bootAvisado = false;     // v3.14 — o aviso do BOOT= sai uma vez por conexão
-const vpt = { slot:null, timbre:null, nome:'', vol:null, busy:false, drag:false };
+const vpt = { slot:null, timbre:null, nome:'', vol:null, drag:false, semResposta:false };
+let ultimoNivelGeral = null;   // v3.15 — último nível de verdade (1-16) visto; o MUTE não conta
+let muteTimer = null, vptTimer = null;
+const volPedidos = {};         // v3.15 — "Vnn=vvv" enviados pela página, esperando a resposta
+const TIMBRE_MUTE_N = 0;       // v3.15 — o número do MUTE na tela e no BLE
 
 const $ = s => document.querySelector(s);
 const pad = (n,w) => String(n).padStart(w,'0');
@@ -1089,6 +1147,7 @@ function onNotify(ev){
 
 function handleLine(line){
   log('← ' + line, 'rx');
+  conferirEsperas(line);   // v3.15 — o carregamento da cena espera respostas
   let m;
 
   // BOOT=BROWNOUT (v32) — motivo do último reset do pedal. Vem no pacote de
@@ -1106,15 +1165,20 @@ function handleLine(line){
     return;
   }
 
-  // VOL GERAL 12/16 -4dB
+  // VOL GERAL 12/16 -4dB   (v3.15: "VOL GERAL 0/16 MUTE" = mudo geral)
   if ((m = line.match(/^VOL\s+GERAL\s+(\d+)\s*\/\s*(\d+)\s*(.*)$/i))){
     state.master = +m[1]; state.masterDb = m[3].trim();
+    if (state.master >= 1) ultimoNivelGeral = state.master;
     renderMaster(); return;
   }
   // VOL 06 CARRIL=230
   if ((m = line.match(/^VOL\s+(\d+)\s+(.*?)\s*=\s*(\d+)\s*$/i))){
-    vpt.timbre = +m[1]; vpt.nome = m[2].trim(); vpt.vol = +m[3];
-    renderVpt(); return;
+    const n = +m[1], v = +m[3];
+    // v3.15 — volume DEFINIDO pela página e confirmado: entra na lista da cena
+    if (volPedidos[n] != null){ delete volPedidos[n]; mesaVolumes[n] = v; salvarMesa(); renderCena(); }
+    // o painel só olha a resposta do timbre que ele está mostrando
+    if (vpt.timbre === n){ vpt.nome = m[2].trim(); vpt.vol = v; vpt.semResposta = false; clearTimeout(vptTimer); renderVpt(); }
+    return;
   }
   // T3=12 BLOCO L
   if ((m = line.match(/^T(\d)\s*=\s*(\d+)\s*(.*)$/i))){
@@ -1131,6 +1195,8 @@ function handleLine(line){
       avisoStatus('Modo metrônomo: o timbre ' + pad(n, 2) + ' foi pro metrônomo, não pro Pedal 1', '', 5000);
     }
     renderSlots(); renderGrid();
+    // v3.15 — o slot do painel de volume trocou de timbre: relê o do novo
+    if (s === vpt.slot && vpt.timbre !== n) lerVolume(s);
     return;
   }
   if ((m = line.match(/^BPM\s*[:=]?\s*(\d+)/i))){ state.bpm = +m[1]; renderTempo(); return; }
@@ -1156,8 +1222,11 @@ function renderSlots(){
     b.querySelector('.lbl').textContent = SLOT_NAMES[s] || ('Slot ' + s);
     const p = pendentes[s];   // v3.14 — pedido esperando a confirmação
     b.classList.toggle('pend', !!p);
-    b.querySelector('.num').textContent = p ? pad(p.n, 2) : (d.n ? pad(d.n, 2) : '--');
+    const mudo = !p && d.n === TIMBRE_MUTE_N;   // v3.15
+    b.classList.toggle('mudo', mudo);
+    b.querySelector('.num').textContent = p ? pad(p.n, 2) : (d.n != null ? pad(d.n, 2) : '--');
     b.querySelector('.nm').textContent = p ? 'aguardando o pedal…'
+      : mudo ? 'MUTE'
       : (d.nm || (d.n ? (TIMBRES[d.n-1] || '') : 'sem leitura'));
     b.onclick = () => { state.active = s; renderSlots(); renderGrid(); };
     wrap.appendChild(b);
@@ -1247,8 +1316,30 @@ function renderGrid(){
   const wrap = $('#grid');
   wrap.style.setProperty('--activeColor', SLOT_COLORS[state.active] || 'var(--blue)');
   wrap.innerHTML = '';
+  wrap.appendChild(criarBotaoMute());   // v3.15 — o 00 MUTE é sempre o primeiro
   ordemExibicao().forEach(i => wrap.appendChild(criarBotaoTimbre(i)));
   renderFavoritos();
+}
+
+/* v3.15 — o balão do timbre 00 MUTE. Fica fora do catálogo editável: o
+   catálogo é a lista de timbres de verdade (01 em diante) e continua
+   igual. Mesma confirmação dos outros timbres (pendente até "T<slot>=00"). */
+function criarBotaoMute(){
+  const n = TIMBRE_MUTE_N;
+  const b = document.createElement('button');
+  const pedido = pendentes[state.active];
+  b.className = 'tim mute' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '')
+                           + (pedido && pedido.n === n ? ' pend' : '');
+  b.innerHTML = '<span class="n mono">00</span><span class="t">MUTE</span>';
+  const outros = Object.keys(state.slots).map(Number)
+    .filter(s => s !== state.active && s !== 5 && state.slots[s].n === n);
+  if (outros.length){
+    const tag = document.createElement('span');
+    tag.className = 'badge mono'; tag.textContent = outros.join('');
+    b.appendChild(tag);
+  }
+  b.onclick = () => pedirTimbre(state.active, n);
+  return b;
 }
 
 function renderFavoritos(){
@@ -1272,10 +1363,30 @@ function renderSortBar(){
 function renderTempo(){ const bpm = state.bpm ? state.bpm : null; $('#bpmVal').textContent = bpm || '—'; if (bpm) $('#bpmInput').value = bpm; }
 
 function renderMaster(){
-  $('#mVal').textContent = state.master ? (state.master + '/16') : '—';
-  $('#mDb').textContent = state.masterDb || 'nível de 1 a 16';
+  const mudo = state.master === 0;   // v3.15 — "VOL GERAL 0/16 MUTE"
+  $('#mVal').textContent = mudo ? 'MUTE' : (state.master ? (state.master + '/16') : '—');
+  $('#mDb').textContent = mudo ? 'mudo — toque em MUTE pra voltar' : (state.masterDb || 'nível de 1 a 16');
   if (state.master) $('#mFader').value = state.master;
+  const b = $('#mMute');
+  b.classList.toggle('on', mudo);
+  b.setAttribute('aria-pressed', mudo ? 'true' : 'false');
   pintarFader('mFader');
+}
+
+/* v3.15 — MUTE GERAL. Liga com "M0". Desliga voltando ao último nível de
+   verdade que a página viu; se ela não souber, "M+" — que no pedal, com o
+   mudo ligado, volta EXATAMENTE ao nível de antes (v34). O botão acende e
+   apaga pela RESPOSTA do pedal, nunca pelo toque. */
+function alternarMuteGeral(){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  const mudoAntes = state.master === 0;
+  send(mudoAntes ? (ultimoNivelGeral ? 'M' + ultimoNivelGeral : 'M+') : 'M0');
+  clearTimeout(muteTimer);
+  muteTimer = setTimeout(() => {
+    if ((state.master === 0) !== mudoAntes) return;   // mudou: deu certo
+    avisoStatus(mudoAntes ? 'O pedal não saiu do MUTE — tente de novo'
+                          : 'Sem resposta ao MUTE — ele precisa do firmware v34', 'err', 5000);
+  }, 900);
 }
 
 function renderVpt(){
@@ -1283,9 +1394,13 @@ function renderVpt(){
   if (vpt.vol == null){
     f.disabled = true;
     $('#vNow').textContent = '—';
-    $('#vLabel').textContent = vpt.slot
-      ? 'Lendo o volume do slot ' + (SLOT_NAMES[vpt.slot] || vpt.slot) + '…'
-      : 'Escolha um slot — a página pergunta o volume ao pedal';
+    const nomeSlot = vpt.slot ? (SLOT_NAMES[vpt.slot] || vpt.slot) : '';
+    $('#vLabel').textContent =
+        !vpt.slot                          ? 'Escolha um slot — a página pergunta o volume ao pedal'
+      : vpt.timbre === TIMBRE_MUTE_N       ? nomeSlot + ' está em MUTE — sem volume pra ajustar'
+      : vpt.timbre == null                 ? nomeSlot + ' sem leitura — conecte e espere o cartão'
+      : vpt.semResposta                    ? 'Sem resposta — o volume por timbre precisa do firmware v34'
+      :                                      'Lendo o volume do ' + pad(vpt.timbre, 2) + '…';
   } else {
     f.disabled = false;
     if (!vpt.drag) f.value = vpt.vol;
@@ -1346,59 +1461,33 @@ function ticks(el, n){
   el.style.backgroundSize = 'calc(100% - 1px) 100%';
 }
 
-/* ---------- volume por timbre ---------- */
+/* ---------- volume por timbre ----------
+   v3.15 — COMANDO ABSOLUTO POR TIMBRE (firmware v34): "Vnn?" pergunta e
+   "Vnn=vvv" define — pelo NÚMERO do timbre que está no slot, sem depender do
+   "último slot" do pedal. Por isso acabou a reafirmação do slot (e os efeitos
+   colaterais dela) e a escada de 8 em 8: qualquer valor de 1 a 256 vai num
+   comando só. O piso é 1 (0, no firmware, é "nunca ajustado"). */
 function lerVolume(s){
-  vpt.slot = s; vpt.vol = null; vpt.timbre = null; vpt.nome = '';
+  vpt.slot = s; vpt.vol = null; vpt.nome = ''; vpt.semResposta = false;
+  const d = state.slots[s];
+  vpt.timbre = (d && d.n != null) ? d.n : null;
+  clearTimeout(vptTimer);
   renderVpt();
-  reafirmaSlot(s);
-  send('V?');
+  if (vpt.timbre == null || vpt.timbre === TIMBRE_MUTE_N) return;   // sem leitura, ou MUTE
+  pedirVolume(vpt.timbre);
 }
-function reafirmaSlot(s){
-  // os comandos V agem no ÚLTIMO SLOT USADO; reenviar o timbre atual
-  // do slot é a única forma de garantir que é nele que vamos mexer.
-  if (!$('#reassert').checked) return;
-  const n = state.slots[s] && state.slots[s].n;
-  if (n) send(String(s) + pad(n, 2));
+function pedirVolume(n){
+  send('V' + pad(n, 2) + '?');
+  clearTimeout(vptTimer);
+  vptTimer = setTimeout(() => {
+    if (vpt.timbre === n && vpt.vol == null){ vpt.semResposta = true; renderVpt(); }
+  }, 1500);
 }
-
-// Os comandos V andam de 8 em 8 a partir do valor atual, então nem todo
-// número entre 1 e 256 é alcançável. Traduz a posição do fader no alvo
-// possível mais próximo.
-//
-// v3.14 — PISO 1, NÃO 0. No firmware até a v31, chegar a 0 devolvia o timbre
-// ao volume CHEIO (0 = "nunca ajustado"); a v32 passou a travar em 1. A página
-// nunca comanda um 0: o alvo mínimo é VOL_MIN, e a escada de passos para antes
-// de cruzar ele. O passo extra no fundo (irParaVolume) só vale com firmware
-// v32+ — reconhecido pelo BOOT=, que só existe a partir dela.
-function firmwareComPiso(){ return !!state.boot; }
-function alvoAlcancavel(v){
-  if (vpt.vol == null) return v;
-  if (v >= VOL_MAX - PASSO/2) return VOL_MAX;          // topo: firmware limita
-  if (v <= VOL_MIN + PASSO/2 && firmwareComPiso()) return VOL_MIN;   // fundo: v32+ trava em 1
-  const alvo = vpt.vol + Math.round((v - vpt.vol) / PASSO) * PASSO;
-  return Math.max(VOL_MIN, Math.min(VOL_MAX, alvo));
-}
-
-async function irParaVolume(alvo){
-  if (vpt.slot == null || vpt.vol == null || vpt.busy) return;
-  vpt.busy = true;
-  reafirmaSlot(vpt.slot);
-  let d = Math.round(alvo) - vpt.vol;
-  let guarda = 0;
-  while (Math.abs(d) >= PASSAO && guarda++ < 40){
-    await send(d > 0 ? 'V++' : 'V--'); d += d > 0 ? -PASSAO : PASSAO; await sleep(40);
-  }
-  while (Math.abs(d) >= PASSO && guarda++ < 80){
-    await send(d > 0 ? 'V+' : 'V-'); d += d > 0 ? -PASSO : PASSO; await sleep(40);
-  }
-  // No topo: um passo extra pra encostar no teto, contando com o limite do
-  // firmware. No fundo, SÓ com firmware v32+ (piso 1): nos anteriores, o
-  // passo a mais chegaria a 0 — que neles é volume cheio.
-  if (alvo >= VOL_MAX && d > 0){ await send('V+'); await sleep(40); }
-  if (alvo <= VOL_MIN && d < 0 && firmwareComPiso()){ await send('V-'); await sleep(40); }
-  vpt.busy = false;
-  await sleep(60);
-  send('V?');   // o valor real do pedal manda — o fader se corrige por ele
+function definirVolume(v){
+  if (vpt.timbre == null || vpt.timbre === TIMBRE_MUTE_N || vpt.vol == null) return;
+  v = Math.max(VOL_MIN, Math.min(VOL_MAX, Math.round(v)));
+  volPedidos[vpt.timbre] = v;   // a resposta confirma e põe na lista da cena
+  send('V' + pad(vpt.timbre, 2) + '=' + v);
 }
 
 /* ---------- tap tempo ----------
@@ -1555,26 +1644,164 @@ gerenciarBtn.onclick=abrirGerenciar;gerenciarFechar.onclick=fecharGerenciar;gere
 novoUsarCompasso.onchange=()=>{novoCompasso.disabled=!novoUsarCompasso.checked};repertorioCancelar.onclick=encerrarEdicao;
 repertorioAdd.onclick=()=>{const nome=novaMusica.value.trim();if(!nome){alert('Dê um nome à música.');novaMusica.focus();return}const dados={nome:nome.slice(0,60),descricao:novaDescricao.value.trim().slice(0,80),bpm:sanearBpmRep(novoBpm.value),compasso:novoUsarCompasso.checked?novoCompasso.value:''};if(musicaEmEdicao){Object.assign(musicaEmEdicao,dados)}else repertorio.push(dados);ordenarRepertorio();salvarRepertorio();encerrarEdicao();gerenciarFiltro.value='';desenharGerenciar();};
 
+/* ---------- cena ----------
+   v3.15 — como numa mesa digital: salva o estado e recarrega depois de
+   desligar o pedal. Guarda os 4 slots, o nível do volume geral e SÓ os
+   volumes de timbre que a página mudou ("mesa": cada Vnn=vvv confirmado).
+   Carrega um comando por vez, esperando a resposta de cada um. */
+const CHAVE_CENA = 'sb_cena', CHAVE_MESA = 'sb_mesaVolumes', CENA_PRAZO_MS = 900;
+let mesaVolumes = {};   // { número do timbre: volume }
+let cenaSalva = null;   // { quando, slots:{1..4: n}, volumes:{n: v}, geral }
+let carregandoCena = false;
+
+function volumesValidos(obj){
+  const r = {};
+  Object.keys(obj || {}).forEach(k => {
+    const n = +k, v = +obj[k];
+    if (Number.isInteger(n) && n >= 1 && n <= 99 && Number.isInteger(v) && v >= VOL_MIN && v <= VOL_MAX) r[n] = v;
+  });
+  return r;
+}
+function loadCena(){
+  try { mesaVolumes = volumesValidos(JSON.parse(localStorage.getItem(CHAVE_MESA) || '{}')); } catch(e){ mesaVolumes = {}; }
+  try {
+    const c = JSON.parse(localStorage.getItem(CHAVE_CENA) || 'null');
+    cenaSalva = (c && c.slots) ? { quando: c.quando, slots: c.slots, volumes: volumesValidos(c.volumes),
+                                   geral: (+c.geral >= 1 && +c.geral <= MAX_M) ? +c.geral : null } : null;
+  } catch(e){ cenaSalva = null; }
+}
+function salvarMesa(){ try { localStorage.setItem(CHAVE_MESA, JSON.stringify(mesaVolumes)); } catch(e){} }
+
+// espera por uma linha do pedal que passe no teste (ou vence o prazo)
+const esperas = [];
+function esperarLinha(teste, ms){
+  return new Promise(res => {
+    const e = { teste: teste, res: res };
+    e.timer = setTimeout(() => { const i = esperas.indexOf(e); if (i >= 0) esperas.splice(i, 1); res(false); }, ms);
+    esperas.push(e);
+  });
+}
+function conferirEsperas(line){
+  for (let i = esperas.length - 1; i >= 0; i--){
+    const e = esperas[i];
+    let ok = false;
+    try { ok = e.teste(line); } catch(_){}
+    if (ok){ clearTimeout(e.timer); esperas.splice(i, 1); e.res(true); }
+  }
+}
+async function comandoConfirmado(cmd, teste){
+  const resposta = esperarLinha(teste, CENA_PRAZO_MS);
+  await send(cmd);
+  return resposta;
+}
+
+function salvarCena(){
+  const slots = {};
+  for (const s of [1,2,3,4]){
+    const d = state.slots[s];
+    if (!d || d.n == null || pendentes[s]){
+      avisoStatus((SLOT_NAMES[s] || 'Slot ' + s) + ' sem leitura — conecte e espere os cartões', 'err', 5000);
+      return;
+    }
+    slots[s] = d.n;
+  }
+  cenaSalva = { quando: new Date().toISOString(), slots: slots,
+                volumes: Object.assign({}, mesaVolumes), geral: ultimoNivelGeral || null };
+  try { localStorage.setItem(CHAVE_CENA, JSON.stringify(cenaSalva)); } catch(e){}
+  renderCena();
+  avisoStatus('Cena salva', 'on');
+}
+
+async function carregarCena(){
+  if (!cenaSalva){ avisoStatus('Nenhuma cena salva', 'err'); return; }
+  if (!rx){ avisoStatus('Sem conexão — conecte antes de carregar', 'err'); return; }
+  if (carregandoCena) return;
+  carregandoCena = true; renderCena();
+  const c = cenaSalva, falhas = [];
+  const vols = Object.keys(c.volumes).map(k => [+k, c.volumes[k]]);
+  const mudo = state.master === 0;   // com o MUTE geral ligado, não mexe no volume geral
+  const total = vols.length + (c.geral && !mudo ? 1 : 0) + 4;
+  let k = 0;
+
+  // 1) volumes de timbre
+  for (const [n, v] of vols){
+    progressoCena(++k, total);
+    const ok = await comandoConfirmado('V' + pad(n, 2) + '=' + v, l => {
+      const m = l.match(/^VOL\s+(\d+)\s.*=\s*(\d+)\s*$/i); return !!m && +m[1] === n;
+    });
+    if (!ok) falhas.push('volume do ' + pad(n, 2));
+  }
+  // 2) volume geral
+  if (c.geral && !mudo){
+    progressoCena(++k, total);
+    const ok = await comandoConfirmado('M' + c.geral, l => /^VOL\s+GERAL\s/i.test(l));
+    if (!ok) falhas.push('volume geral');
+  }
+  // 3) slots (só trocam no modo 00)
+  let slotFalhou = false;
+  for (const s of [1,2,3,4]){
+    progressoCena(++k, total);
+    const n = c.slots[s];
+    if (n == null) continue;
+    const ok = await comandoConfirmado(String(s) + pad(n, 2), l => {
+      const m = l.match(/^T(\d)\s*=\s*(\d+)/i); return !!m && +m[1] === s && +m[2] === n;
+    });
+    if (!ok){ falhas.push(SLOT_NAMES[s] || 'Slot ' + s); slotFalhou = true; }
+  }
+
+  // a lista de volumes alterados passa a ser a da cena
+  mesaVolumes = Object.assign({}, c.volumes); salvarMesa();
+  carregandoCena = false; renderCena();
+  if (falhas.length){
+    avisoStatus('Cena carregada, menos: ' + falhas.join(', ') + (slotFalhou ? ' (slots só trocam no modo 00)' : ''), 'err', 8000);
+  } else {
+    avisoStatus('Cena carregada' + (mudo ? ' — o volume geral seguiu no MUTE' : ''), 'on', 4000);
+  }
+}
+function progressoCena(k, total){ $('#cenaCarregar').textContent = 'Carregando ' + k + '/' + total + '…'; }
+
+function renderCena(){
+  const r = $('#cenaResumo');
+  if (!cenaSalva){
+    r.textContent = 'Nenhuma cena salva.';
+  } else {
+    const q = new Date(cenaSalva.quando);
+    const quando = isNaN(q) ? '' : q.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    const slots = [1,2,3,4].map(s => cenaSalva.slots[s] == null ? '--' : pad(cenaSalva.slots[s], 2)).join(' · ');
+    const nv = Object.keys(cenaSalva.volumes).length;
+    r.textContent = 'Salva ' + (quando ? 'em ' + quando + ' ' : '') + '— slots ' + slots + ' · ' +
+                    nv + (nv === 1 ? ' volume' : ' volumes') + (cenaSalva.geral ? ' · geral ' + cenaSalva.geral + '/16' : '');
+  }
+  const ks = Object.keys(mesaVolumes);
+  $('#cenaMesa').textContent = ks.length
+    ? 'Volumes mudados pela página: ' + ks.map(n => pad(n, 2) + '=' + mesaVolumes[n]).join(' · ')
+    : 'Nenhum volume de timbre mudado pela página.';
+  $('#cenaSalvar').disabled = carregandoCena;
+  $('#cenaCarregar').disabled = carregandoCena || !cenaSalva;
+  $('#cenaLimpar').disabled = carregandoCena || !ks.length;
+  if (!carregandoCena) $('#cenaCarregar').textContent = 'Carregar cena';
+}
+
 /* ---------- eventos ---------- */
+$('#cenaSalvar').onclick = salvarCena;
+$('#cenaCarregar').onclick = carregarCena;
+$('#cenaLimpar').onclick = () => {
+  if (!confirm('Esquecer a lista de volumes mudados? A cena salva continua como está.')) return;
+  mesaVolumes = {}; salvarMesa(); renderCena();
+};
 $('#btnConn').onclick = () => (rx ? disconnect() : connect());
 document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => send(String(state.active) + b.dataset.nudge));
 document.querySelectorAll('[data-bpm]').forEach(b => b.onclick = () => send('T' + b.dataset.bpm));
 document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => send('M' + b.dataset.m));
+// v3.15 — os passos viraram conta feita aqui, e o valor vai absoluto
 document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
-  if (vpt.slot == null) return;
-  /* v3.14 — sem saber se o firmware tem piso (BOOT= não chegou), −8/−32 não
-     descem abaixo de 1: até a v31, o 0 é volume CHEIO. */
-  const passo = b.dataset.v === '--' ? PASSAO : (b.dataset.v === '-' ? PASSO : 0);
-  if (passo && vpt.vol != null && vpt.vol - passo < VOL_MIN && !firmwareComPiso()){
-    avisoStatus('Abaixo de 1 o firmware antigo volta pro volume cheio — use o fader', 'err', 5000);
-    return;
-  }
-  reafirmaSlot(vpt.slot);
-  send('V' + b.dataset.v);
-  setTimeout(() => send('V?'), 120);
+  if (vpt.vol == null) return;
+  const passo = { '-': -PASSO, '--': -PASSAO, '+': PASSO, '++': PASSAO }[b.dataset.v] || 0;
+  definirVolume(vpt.vol + passo);
 });
 $('#mAsk').onclick = () => send('M?');
-$('#vAsk').onclick = () => { if (vpt.slot != null){ reafirmaSlot(vpt.slot); send('V?'); } };
+$('#vAsk').onclick = () => { if (vpt.timbre != null && vpt.timbre !== TIMBRE_MUTE_N) pedirVolume(vpt.timbre); };
+$('#mMute').onclick = alternarMuteGeral;   // v3.15
 $('#tap').onclick = tap;
 const bpmInput = $('#bpmInput');
 function selecionarBpm(){ setTimeout(()=>{ try{ bpmInput.select(); bpmInput.setSelectionRange(0,bpmInput.value.length); }catch(e){} },0); }
@@ -1589,13 +1816,12 @@ mF.addEventListener('change', () => send('M' + mF.value));
 
 const vF = $('#vFader');
 vF.addEventListener('pointerdown', () => vpt.drag = true);
-vF.addEventListener('input', () => { $('#vNow').textContent = alvoAlcancavel(+vF.value); });
-vF.addEventListener('change', () => { vpt.drag = false; irParaVolume(alvoAlcancavel(+vF.value)); });
+vF.addEventListener('input', () => { $('#vNow').textContent = vF.value; });
+vF.addEventListener('change', () => { vpt.drag = false; definirVolume(+vF.value); });   // v3.15
 
 $('#cmdSend').onclick = () => { const v = $('#cmd').value.trim(); if (v){ send(v); $('#cmd').value = ''; } };
 $('#cmd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#cmdSend').click(); });
 $('#term').onchange = () => localStorage.setItem('sb_term', $('#term').value);
-$('#reassert').onchange = () => localStorage.setItem('sb_reassert', $('#reassert').checked ? '1' : '0');
 
 const pdlg = $('#preDlg');
 $('#editPre').onclick = () => {
@@ -1734,13 +1960,13 @@ function pintarFader(id){
 
 /* ---------- boot ---------- */
 loadCat(); loadSort(); loadFavoritos(); loadPresets(); carregarRepertorio(); ordenarRepertorio();
+loadCena();   // v3.15
 $('#term').value = localStorage.getItem('sb_term') || '';
-$('#reassert').checked = localStorage.getItem('sb_reassert') !== '0';
 ticks($('#mTicks'), MAX_M);
 ticks($('#vTicks'), 9);
 renderSortBar();
 renderSlots(); renderGrid(); renderTempo(); renderMaster();
-renderVpt(); renderPick(); renderPresets(); renderFire();
+renderVpt(); renderPick(); renderPresets(); renderFire(); renderCena();
 
 if (!navigator.bluetooth){
   setStatus('Abra no Chrome do Android, em HTTPS', 'err');
