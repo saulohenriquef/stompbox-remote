@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.15 "Mixing Station + Repertório + Cena"
+ STOMPBOX REMOTE — v3.18 "Mixing Station + Repertório + Cena + Sampler"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -10,7 +10,7 @@
  PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth"), mais o que
  a página usa das versões seguintes: "BOOT=" (v32), "E?" (v33), e o MUTE
  de slot "s00", o MUTE geral "M0" e o volume absoluto "Vnn=vvv"/"Vnn?"
- (v34). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
+ (v34), e o sampler "Ann" (v36). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
  é o antigo "volta um timbre" — a página mostra o que o pedal responder.
 
  ------------------------------------------------------------
@@ -222,6 +222,85 @@
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
 
+ v3.18 — SEGURAR UM TIMBRE ABRE O FADER DELE (firmware v36.0 sem mudança):
+        1) Segurar um balão de timbre por meio segundo (na grade ou nos
+           favoritos) abre uma janela com o fader de volume DAQUELE timbre,
+           um "✕" pra fechar e um botão "▶ Tocar" pra ouvir enquanto
+           ajusta. Vale com qualquer slot selecionado e no modo sampler.
+        2) Usa os comandos que já existem: "Vnn?" lê o volume ao abrir,
+           "Vnn=vvv" grava ao soltar a alça (firmware v34), e o "▶ Tocar"
+           é o "Ann" do sampler (firmware v36) — toca pelo pool do pedal 2
+           sem trocar slot nenhum. O volume mudado entra na lista da cena,
+           como no painel "Volume por timbre". Smart (BLOCOS, TRI S): é o
+           volume do smart como um todo, e o ▶ alterna os passos.
+        3) O fader da janela é "só pela alça", como os outros (v3.16).
+        4) FORA DO SAMPLER: o toque rápido continua escolhendo o timbre do
+           slot. Um toque que virou "segurar" NÃO troca o timbre — só abre
+           a janela.
+        5) NO SAMPLER: o toque rápido dispara como antes, SEM ATRASO — a
+           página não espera pra decidir se é toque ou segurar. Segurando,
+           a janela abre e o timbre pode disparar também ao soltar; isso
+           não é evitado (decisão do Saulo).
+        6) Arrastar o dedo (rolar a página) cancela o segurar. O menu de
+           toque longo do navegador fica desligado nos balões.
+        7) O 00 MUTE não abre a janela: não é som.
+
+ v3.17.1 — Só a página (firmware v36.0 sem mudança):
+        1) O 00 MUTE VOLTOU À GRADE NO MODO SAMPLER, SÓ DE ENFEITE. Na v3.17
+           ele sumia no sampler, e todos os balões andavam uma casa: a
+           grade deixava de bater com a posição de sempre. Agora ele fica no
+           lugar dele, apagado e desligado (não toca nada, não responde ao
+           toque) — o MUTE não é um som. Fora do sampler, nada mudou.
+
+ v3.17 — SAMPLER (casada com o firmware v36.0):
+        1) UM QUINTO QUADRADO, LARANJA, depois do Aro: "Sampler". Tocar nele
+           liga o modo sampler (tocar de novo, ou num slot, desliga). Com ele
+           ligado, os nomes da grade e dos favoritos ficam LARANJA e tocar
+           num nome DISPARA aquele timbre na hora, em vez de escolher o
+           timbre de um slot.
+        2) O disparo é o comando "Ann" do firmware v36 ("A05" toca o 05):
+           direto no pool de vozes do pedal 2, emprestado — não troca o
+           timbre de slot nenhum, não redesenha o OLED, vale em qualquer
+           modo. O balão pisca laranja no toque, e o pedal confirma
+           ("A05 BE 808"). Sem confirmação em 0,9 s, a barra avisa que o
+           sampler precisa do firmware v36 (firmware antigo ignora o "A").
+        3) No modo sampler: o 00 MUTE some da grade (não é som — v3.17.1:
+           voltou, só de enfeite, pra não desalinhar a grade), as marcas
+           de "timbre do slot" e de outros slots somem (a grade vira só um
+           teclado de sons), e o anterior/próximo dos slots fica desligado.
+        4) SEGURANÇA: o modo sampler SEMPRE começa desligado ao abrir a
+           página — não fica guardado. Um toque sem querer num nome não
+           dispara som no PA a menos que você tenha ligado o sampler.
+        5) LATÊNCIA: toque na tela + Bluetooth somam uns 20 a 60 ms, e
+           variam de toque pra toque. Bom pra ouvir um timbre e disparar um
+           efeito solto; não pra tocar no tempo como um pad.
+
+ v3.16 — Só a página (firmware v34 sem mudança):
+        1) MEUS PRESETS, um balão acima dos Presets. Presets montados na
+           própria página: um nome (ex.: "Anderson") e o timbre de cada um
+           dos 4 slots, escolhido numa lista (o 00 MUTE incluído) ou
+           copiado dos slots de agora. Tocar no preset manda os slots pro
+           pedal, um por vez, esperando a confirmação de cada um — o mesmo
+           caminho da cena. Slot que já está no timbre certo não é
+           reenviado (reenviar voltaria um smart pro passo 1). O lápis no
+           canto abre a edição, com Excluir. O preset igual aos slots de
+           agora fica aceso. Nada muda no firmware: são os mesmos "snn".
+        2) FADERS SÓ PELA ALÇA, como no Mixing Station. Tocar no trilho não
+           move mais o volume: ao rolar a página, um toque sem querer no
+           fader mudava o volume. Agora o fader só anda se o dedo PEGAR a
+           alça onde ela está e arrastar; o movimento é relativo ao ponto
+           onde pegou. Arrasto que vira rolagem (dedo subindo ou descendo)
+           é cancelado e o valor volta ao de antes, sem mandar nada. As
+           setas do teclado continuam funcionando.
+        3) VER CENA SALVA: um botão no balão da Cena abre uma janela com
+           tudo o que foi salvo — slots, volume geral e os volumes de
+           timbre, cada um com a posição dele na tabela VOLUME_TIMBRE do
+           firmware —, pronto pra copiar.
+        4) BALÕES RECOLHÍVEIS: tocar no título de um balão recolhe e abre,
+           como o "Console e ajustes". A seta ao lado do título mostra o
+           estado, e a escolha fica guardada no aparelho. Os botões dentro
+           do título (editar, novo) continuam sendo só botões.
+
  v3.15 — MUTE, cena e volume absoluto (casada com o firmware v34):
         1) TIMBRE 00 MUTE, o primeiro balão da grade, fixo em qualquer
            ordenação. Manda "s00": o pedal para de tocar aquele slot (é a
@@ -287,6 +366,7 @@
   --blue:#4da3ff;--cyan:#42d9d0;--green:#45d483;
   --amber:#ffb84d;--red:#ff5c68;--purple:#a98cff;
   --slot1:#0a84ff;--slot2:#30d158;--slot3:#ff3b30;--slot4:#ffd60a;
+  --sampler:#ff9500;   /* v3.17 — laranja do sampler */
   --r:8px;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
@@ -333,7 +413,7 @@ button:active{transform:translateY(1px)}
 .btn:active{transform:translateY(1px)}
 
 /* Slots / canais */
-.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:7px}
+.slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-top:7px}   /* v3.17: 4 slots + sampler */
 .slot{
   background:linear-gradient(180deg,#1c232b,#171d24);
   border:1px solid var(--line);border-radius:8px;
@@ -348,6 +428,7 @@ button:active{transform:translateY(1px)}
 .slot:nth-child(2)::before{background:var(--slot2)}
 .slot:nth-child(3)::before{background:var(--slot3)}
 .slot:nth-child(4)::before{background:var(--slot4)}
+.slot:nth-child(5)::before{background:var(--sampler)}   /* v3.17 */
 .slot::after{
   content:"";position:absolute;width:6px;height:6px;border-radius:50%;
   right:7px;top:7px;background:#4a535d;
@@ -361,6 +442,25 @@ button:active{transform:translateY(1px)}
 .slot:nth-child(2)[aria-pressed="true"]{background:var(--slot2);border-color:color-mix(in srgb, var(--slot2) 75%, black 25%)}
 .slot:nth-child(3)[aria-pressed="true"]{background:var(--slot3);border-color:color-mix(in srgb, var(--slot3) 75%, black 25%)}
 .slot:nth-child(4)[aria-pressed="true"]{background:var(--slot4);border-color:color-mix(in srgb, var(--slot4) 75%, black 25%)}
+.slot:nth-child(5)[aria-pressed="true"]{background:var(--sampler);border-color:color-mix(in srgb, var(--sampler) 75%, black 25%)}
+/* v3.17 — o quadrado do sampler: o "número" é o símbolo de tocar */
+.slot.sampler .num{color:var(--sampler)}
+.slot.sampler[aria-pressed="true"] .num{color:#12161b}
+/* v3.17 — com o sampler ligado, os nomes da grade e dos favoritos ficam laranja */
+#grid.sampler .tim .t,#favbar.sampler .tim .t{color:var(--sampler)}
+/* v3.18 — segurar um balão abre o fader do timbre; sem menu de toque longo */
+.tim{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#volDlg .volTopo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+#volDlg h3{margin:0}
+#volFechar{width:38px;height:38px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:17px;flex:0 0 auto}
+#volTocar{width:100%;margin-top:10px}
+#volDlg .note{margin-top:6px}
+/* v3.17.1 — no sampler, o 00 MUTE fica só de enfeite: segura o lugar na grade, apagado */
+.tim.mute.enfeite{opacity:.35;pointer-events:none}
+#grid.sampler .tim.mute.enfeite .t{color:#ff8c95}
+.tim.tocando{background:var(--sampler);border-color:var(--sampler)}
+.tim.tocando .t,.tim.tocando .n{color:#12161b !important}
+.nudge.desligado button{opacity:.35;pointer-events:none}
 .slot[aria-pressed="true"]::after{
   background:#12161b;opacity:.3;box-shadow:none;
 }
@@ -425,6 +525,22 @@ h2 button{
 .tim.cur .n{color:#12161b;opacity:.75}
 .tim.cur .t{color:#12161b;font-weight:700}
 .tim .badge{position:absolute;top:6px;right:7px;font-size:10px;color:#7891a7}
+/* v3.16 — balões recolhíveis: o título abre e fecha */
+h2[data-rec]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+h2 .seta{font-size:10px;color:#6c7a88;transition:transform .15s;display:inline-block}
+h2.fechado .seta{transform:rotate(-90deg)}
+.recolhido{display:none !important}
+/* v3.16 — faders só pela alça: o trilho não recebe toque, a rolagem segue livre */
+.fader-zone{touch-action:pan-y}
+.fader-zone .fader{pointer-events:none}
+/* v3.16 — Meus presets */
+.presets.meus .ed{position:absolute;right:0;top:0;width:34px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#7d97ad}
+.presets.meus button{padding-right:30px}
+#meusVazio{grid-column:1/-1;font-size:12px;color:#65717c;padding:10px 4px}
+.meuPreSlots{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:10px 0}
+.meuPreSlots label{font-size:12px;color:#9aa6b1}
+.meuPreSlots select{width:100%}
+#meuPreNome{width:100%;margin-top:8px;box-sizing:border-box}
 /* v3.15 — o timbre 00 MUTE */
 .tim.mute .t{color:#ff8c95;font-weight:700}
 .tim.mute.cur{background:var(--red);border-color:var(--red)}
@@ -693,10 +809,10 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   <button data-nudge="+" aria-label="Próximo timbre">+</button>
 </div>
 
-<h2><span>Favoritos</span><button id="editFav">editar favoritos</button></h2>
+<h2 data-rec="favoritos"><span>Favoritos</span><button id="editFav">editar favoritos</button></h2>
 <section class="favbar" id="favbar"></section>
 
-<h2><span id="gridTitle">Timbres</span><button id="editCat">editar catálogo</button></h2>
+<h2 data-rec="timbres"><span id="gridTitle">Timbres</span><button id="editCat">editar catálogo</button></h2>
 <div class="sortBar" id="sortBar">
   <button data-sort="indice">Índice</button>
   <button data-sort="alfabetica">A–Z</button>
@@ -705,10 +821,13 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 <button class="sortEdit" id="editOrder" style="display:none">editar minha ordem</button>
 <section class="grid" id="grid"></section>
 
-<h2><span>Presets</span><button id="editPre">editar nomes</button></h2>
+<h2 data-rec="meuspresets"><span>Meus presets</span><button id="novoMeuPre">novo</button></h2>
+<section class="presets meus" id="meusPresets"></section>
+
+<h2 data-rec="presets"><span>Presets</span><button id="editPre">editar nomes</button></h2>
 <section class="presets" id="presets"></section>
 
-<h2>Volume geral</h2>
+<h2 data-rec="volumegeral">Volume geral</h2>
 <section class="box">
   <div class="head">
     <button data-m="-" aria-label="Abaixar volume geral">–</button>
@@ -722,7 +841,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   <div class="scale"><span>1 · −15 dB</span><span>16 · 0 dB</span></div>
 </section>
 
-<h2>Andamento</h2>
+<h2 data-rec="andamento">Andamento</h2>
 <section class="box tempo-box">
   <div class="tempo-manual">
     <input type="number" id="bpmInput" min="30" max="300" step="1" value="120" inputmode="numeric" aria-label="Andamento em BPM">
@@ -738,11 +857,11 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   </div>
 </section>
 
-<h2>Disparo</h2>
+<h2 data-rec="disparo">Disparo</h2>
 <section class="fire" id="fire"></section>
 <p class="note fireNota">O 8888 só larga o metrônomo (ou reseta, com ele tocando) nos modos 01 e 11. No 00 e no 10, ele dispara o Pedal 2.</p>
 
-<h2>Volume por timbre</h2>
+<h2 data-rec="volumetimbre">Volume por timbre</h2>
 <section class="box">
   <div class="pick" id="vPick"></div>
   <div class="vlabel" id="vLabel">Escolha um slot — a página pergunta o volume ao pedal</div>
@@ -774,11 +893,11 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v3.15 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34)</p>
+    <p class="note">StompBox Remote v3.18 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
   </div>
 </details>
 
-<h2>Cena</h2>
+<h2 data-rec="cena">Cena</h2>
 <section class="box cena">
   <p class="cenaTxt" id="cenaResumo">Nenhuma cena salva.</p>
   <p class="note" id="cenaMesa"></p>
@@ -786,9 +905,43 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
     <button class="btn" id="cenaSalvar">Salvar cena</button>
     <button class="btn primary" id="cenaCarregar">Carregar cena</button>
   </div>
+  <button class="btn" id="cenaVer" style="width:100%;margin-top:7px">Ver cena salva</button>
   <button id="cenaLimpar">esquecer volumes alterados</button>
   <p class="note" style="margin-top:8px">Guarda os timbres dos 4 slots, o volume geral e só os volumes de timbre mudados pela página. Os slots só trocam no modo 00.</p>
 </section>
+
+<dialog id="meuPreDlg">
+  <h3 id="meuPreTitulo">Novo preset</h3>
+  <input type="text" id="meuPreNome" maxlength="24" placeholder="Nome (ex.: Anderson)" autocomplete="off">
+  <div class="meuPreSlots" id="meuPreSlots"></div>
+  <button class="btn" id="meuPreAgora" style="width:100%">Usar os timbres dos slots de agora</button>
+  <div class="dlgbar">
+    <button class="btn" id="meuPreExcluir">Excluir</button>
+    <button class="btn" id="meuPreCancelar">Cancelar</button>
+    <button class="btn primary" id="meuPreSalvar">Salvar</button>
+  </div>
+</dialog>
+
+<dialog id="volDlg">
+  <div class="volTopo">
+    <h3 id="volTitulo">Volume</h3>
+    <button id="volFechar" aria-label="Fechar">✕</button>
+  </div>
+  <div class="fader-zone"><div class="level-markers"></div><input type="range" class="fader" id="volFader" min="1" max="256" step="1" value="1" disabled aria-label="Volume do timbre"></div>
+  <div class="scale"><span>1</span><span id="volNow" class="mono">—</span><span>256</span></div>
+  <p class="note" id="volNota">Lendo o volume no pedal…</p>
+  <button class="btn primary" id="volTocar">▶ Tocar</button>
+</dialog>
+
+<dialog id="cenaDlg">
+  <h3>Cena salva</h3>
+  <p class="note">Os volumes vão na tabela VOLUME_TIMBRE do firmware, na posição indicada em cada linha.</p>
+  <textarea id="cenaTexto" readonly spellcheck="false"></textarea>
+  <div class="dlgbar">
+    <button class="btn" id="cenaCopiar">Copiar</button>
+    <button class="btn primary" id="cenaFechar">Fechar</button>
+  </div>
+</dialog>
 
 <dialog id="preDlg">
   <h3>Nomes dos presets</h3>
@@ -910,6 +1063,14 @@ const CAT_PADRAO = [
 ];
 const SLOT_NAMES = {1:'Pedal 1', 2:'Pedal 2', 3:'Pele', 4:'Aro', 5:'Metrônomo'};
 const SLOT_COLORS = {1:'var(--slot1)', 2:'var(--slot2)', 3:'var(--slot3)', 4:'var(--slot4)'};
+/* v3.17 — MODO SAMPLER. Não é guardado: a página sempre abre com ele
+   desligado, pra um toque sem querer num nome não disparar som no PA. */
+let modoSampler = false;
+let amostraTimer = null, amostraAvisado = false;
+// v3.18 — segurar um balão abre o fader do timbre
+const SEGURAR_MS = 500, SEGURAR_TOLERANCIA_PX = 10;
+const volJanela = { n: null, vol: null, timer: null };
+const AMOSTRA_PRAZO_MS = 900;
 
 const enc = new TextEncoder(), dec = new TextDecoder();
 let dev=null, rx=null, tx=null, wl=null;
@@ -1150,6 +1311,12 @@ function handleLine(line){
   conferirEsperas(line);   // v3.15 — o carregamento da cena espera respostas
   let m;
 
+  // A05 BE 808 (v36) — o pedal tocou o timbre do sampler
+  if ((m = line.match(/^A(\d+)\s/))){
+    clearTimeout(amostraTimer); amostraTimer = null; amostraAvisado = false;
+    return;
+  }
+
   // BOOT=BROWNOUT (v32) — motivo do último reset do pedal. Vem no pacote de
   // estado (conexão e E?). POWERON é o liga normal: não avisa.
   if ((m = line.match(/^BOOT\s*=\s*(\S+)/i))){
@@ -1178,6 +1345,7 @@ function handleLine(line){
     if (volPedidos[n] != null){ delete volPedidos[n]; mesaVolumes[n] = v; salvarMesa(); renderCena(); }
     // o painel só olha a resposta do timbre que ele está mostrando
     if (vpt.timbre === n){ vpt.nome = m[2].trim(); vpt.vol = v; vpt.semResposta = false; clearTimeout(vptTimer); renderVpt(); }
+    if (volJanela.n === n){ volJanela.vol = v; clearTimeout(volJanela.timer); renderVolJanela(); }   // v3.18
     return;
   }
   // T3=12 BLOCO L
@@ -1194,7 +1362,7 @@ function handleLine(line){
       resolverPendente(1);
       avisoStatus('Modo metrônomo: o timbre ' + pad(n, 2) + ' foi pro metrônomo, não pro Pedal 1', '', 5000);
     }
-    renderSlots(); renderGrid();
+    renderSlots(); renderGrid(); renderMeusPresets();   // v3.16: o preset aceso acompanha
     // v3.15 — o slot do painel de volume trocou de timbre: relê o do novo
     if (s === vpt.slot && vpt.timbre !== n) lerVolume(s);
     return;
@@ -1217,7 +1385,7 @@ function renderSlots(){
     const d = state.slots[s] || {};
     const b = document.createElement('button');
     b.className = 'slot';
-    b.setAttribute('aria-pressed', state.active === s ? 'true' : 'false');
+    b.setAttribute('aria-pressed', (!modoSampler && state.active === s) ? 'true' : 'false');   // v3.17
     b.innerHTML = '<span class="lbl"></span><span class="num mono"></span><span class="nm"></span>';
     b.querySelector('.lbl').textContent = SLOT_NAMES[s] || ('Slot ' + s);
     const p = pendentes[s];   // v3.14 — pedido esperando a confirmação
@@ -1228,9 +1396,18 @@ function renderSlots(){
     b.querySelector('.nm').textContent = p ? 'aguardando o pedal…'
       : mudo ? 'MUTE'
       : (d.nm || (d.n ? (TIMBRES[d.n-1] || '') : 'sem leitura'));
-    b.onclick = () => { state.active = s; renderSlots(); renderGrid(); };
+    b.onclick = () => { modoSampler = false; state.active = s; renderSlots(); renderGrid(); };   // v3.17: slot desliga o sampler
     wrap.appendChild(b);
   });
+
+  // v3.17 — o QUINTO quadrado: o sampler. Tocar liga; tocar de novo desliga.
+  const sb = document.createElement('button');
+  sb.className = 'slot sampler';
+  sb.setAttribute('aria-pressed', modoSampler ? 'true' : 'false');
+  sb.innerHTML = '<span class="lbl">Sampler</span><span class="num">▶</span><span class="nm"></span>';
+  sb.querySelector('.nm').textContent = modoSampler ? 'toque num nome' : 'desligado';
+  sb.onclick = () => { modoSampler = !modoSampler; renderSlots(); renderGrid(); };
+  wrap.appendChild(sb);
 
   // Slot 5 (metrônomo) fica fora da linha fixa — só leitura, não navega/seleciona.
   const metro = $('#slotMetro'), d5 = state.slots[5];
@@ -1243,14 +1420,28 @@ function renderSlots(){
     metro.style.display = 'none';
   }
 
-  $('#nudgeLabel').textContent = (SLOT_NAMES[state.active] || 'Slot ' + state.active) + ' — anterior / próximo';
-  $('#gridTitle').textContent = 'Timbres — ' + (SLOT_NAMES[state.active] || 'Slot ' + state.active);
+  // v3.17 — no sampler, a grade vira teclado de sons e o anterior/próximo dos slots desliga
+  document.querySelector('.nudge').classList.toggle('desligado', modoSampler);
+  $('#nudgeLabel').textContent = modoSampler ? 'Sampler — toque num nome pra tocar'
+    : (SLOT_NAMES[state.active] || 'Slot ' + state.active) + ' — anterior / próximo';
+  $('#gridTitle').textContent = modoSampler ? 'Timbres — Sampler'
+    : 'Timbres — ' + (SLOT_NAMES[state.active] || 'Slot ' + state.active);
 }
 
 // Botão de um timbre (índice 0-based em TIMBRES) — usado na grade e na barra de favoritos.
 function criarBotaoTimbre(i){
   const n = i + 1, nome = TIMBRES[i];
   const b = document.createElement('button');
+  if (modoSampler){
+    // v3.17 — no sampler, o balão é só um "botão de som": sem marca de slot
+    b.className = 'tim';
+    b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
+    b.querySelector('.n').textContent = pad(n, 2);
+    b.querySelector('.t').textContent = nome;
+    b.onclick = () => tocarAmostra(n, b);   // sem atraso: toque rápido dispara na hora
+    ligarSegurar(b, n);                        // v3.18 — segurando, abre o fader (e pode disparar ao soltar)
+    return b;
+  }
   const pedido = pendentes[state.active];   // v3.14
   b.className = 'tim' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '')
                       + (pedido && pedido.n === n ? ' pend' : '');
@@ -1264,8 +1455,86 @@ function criarBotaoTimbre(i){
     tag.className = 'badge mono'; tag.textContent = outros.join('');
     b.appendChild(tag);
   }
-  b.onclick = () => pedirTimbre(state.active, n);   // v3.14 — só vale com a confirmação
+  b.onclick = () => {
+    // v3.18 — um toque que virou "segurar" só abre a janela: não troca o timbre
+    if (b.dataset.segurou){ b.dataset.segurou = ''; return; }
+    pedirTimbre(state.active, n);   // v3.14 — só vale com a confirmação
+  };
+  ligarSegurar(b, n);
   return b;
+}
+
+/* v3.18 — SEGURAR UM BALÃO ABRE O FADER DAQUELE TIMBRE.
+   Meio segundo com o dedo parado abre a janela; arrastar (rolar a página)
+   cancela. O toque rápido não espera nada: o clique segue o caminho de
+   sempre na hora em que o dedo sai. */
+function ligarSegurar(b, n){
+  let t = null, x0 = 0, y0 = 0;
+  const cancelar = () => { if (t){ clearTimeout(t); t = null; } };
+  b.addEventListener('pointerdown', e => {
+    b.dataset.segurou = '';
+    x0 = e.clientX; y0 = e.clientY;
+    cancelar();
+    t = setTimeout(() => { t = null; b.dataset.segurou = '1'; abrirVolumeTimbre(n); }, SEGURAR_MS);
+  });
+  b.addEventListener('pointermove', e => {
+    if (t && (Math.abs(e.clientX - x0) > SEGURAR_TOLERANCIA_PX || Math.abs(e.clientY - y0) > SEGURAR_TOLERANCIA_PX)) cancelar();
+  });
+  b.addEventListener('pointerup', cancelar);
+  b.addEventListener('pointercancel', cancelar);
+  b.addEventListener('contextmenu', e => e.preventDefault());   // sem o menu de toque longo
+}
+
+function abrirVolumeTimbre(n){
+  if (n === TIMBRE_MUTE_N) return;
+  volJanela.n = n; volJanela.vol = null;
+  $('#volTitulo').textContent = pad(n, 2) + ' ' + nomeDoNumero(n);
+  const f = $('#volFader'); f.disabled = true;
+  $('#volNow').textContent = '—';
+  $('#volNota').textContent = rx ? 'Lendo o volume no pedal…' : 'Sem conexão — conecte o pedal';
+  pintarFader('volFader');
+  try { $('#volDlg').showModal(); } catch(e){}
+  if (!rx) return;
+  send('V' + pad(n, 2) + '?');
+  clearTimeout(volJanela.timer);
+  volJanela.timer = setTimeout(() => {
+    if (volJanela.n === n && volJanela.vol == null) $('#volNota').textContent = 'Sem resposta — o volume por timbre precisa do firmware v34';
+  }, 1500);
+}
+function renderVolJanela(){
+  if (volJanela.n == null || volJanela.vol == null) return;
+  const f = $('#volFader');
+  f.disabled = false;
+  if (!f.dataset.arrasto) f.value = volJanela.vol;
+  $('#volNow').textContent = volJanela.vol;
+  $('#volNota').textContent = 'Arraste a alça. O ▶ toca o timbre pra você ouvir.';
+  pintarFader('volFader');
+}
+function fecharVolumeTimbre(){
+  clearTimeout(volJanela.timer);
+  volJanela.n = null; volJanela.vol = null;
+  try { $('#volDlg').close(); } catch(e){}
+}
+
+/* v3.17 — SAMPLER: toca o timbre n na hora ("Ann", firmware v36), direto
+   no pool do pedal 2 — sem trocar slot nenhum. O balão pisca laranja; o
+   pedal confirma com "Ann NOME". Sem confirmação em AMOSTRA_PRAZO_MS, avisa
+   uma vez que o sampler precisa do firmware v36. */
+function tocarAmostra(n, botao){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  send('A' + pad(n, 2));
+  if (botao){
+    botao.classList.add('tocando');
+    setTimeout(() => botao.classList.remove('tocando'), 180);
+  }
+  clearTimeout(amostraTimer);
+  amostraTimer = setTimeout(() => {
+    amostraTimer = null;
+    if (!amostraAvisado){
+      amostraAvisado = true;
+      avisoStatus('Sem resposta — o sampler precisa do firmware v36', 'err', 5000);
+    }
+  }, AMOSTRA_PRAZO_MS);
 }
 
 /* v3.14 — TROCA DE TIMBRE SÓ VALE QUANDO O PEDAL CONFIRMA.
@@ -1314,9 +1583,10 @@ function criarBotaoVazio(){
 
 function renderGrid(){
   const wrap = $('#grid');
-  wrap.style.setProperty('--activeColor', SLOT_COLORS[state.active] || 'var(--blue)');
+  wrap.style.setProperty('--activeColor', modoSampler ? 'var(--sampler)' : (SLOT_COLORS[state.active] || 'var(--blue)'));
+  wrap.classList.toggle('sampler', modoSampler);   // v3.17 — nomes laranja
   wrap.innerHTML = '';
-  wrap.appendChild(criarBotaoMute());   // v3.15 — o 00 MUTE é sempre o primeiro
+  wrap.appendChild(criarBotaoMute());   // v3.15 — o 00 MUTE é sempre o primeiro (v3.17.1: no sampler, só de enfeite)
   ordemExibicao().forEach(i => wrap.appendChild(criarBotaoTimbre(i)));
   renderFavoritos();
 }
@@ -1327,6 +1597,15 @@ function renderGrid(){
 function criarBotaoMute(){
   const n = TIMBRE_MUTE_N;
   const b = document.createElement('button');
+  if (modoSampler){
+    // v3.17.1 — no sampler, SÓ DE ENFEITE: segura o lugar pra grade não
+    // andar uma casa, apagado e desligado (o MUTE não é um som)
+    b.className = 'tim mute enfeite';
+    b.disabled = true;
+    b.setAttribute('aria-hidden', 'true');
+    b.innerHTML = '<span class="n mono">00</span><span class="t">MUTE</span>';
+    return b;
+  }
   const pedido = pendentes[state.active];
   b.className = 'tim mute' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '')
                            + (pedido && pedido.n === n ? ' pend' : '');
@@ -1345,7 +1624,8 @@ function criarBotaoMute(){
 function renderFavoritos(){
   const wrap = $('#favbar');
   if (!wrap) return;
-  wrap.style.setProperty('--activeColor', SLOT_COLORS[state.active] || 'var(--blue)');
+  wrap.style.setProperty('--activeColor', modoSampler ? 'var(--sampler)' : (SLOT_COLORS[state.active] || 'var(--blue)'));
+  wrap.classList.toggle('sampler', modoSampler);   // v3.17
   wrap.innerHTML = '';
   for (let slot = 0; slot < 6; slot++){
     const i = FAVORITOS[slot];
@@ -1366,7 +1646,7 @@ function renderMaster(){
   const mudo = state.master === 0;   // v3.15 — "VOL GERAL 0/16 MUTE"
   $('#mVal').textContent = mudo ? 'MUTE' : (state.master ? (state.master + '/16') : '—');
   $('#mDb').textContent = mudo ? 'mudo — toque em MUTE pra voltar' : (state.masterDb || 'nível de 1 a 16');
-  if (state.master) $('#mFader').value = state.master;
+  if (state.master && !$('#mFader').dataset.arrasto) $('#mFader').value = state.master;   // v3.16: não pula sob o dedo
   const b = $('#mMute');
   b.classList.toggle('on', mudo);
   b.setAttribute('aria-pressed', mudo ? 'true' : 'false');
@@ -1485,9 +1765,13 @@ function pedirVolume(n){
 }
 function definirVolume(v){
   if (vpt.timbre == null || vpt.timbre === TIMBRE_MUTE_N || vpt.vol == null) return;
+  enviarVolumeTimbre(vpt.timbre, v);
+}
+// v3.18 — o painel e a janela do "segurar" gravam pelo mesmo caminho
+function enviarVolumeTimbre(n, v){
   v = Math.max(VOL_MIN, Math.min(VOL_MAX, Math.round(v)));
-  volPedidos[vpt.timbre] = v;   // a resposta confirma e põe na lista da cena
-  send('V' + pad(vpt.timbre, 2) + '=' + v);
+  volPedidos[n] = v;   // a resposta confirma e põe na lista da cena
+  send('V' + pad(n, 2) + '=' + v);
 }
 
 /* ---------- tap tempo ----------
@@ -1779,6 +2063,7 @@ function renderCena(){
   $('#cenaSalvar').disabled = carregandoCena;
   $('#cenaCarregar').disabled = carregandoCena || !cenaSalva;
   $('#cenaLimpar').disabled = carregandoCena || !ks.length;
+  $('#cenaVer').disabled = !cenaSalva;   // v3.16
   if (!carregandoCena) $('#cenaCarregar').textContent = 'Carregar cena';
 }
 
@@ -1790,7 +2075,7 @@ $('#cenaLimpar').onclick = () => {
   mesaVolumes = {}; salvarMesa(); renderCena();
 };
 $('#btnConn').onclick = () => (rx ? disconnect() : connect());
-document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => send(String(state.active) + b.dataset.nudge));
+document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => { if (!modoSampler) send(String(state.active) + b.dataset.nudge); });   // v3.17
 document.querySelectorAll('[data-bpm]').forEach(b => b.onclick = () => send('T' + b.dataset.bpm));
 document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => send('M' + b.dataset.m));
 // v3.15 — os passos viraram conta feita aqui, e o valor vai absoluto
@@ -1815,7 +2100,9 @@ mF.addEventListener('input', () => { $('#mVal').textContent = mF.value + '/16'; 
 mF.addEventListener('change', () => send('M' + mF.value));
 
 const vF = $('#vFader');
-vF.addEventListener('pointerdown', () => vpt.drag = true);
+// v3.16 — o arrasto é da zona (faderSoPelaAlca); ela avisa começo e fim
+vF.addEventListener('arrastoinicio', () => { vpt.drag = true; });
+vF.addEventListener('arrastofim', () => { vpt.drag = false; });   // quem redesenha é a resposta do pedal
 vF.addEventListener('input', () => { $('#vNow').textContent = vF.value; });
 vF.addEventListener('change', () => { vpt.drag = false; definirVolume(+vF.value); });   // v3.15
 
@@ -1952,21 +2239,277 @@ function pintarFader(id){
   zone.style.setProperty('--level', (p * 100) + '%');
   zone.style.setProperty('--level-alpha', Math.max(.06, .16 + p * .22));
 }
-['mFader','vFader'].forEach(id => {
+['mFader','vFader','volFader'].forEach(id => {   // v3.18: + a janela do segurar
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', () => pintarFader(id));
   pintarFader(id);
 });
 
+/* ---------- v3.16 — FADERS SÓ PELA ALÇA ----------
+   Como no Mixing Station: tocar no trilho NÃO move o volume. O input fica
+   sem toque (pointer-events:none no CSS) e quem ouve é a zona em volta: só
+   um toque PERTO DA ALÇA começa o arrasto, e o valor anda RELATIVO ao ponto
+   onde o dedo pegou — a alça não salta pro dedo. A zona tem touch-action
+   pan-y: um gesto vertical continua rolando a página; se a rolagem tomar o
+   gesto (pointercancel), o valor volta ao de antes e nada é enviado.
+   Os eventos 'input' e 'change' do input continuam sendo os de sempre, então
+   o resto da página não precisou mudar. */
+const ALCA_LARGURA = 25;   // a largura da alça no CSS (::-webkit-slider-thumb)
+const ALCA_PEGA_PX = 26;   // distância do centro da alça que ainda conta como pegar
+function faderSoPelaAlca(input){
+  const zona = input.closest('.fader-zone');
+  if (!zona) return;
+  let arrasto = null;
+  const faixa = () => ({ min: +input.min, max: +input.max, passo: +input.step || 1 });
+  zona.addEventListener('pointerdown', e => {
+    if (input.disabled || arrasto) return;
+    const r = input.getBoundingClientRect(), f = faixa();
+    const util = r.width - ALCA_LARGURA;
+    const xAlca = r.left + ALCA_LARGURA / 2 + util * ((+input.value - f.min) / (f.max - f.min));
+    if (Math.abs(e.clientX - xAlca) > ALCA_PEGA_PX) return;   // fora da alça: ignora (a página rola)
+    arrasto = { id: e.pointerId, x0: e.clientX, v0: +input.value, util: util };
+    input.dataset.arrasto = '1';
+    try { zona.setPointerCapture(e.pointerId); } catch(_){}
+    input.dispatchEvent(new Event('arrastoinicio'));
+  });
+  zona.addEventListener('pointermove', e => {
+    if (!arrasto || e.pointerId !== arrasto.id) return;
+    const f = faixa();
+    let v = arrasto.v0 + (e.clientX - arrasto.x0) / arrasto.util * (f.max - f.min);
+    v = Math.round(v / f.passo) * f.passo;
+    v = Math.max(f.min, Math.min(f.max, v));
+    if (v !== +input.value){
+      input.value = v;
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+  const terminar = (e, valeu) => {
+    if (!arrasto || e.pointerId !== arrasto.id) return;
+    const v0 = arrasto.v0;
+    arrasto = null;
+    delete input.dataset.arrasto;
+    if (!valeu && +input.value !== v0){
+      input.value = v0;                      // virou rolagem: desfaz
+      input.dispatchEvent(new Event('input'));
+    }
+    if (valeu && +input.value !== v0) input.dispatchEvent(new Event('change'));   // manda o valor arrastado
+    input.dispatchEvent(new Event('arrastofim'));
+  };
+  zona.addEventListener('pointerup', e => terminar(e, true));
+  zona.addEventListener('pointercancel', e => terminar(e, false));
+}
+faderSoPelaAlca($('#mFader'));
+faderSoPelaAlca($('#vFader'));
+faderSoPelaAlca($('#volFader'));   // v3.18
+{
+  const vf = $('#volFader');
+  vf.addEventListener('input', () => { $('#volNow').textContent = vf.value; });
+  vf.addEventListener('change', () => { if (volJanela.n != null && volJanela.vol != null) enviarVolumeTimbre(volJanela.n, +vf.value); });
+  $('#volTocar').onclick = () => { if (volJanela.n != null) tocarAmostra(volJanela.n, null); };
+  $('#volFechar').onclick = fecharVolumeTimbre;
+  $('#volDlg').addEventListener('close', () => { volJanela.n = null; volJanela.vol = null; });
+}
+
+/* ---------- v3.16 — BALÕES RECOLHÍVEIS ----------
+   Tocar no título recolhe o balão, como o "Console e ajustes". Recolhe tudo
+   o que vem depois do título até o próximo título (ou o painel do console,
+   ou as janelas). Os botões dentro do título continuam só botões. O estado
+   fica no aparelho, por balão (data-rec). */
+const CHAVE_RECOLHIDOS = 'sb_recolhidos';
+let recolhidos = [];
+try { recolhidos = JSON.parse(localStorage.getItem(CHAVE_RECOLHIDOS) || '[]') || []; } catch(e){ recolhidos = []; }
+function conteudoDoBalao(h){
+  const lista = [];
+  for (let el = h.nextElementSibling; el; el = el.nextElementSibling){
+    if (el.tagName === 'H2' || el.tagName === 'DETAILS' || el.tagName === 'DIALOG' || el.tagName === 'SCRIPT') break;
+    lista.push(el);
+  }
+  return lista;
+}
+function aplicarRecolhido(h){
+  const fechado = recolhidos.includes(h.dataset.rec);
+  h.classList.toggle('fechado', fechado);
+  h.setAttribute('aria-expanded', fechado ? 'false' : 'true');
+  conteudoDoBalao(h).forEach(el => el.classList.toggle('recolhido', fechado));
+}
+document.querySelectorAll('h2[data-rec]').forEach(h => {
+  const seta = document.createElement('span');
+  seta.className = 'seta'; seta.textContent = '▾';
+  h.insertBefore(seta, h.firstChild.nextSibling);   // logo depois do nome
+  h.addEventListener('click', e => {
+    if (e.target.closest('button')) return;         // "editar", "novo"… continuam botões
+    const k = h.dataset.rec;
+    recolhidos = recolhidos.includes(k) ? recolhidos.filter(x => x !== k) : recolhidos.concat(k);
+    try { localStorage.setItem(CHAVE_RECOLHIDOS, JSON.stringify(recolhidos)); } catch(_){}
+    aplicarRecolhido(h);
+  });
+  aplicarRecolhido(h);
+});
+
+/* ---------- v3.16 — MEUS PRESETS ----------
+   Presets montados NA PÁGINA: nome + o timbre de cada um dos 4 slots. Tocar
+   manda os slots pro pedal, um por vez, esperando a confirmação (o mesmo
+   comandoConfirmado da cena). Slot que já está no timbre certo não é
+   reenviado: reenviar voltaria um smart pro passo 1. Nada muda no firmware. */
+const CHAVE_MEUS_PRESETS = 'sb_meusPresets';
+let meusPresets = [];          // [{ nome, slots:{1:n,2:n,3:n,4:n} }]
+let meuPreEditando = -1;       // índice em edição; -1 = novo
+let aplicandoMeuPre = false;
+function loadMeusPresets(){
+  let lista = [];
+  try { lista = JSON.parse(localStorage.getItem(CHAVE_MEUS_PRESETS) || '[]') || []; } catch(e){ lista = []; }
+  meusPresets = lista.filter(p => p && typeof p.nome === 'string' && p.slots).map(p => {
+    const slots = {};
+    [1,2,3,4].forEach(s => { const n = +p.slots[s]; slots[s] = (Number.isInteger(n) && n >= 0 && n <= 99) ? n : 1; });
+    return { nome: p.nome.slice(0, 24), slots: slots };
+  });
+}
+function salvarMeusPresets(){ try { localStorage.setItem(CHAVE_MEUS_PRESETS, JSON.stringify(meusPresets)); } catch(e){} }
+function igualAosSlots(p){ return [1,2,3,4].every(s => state.slots[s] && state.slots[s].n === p.slots[s]); }
+
+function renderMeusPresets(){
+  const wrap = $('#meusPresets');
+  wrap.innerHTML = '';
+  if (!meusPresets.length){
+    const v = document.createElement('div');
+    v.id = 'meusVazio'; v.textContent = 'Nenhum preset seu ainda — toque em "novo".';
+    wrap.appendChild(v);
+    return;
+  }
+  meusPresets.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = igualAosSlots(p) ? 'cur' : '';
+    b.innerHTML = '<span class="n mono"></span><span class="t"></span><span class="ed" aria-label="Editar">✎</span>';
+    b.querySelector('.n').textContent = [1,2,3,4].map(s => pad(p.slots[s], 2)).join('·');
+    b.querySelector('.t').textContent = p.nome;
+    b.onclick = e => { if (e.target.closest('.ed')) abrirMeuPreset(i); else aplicarMeuPreset(i); };
+    wrap.appendChild(b);
+  });
+}
+
+async function aplicarMeuPreset(i){
+  const p = meusPresets[i];
+  if (!p) return;
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (aplicandoMeuPre || carregandoCena) return;
+  aplicandoMeuPre = true;
+  const falhas = [];
+  for (const s of [1,2,3,4]){
+    const n = p.slots[s];
+    if (state.slots[s] && state.slots[s].n === n) continue;   // já está: não reenvia
+    avisoStatus(p.nome + ': ' + (SLOT_NAMES[s] || 'Slot ' + s) + '…', 'busy', 3000);
+    const ok = await comandoConfirmado(String(s) + pad(n, 2), l => {
+      const m = l.match(/^T(\d)\s*=\s*(\d+)/i); return !!m && +m[1] === s && +m[2] === n;
+    });
+    if (!ok) falhas.push(SLOT_NAMES[s] || 'Slot ' + s);
+  }
+  aplicandoMeuPre = false;
+  renderMeusPresets();
+  if (falhas.length) avisoStatus(p.nome + ': não trocaram ' + falhas.join(', ') + ' (slots só trocam no modo 00)', 'err', 7000);
+  else avisoStatus(p.nome + ' aplicado', 'on');
+}
+
+function opcoesDeTimbre(sel, atual){
+  sel.innerHTML = '';
+  const add = (n, nome) => { const o = document.createElement('option'); o.value = n; o.textContent = pad(n, 2) + ' ' + nome; sel.appendChild(o); };
+  add(TIMBRE_MUTE_N, 'MUTE');
+  TIMBRES.forEach((nome, i) => add(i + 1, nome));
+  if (atual > TIMBRES.length) add(atual, 'Timbre ' + pad(atual, 2));   // fora do catálogo: mantém
+  sel.value = String(atual);
+}
+function abrirMeuPreset(i){
+  meuPreEditando = i;
+  const p = i >= 0 ? meusPresets[i] : null;
+  $('#meuPreTitulo').textContent = p ? 'Editar preset' : 'Novo preset';
+  $('#meuPreNome').value = p ? p.nome : '';
+  $('#meuPreExcluir').style.display = p ? '' : 'none';
+  const wrap = $('#meuPreSlots');
+  wrap.innerHTML = '';
+  [1,2,3,4].forEach(s => {
+    const lab = document.createElement('label');
+    lab.textContent = SLOT_NAMES[s] || 'Slot ' + s;
+    const sel = document.createElement('select');
+    sel.dataset.slot = s;
+    const atual = p ? p.slots[s] : ((state.slots[s] && state.slots[s].n != null) ? state.slots[s].n : 1);
+    opcoesDeTimbre(sel, atual);
+    wrap.appendChild(lab); wrap.appendChild(sel);
+  });
+  $('#meuPreDlg').showModal();
+}
+$('#novoMeuPre').onclick = () => abrirMeuPreset(-1);
+$('#meuPreAgora').onclick = () => {
+  $('#meuPreSlots').querySelectorAll('select').forEach(sel => {
+    const d = state.slots[+sel.dataset.slot];
+    if (d && d.n != null) opcoesDeTimbre(sel, d.n);
+  });
+};
+$('#meuPreCancelar').onclick = () => $('#meuPreDlg').close();
+$('#meuPreExcluir').onclick = () => {
+  if (meuPreEditando < 0) return;
+  if (!confirm('Excluir o preset "' + meusPresets[meuPreEditando].nome + '"?')) return;
+  meusPresets.splice(meuPreEditando, 1);
+  salvarMeusPresets(); renderMeusPresets();
+  $('#meuPreDlg').close();
+};
+$('#meuPreSalvar').onclick = () => {
+  const nome = $('#meuPreNome').value.trim();
+  if (!nome){ alert('Dê um nome ao preset.'); $('#meuPreNome').focus(); return; }
+  const slots = {};
+  $('#meuPreSlots').querySelectorAll('select').forEach(sel => { slots[+sel.dataset.slot] = +sel.value; });
+  const p = { nome: nome.slice(0, 24), slots: slots };
+  if (meuPreEditando >= 0) meusPresets[meuPreEditando] = p; else meusPresets.push(p);
+  salvarMeusPresets(); renderMeusPresets();
+  $('#meuPreDlg').close();
+};
+
+/* ---------- v3.16 — VER CENA SALVA ----------
+   Tudo o que a cena guardou, em texto, pronto pra copiar. Cada volume sai
+   com a posição dele na tabela VOLUME_TIMBRE do firmware (o índice é o
+   número do timbre menos 1). */
+function nomeDoNumero(n){ return n === TIMBRE_MUTE_N ? 'MUTE' : (TIMBRES[n - 1] || ('Timbre ' + pad(n, 2))); }
+function textoDaCena(c){
+  const linhas = [];
+  const q = new Date(c.quando);
+  linhas.push('CENA — salva em ' + (isNaN(q) ? '?' : q.toLocaleString('pt-BR')));
+  linhas.push('');
+  linhas.push('SLOTS');
+  [1,2,3,4].forEach(s => {
+    const n = c.slots[s];
+    linhas.push('  ' + (SLOT_NAMES[s] || 'Slot ' + s).padEnd(8) + ' ' + (n == null ? '--' : pad(n, 2) + ' ' + nomeDoNumero(n)));
+  });
+  linhas.push('');
+  linhas.push('VOLUME GERAL  ' + (c.geral ? c.geral + '/16' : '(não guardado)'));
+  linhas.push('');
+  linhas.push('VOLUMES DE TIMBRE (só os mudados pela página)');
+  const ks = Object.keys(c.volumes).map(Number).sort((a, b) => a - b);
+  if (!ks.length) linhas.push('  (nenhum)');
+  ks.forEach(n => {
+    const esq = '  ' + pad(n, 2) + ' ' + nomeDoNumero(n);
+    linhas.push(esq.padEnd(22) + ' = ' + String(c.volumes[n]).padStart(3) + '    VOLUME_TIMBRE[' + (n - 1) + ']');
+  });
+  return linhas.join('\n');
+}
+$('#cenaVer').onclick = () => {
+  if (!cenaSalva){ avisoStatus('Nenhuma cena salva', 'err'); return; }
+  $('#cenaTexto').value = textoDaCena(cenaSalva);
+  $('#cenaDlg').showModal();
+};
+$('#cenaCopiar').onclick = async () => {
+  try { await navigator.clipboard.writeText($('#cenaTexto').value); avisoStatus('Cena copiada', 'on'); }
+  catch(e){ $('#cenaTexto').select(); }
+};
+$('#cenaFechar').onclick = () => $('#cenaDlg').close();
+
 /* ---------- boot ---------- */
 loadCat(); loadSort(); loadFavoritos(); loadPresets(); carregarRepertorio(); ordenarRepertorio();
 loadCena();   // v3.15
+loadMeusPresets();   // v3.16
 $('#term').value = localStorage.getItem('sb_term') || '';
 ticks($('#mTicks'), MAX_M);
 ticks($('#vTicks'), 9);
 renderSortBar();
 renderSlots(); renderGrid(); renderTempo(); renderMaster();
-renderVpt(); renderPick(); renderPresets(); renderFire(); renderCena();
+renderVpt(); renderPick(); renderPresets(); renderFire(); renderCena(); renderMeusPresets();
 
 if (!navigator.bluetooth){
   setStatus('Abra no Chrome do Android, em HTTPS', 'err');
