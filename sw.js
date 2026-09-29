@@ -1,6 +1,10 @@
 // StompBox Remote — cache offline.
 // Ao publicar uma versão nova, mude o número do CACHE para forçar a atualização.
 //
+// v3.18 — só o número (segurar um timbre abre o fader dele).
+// v3.17.1 — só o número (o 00 MUTE de enfeite no sampler).
+// v3.17 — só o número (modo sampler).
+// v3.16 — só o número (Meus presets, faders pela alça, balões recolhíveis).
 // v3.15 — só o número (página com MUTE, cena e volume absoluto).
 // v3.14 — além do número, cinco ajustes:
 //  1) A instalação busca os arquivos PULANDO o cache HTTP do navegador
@@ -17,7 +21,7 @@
 //  5) Offline, uma navegação que não bate exatamente com o que está
 //     guardado (ex.: endereço com ?parâmetro) recebe o index.html do
 //     cache, em vez da página de erro do navegador.
-const CACHE = 'stompbox-v3.15';
+const CACHE = 'stompbox-v3.18';
 const ARQUIVOS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', ev => {
