@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.18 "Mixing Station + Repertório + Cena + Sampler"
+ STOMPBOX REMOTE — v3.20 "Mixing Station + Repertório + Cena + Sampler"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -10,7 +10,7 @@
  PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth"), mais o que
  a página usa das versões seguintes: "BOOT=" (v32), "E?" (v33), e o MUTE
  de slot "s00", o MUTE geral "M0" e o volume absoluto "Vnn=vvv"/"Vnn?"
- (v34), e o sampler "Ann" (v36). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
+ (v34), o sampler "Ann" (v36) e o modo "Cnn" (v37). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
  é o antigo "volta um timbre" — a página mostra o que o pedal responder.
 
  ------------------------------------------------------------
@@ -221,6 +221,60 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v3.20 — DISPARO TAMBÉM NO QUADRADO DO SAMPLER (firmware v37.0 sem mudança):
+        1) O quinto lugar da fileira de disparos (embaixo do Sampler), que
+           era só espaço, virou um ▶ com o laranja do sampler: toca de novo
+           o ÚLTIMO SAMPLE DISPARADO — pela grade ou pelos favoritos no modo
+           sampler, ou pelo ▶ Tocar da janela de volume.
+        2) Fica apagado até o primeiro sample da sessão (não é guardado ao
+           fechar a página).
+        3) É o mesmo comando "Ann" de qualquer toque no sampler: um comando
+           por toque, sem latência a mais no Bluetooth.
+
+ v3.19.1 — AS CHAVES DO MODO COMO AS DO PEDAL (firmware v37.0 sem mudança):
+        1) O pedal tem uma chave de 3 POSIÇÕES e uma de 2, não duas de 2.
+           O balão "Modo da StompBox" agora tem as duas assim:
+             - 3 posições: FR (Free Run) | SB (StompBox, no meio) | AT·MN
+             - 2 posições: RITMOS ou METRÔ — decide entre AT (ritmos) e
+               MN (metrônomo) quando a de 3 está em AT·MN.
+           A posição AT·MN fica virada pro lado da chave de 2, que é quem
+           decide entre metrônomo e ritmos (pedido do Saulo: mais
+           intuitivo). A ordem das posições não precisa ser a do pedal.
+        2) Mover a chave de 2 com a de 3 em FR ou SB só muda a posição dela
+           (não manda nada), como no pedal: ela só vale em AT·MN.
+        3) Os comandos são os mesmos da v3.19 (C00, C01, C10, C11) e as
+           chaves seguem mostrando o que o PEDAL diz; a de 2 guarda a última
+           posição quando o modo é SB ou FR.
+
+ v3.19 — MODO PELO CELULAR, BARRA DE STATUS E DISPAROS NOS SLOTS
+        (casada com o firmware v37.0):
+        1) BARRA DE STATUS no topo, junto do "conectado/desconectado": o
+           modo da StompBox (SB, FR, AT, MN — as siglas do OLED), o volume
+           geral (V16 ou MUTE) e "BT" quando conectado. No lugar do símbolo
+           do Bluetooth vai "BT", igual à barra do OLED.
+        2) BOTÕES DE DISPARO NOS SLOTS: um botão pequeno embaixo de cada
+           slot (1/4 da altura do cartão), fixo no topo junto com eles,
+           com a cor do slot. Manda D1..D4. Embaixo do Sampler fica só o
+           espaço, pra não desalinhar.
+        3) BALÃO DO DISPARO: cada botão mostra o NOME DO TIMBRE que vai
+           tocar e, menor e mais apagado, o nome do slot. Acompanha as
+           trocas de timbre.
+        4) BALÃO "MODO DA STOMPBOX": duas chaves estilo iPhone, como as do
+           pedal — chave 2 à esquerda, chave 1 à direita, então a leitura
+           da esquerda pra direita é o número do modo (00 SB, 01 FR, 10 AT,
+           11 MN). Tocar numa chave manda "Cnn" (firmware v37); a chave
+           mostra o pedido apagada até o pedal confirmar ("C01 FR"). Sem
+           confirmação em 1,2 s, volta e avisa que precisa do firmware v37.
+           As chaves daqui mostram O QUE O PEDAL DIZ, inclusive quando a
+           troca vem de uma chave física — que continua valendo e pode
+           ficar fora de sincronia com o que aparece aqui (aceito).
+        5) Catálogo padrão com os 4 timbres novos da v37 (Laser Gun, Gun
+           Reload, Chicote, Nextel) antes dos mix. Quem já tem catálogo
+           salvo no aparelho atualiza em "editar catálogo".
+        6) A partir desta versão, os arquivos saem com o nome do projeto e
+           a versão (…_index.html e …_sw.js), pra guardar o histórico; no
+           site eles continuam se chamando index.html e sw.js.
 
  v3.18 — SEGURAR UM TIMBRE ABRE O FADER DELE (firmware v36.0 sem mudança):
         1) Segurar um balão de timbre por meio segundo (na grade ou nos
@@ -788,6 +842,50 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   .fire button.wide{grid-column:1/-1}
 }
 ::selection{background:#2b618d;color:white}
+/* v3.19 — barra de status no topo */
+.sbar{display:flex;gap:4px;flex:none}
+.sbar .chip{font-size:10px;padding:2px 5px;border-radius:4px;background:#d7dde3;color:#12161b;font-weight:700;letter-spacing:.3px}
+.sbar .chip.bt{background:var(--blue);color:#fff}
+.sbar .chip.mudo{background:var(--red);color:#fff}
+.sbar .chip[hidden]{display:none}
+/* v3.19 — disparo embaixo de cada slot, fixo no topo junto com eles */
+.slotFire{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-top:5px}
+.slotFire button{height:20px;border-radius:6px;border:1px solid var(--line);background:#1a2027;color:var(--dim);font-size:10px;padding:0;position:relative;overflow:hidden;line-height:1}
+.slotFire button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px}
+.slotFire button:nth-child(1)::after{background:var(--slot1)}
+.slotFire button:nth-child(2)::after{background:var(--slot2)}
+.slotFire button:nth-child(3)::after{background:var(--slot3)}
+.slotFire button:nth-child(4)::after{background:var(--slot4)}
+.slotFire button:nth-child(5)::after{background:var(--sampler)}   /* v3.20 — último sample */
+.slotFire button:active{background:#2a343e;color:var(--ink)}
+/* v3.19 — balão do disparo: nome do timbre + nome do slot, menor e apagado */
+.fire button .fnome{display:block;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fire button .fslot{display:block;font-size:10px;color:var(--dim);margin-top:2px}
+/* v3.19 — chaves estilo iPhone do modo */
+.chaves{display:flex;align-items:center;gap:18px}
+.chave{display:flex;flex-direction:column;align-items:center;gap:5px}
+.chave .cRot{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.ios{width:52px;height:30px;border-radius:15px;background:#3a444f;border:none;position:relative;padding:0;flex:none}
+.ios::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .15s}
+.ios[aria-checked="true"]{background:#34c759}
+.ios[aria-checked="true"]::after{left:25px}
+.ios.pend{opacity:.5}
+.modoNome{display:flex;flex-direction:column;gap:2px;margin-left:4px}
+/* v3.19.1 — chave de 3 posições estilo iPhone */
+.tri{position:relative;display:grid;grid-template-columns:repeat(3,1fr);width:156px;height:32px;border-radius:16px;background:#3a444f;padding:0;flex:none}
+.tri button{position:relative;z-index:1;background:transparent;border:none;color:#c9d1d9;font-size:11px;font-weight:700;padding:0}
+.tri .knob{position:absolute;top:3px;width:calc((100% - 6px)/3);height:26px;border-radius:13px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .15s;left:calc(3px + (100% - 6px)/3)}
+.tri[data-pos="FR"] .knob{left:3px}
+.tri[data-pos="SB"] .knob{left:calc(3px + (100% - 6px)/3)}
+.tri[data-pos="SOM"] .knob{left:calc(3px + 2*(100% - 6px)/3)}
+.tri[data-pos="FR"] button[data-pos="FR"],.tri[data-pos="SB"] button[data-pos="SB"],.tri[data-pos="SOM"] button[data-pos="SOM"]{color:#12161b}
+.tri.pend,.duo.pend{opacity:.5}
+.duo{display:flex;align-items:center;gap:6px}
+.duo .dRot{font-size:10px;font-weight:700;color:var(--dim)}
+.duo .dRot.on{color:var(--ink)}
+.duo.inativa .ios{opacity:.45}
+.modoNome .mono{font-size:20px;font-weight:700}
+#modoNome{font-size:12px;color:var(--dim)}
 </style>
 </head>
 <body>
@@ -796,9 +894,11 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   <header class="bar">
     <span class="dot" id="dot"></span>
     <span id="status">Desconectado</span>
+    <span class="sbar" id="sbar"><span class="chip mono" id="sbModo">--</span><span class="chip mono" id="sbVol">V--</span><span class="chip mono bt" id="sbBt" hidden>BT</span></span>
     <button class="btn primary" id="btnConn">Conectar</button>
   </header>
   <section class="slots" id="slots"></section>
+  <section class="slotFire" id="slotFire"></section>
 </div>
 
 <section class="slotMetro" id="slotMetro"></section>
@@ -826,6 +926,25 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 
 <h2 data-rec="presets"><span>Presets</span><button id="editPre">editar nomes</button></h2>
 <section class="presets" id="presets"></section>
+
+<h2 data-rec="modo">Modo da StompBox</h2>
+<section class="box">
+  <div class="chaves">
+    <div class="tri" id="tri" data-pos="SB" role="radiogroup" aria-label="Chave de 3 posições">
+      <button data-pos="FR" role="radio">FR</button>
+      <button data-pos="SB" role="radio">SB</button>
+      <button data-pos="SOM" role="radio">AT·MN</button>
+      <span class="knob"></span>
+    </div>
+    <div class="duo" id="duo">
+      <span class="dRot" id="dRitmos">RITMOS</span>
+      <button class="ios" id="chaveDuo" role="switch" aria-checked="false" aria-label="Ritmos ou metrônomo"></button>
+      <span class="dRot" id="dMetro">METRÔ</span>
+    </div>
+  </div>
+  <div class="modoNome" style="margin:8px 0 0"><span class="mono" id="modoBits">--</span><span id="modoNome">—</span></div>
+  <p class="note" style="margin-top:8px">Mexer numa chave do pedal troca o modo de novo — as chaves físicas podem ficar diferentes do que aparece aqui. Precisa do firmware v37.</p>
+</section>
 
 <h2 data-rec="volumegeral">Volume geral</h2>
 <section class="box">
@@ -893,7 +1012,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v3.18 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
+    <p class="note">StompBox Remote v3.20 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
   </div>
 </details>
 
@@ -1059,7 +1178,7 @@ const CAT_PADRAO = [
  'B Cajon','Bumbo 24','Bumbo 22','Bumbo 20','Bumbo 808','Carrilhão','Pandeirola','Cowbell',
  'Afoxé','Aro de caixa','Chimbal','Bloco L','Bloco H','Tri aberto','Tri abafado','Maraca',
  'Surdo','Crash 16','Splash 10','Crash 18','Bumbo FSA','Violão B','Violão A','Caixa reverb',
- 'Caixa Zezé','Carrilhão 2','Cajón+Cr16','Cajón+Cr18','Cajón+Pand','Blocos S','Triângulo S'
+ 'Caixa Zezé','Carrilhão 2','Laser Gun','Gun Reload','Chicote','Nextel','Cajón+Cr16','Cajón+Cr18','Cajón+Pand','Blocos S','Triângulo S'
 ];
 const SLOT_NAMES = {1:'Pedal 1', 2:'Pedal 2', 3:'Pele', 4:'Aro', 5:'Metrônomo'};
 const SLOT_COLORS = {1:'var(--slot1)', 2:'var(--slot2)', 3:'var(--slot3)', 4:'var(--slot4)'};
@@ -1067,6 +1186,7 @@ const SLOT_COLORS = {1:'var(--slot1)', 2:'var(--slot2)', 3:'var(--slot3)', 4:'va
    desligado, pra um toque sem querer num nome não disparar som no PA. */
 let modoSampler = false;
 let amostraTimer = null, amostraAvisado = false;
+let ultimaAmostra = null;   // v3.20 — número do último sample disparado (pro ▶ embaixo do Sampler)
 // v3.18 — segurar um balão abre o fader do timbre
 const SEGURAR_MS = 500, SEGURAR_TOLERANCIA_PX = 10;
 const volJanela = { n: null, vol: null, timer: null };
@@ -1180,8 +1300,20 @@ function pintarStatus(txt, kind){
   $('#status').textContent = txt;
   $('#dot').className = 'dot' + (kind ? ' ' + kind : '');
 }
+// v3.19 — barra de status: modo, volume geral e BT
+const MODOS = { '00': ['SB', 'StompBox'], '01': ['FR', 'Free Run'], '10': ['AT', 'Automático'], '11': ['MN', 'Metrônomo'] };
+let modoPedal = null, modoPedido = null, modoTimer = null;
+function renderBarraStatus(){
+  const m = modoPedal && MODOS[modoPedal];
+  $('#sbModo').textContent = m ? m[0] : '--';
+  const v = $('#sbVol');
+  v.textContent = state.master === 0 ? 'MUTE' : (state.master ? 'V' + state.master : 'V--');
+  v.classList.toggle('mudo', state.master === 0);
+  $('#sbBt').hidden = !rx;
+}
 function setStatus(txt, kind){
   statusBase = { txt: txt, kind: kind || '' };
+  setTimeout(renderBarraStatus, 0);   // v3.19 — a conexão mudou: o "BT" acompanha
   if (statusTimer){ clearTimeout(statusTimer); statusTimer = null; }
   pintarStatus(txt, kind);
 }
@@ -1311,6 +1443,14 @@ function handleLine(line){
   conferirEsperas(line);   // v3.15 — o carregamento da cena espera respostas
   let m;
 
+  // C01 FR (v37) — o modo da StompBox: a cada troca, no E? e no C?
+  if ((m = line.match(/^C([01])([01])(\s|$)/))){
+    modoPedal = m[1] + m[2];
+    modoPedido = null; clearTimeout(modoTimer); modoTimer = null;
+    renderModo(); renderBarraStatus();
+    return;
+  }
+
   // A05 BE 808 (v36) — o pedal tocou o timbre do sampler
   if ((m = line.match(/^A(\d+)\s/))){
     clearTimeout(amostraTimer); amostraTimer = null; amostraAvisado = false;
@@ -1399,6 +1539,27 @@ function renderSlots(){
     b.onclick = () => { modoSampler = false; state.active = s; renderSlots(); renderGrid(); };   // v3.17: slot desliga o sampler
     wrap.appendChild(b);
   });
+
+  // v3.19 — disparo embaixo de cada slot (o 5º lugar fica vazio, embaixo do sampler)
+  const sf = $('#slotFire');
+  if (sf){
+    sf.innerHTML = '';
+    [1,2,3,4].forEach(s => {
+      const f = document.createElement('button');
+      f.textContent = '▶';
+      f.setAttribute('aria-label', 'Disparar ' + (SLOT_NAMES[s] || 'slot ' + s));
+      f.onclick = () => send('D' + s);
+      sf.appendChild(f);
+    });
+    // v3.20 — embaixo do Sampler: toca de novo o último sample disparado
+    const fa = document.createElement('button');
+    fa.id = 'fireAmostra';
+    fa.textContent = '▶';
+    fa.onclick = () => { if (ultimaAmostra != null) tocarAmostra(ultimaAmostra, null); };
+    sf.appendChild(fa);
+    renderFireAmostra();
+  }
+  renderFire();   // v3.19 — o balão do disparo mostra o timbre de cada slot
 
   // v3.17 — o QUINTO quadrado: o sampler. Tocar liga; tocar de novo desliga.
   const sb = document.createElement('button');
@@ -1516,13 +1677,58 @@ function fecharVolumeTimbre(){
   try { $('#volDlg').close(); } catch(e){}
 }
 
+/* v3.19 — MODO DA STOMPBOX ("Cnn", firmware v37). As chaves daqui mostram o
+   que o PEDAL diz; o toque só pede. Chave 2 à esquerda, chave 1 à direita:
+   lendo da esquerda pra direita sai o número do modo. */
+// v3.19.1 — chave de 3 posições (FR | SB | AT·MN) + chave de 2 (RITMOS | METRÔ).
+// A de 2 só vale com a de 3 em AT·MN; nos outros modos ela guarda a posição.
+let duoMetro = false;   // posição da chave de 2: false = RITMOS (AT), true = METRÔ (MN)
+function posDaTri(bits){ return bits === '01' ? 'FR' : (bits === '10' || bits === '11') ? 'SOM' : 'SB'; }
+function renderModo(){
+  const bits = modoPedido || modoPedal;
+  if (bits === '10') duoMetro = false;
+  if (bits === '11') duoMetro = true;
+  const pos = posDaTri(bits);
+  const tri = $('#tri');
+  tri.dataset.pos = pos;
+  tri.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.pos === pos ? 'true' : 'false'));
+  $('#chaveDuo').setAttribute('aria-checked', duoMetro ? 'true' : 'false');
+  $('#dRitmos').classList.toggle('on', !duoMetro);
+  $('#dMetro').classList.toggle('on', duoMetro);
+  $('#duo').classList.toggle('inativa', pos !== 'SOM');
+  tri.classList.toggle('pend', !!modoPedido);
+  $('#duo').classList.toggle('pend', !!modoPedido);
+  const m = bits && MODOS[bits];
+  $('#modoBits').textContent = bits || '--';
+  $('#modoNome').textContent = m ? m[0] + ' · ' + m[1] + (modoPedido ? ' — aguardando o pedal…' : '') : '—';
+}
+function pedirModo(bits){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  modoPedido = bits; renderModo();
+  send('C' + bits);
+  clearTimeout(modoTimer);
+  modoTimer = setTimeout(() => {
+    modoTimer = null;
+    if (modoPedido){ modoPedido = null; renderModo(); avisoStatus('O pedal não confirmou o modo — precisa do firmware v37', 'err', 5000); }
+  }, 1200);
+}
+
 /* v3.17 — SAMPLER: toca o timbre n na hora ("Ann", firmware v36), direto
    no pool do pedal 2 — sem trocar slot nenhum. O balão pisca laranja; o
    pedal confirma com "Ann NOME". Sem confirmação em AMOSTRA_PRAZO_MS, avisa
    uma vez que o sampler precisa do firmware v36. */
+// v3.20 — o ▶ embaixo do Sampler: apagado até o primeiro sample da sessão
+function renderFireAmostra(){
+  const fa = $('#fireAmostra');
+  if (!fa) return;
+  fa.disabled = ultimaAmostra == null;
+  fa.setAttribute('aria-label', ultimaAmostra == null ? 'Último sample (nenhum ainda)'
+    : 'Tocar de novo ' + pad(ultimaAmostra, 2) + ' ' + nomeDoNumero(ultimaAmostra));
+}
 function tocarAmostra(n, botao){
   if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
   send('A' + pad(n, 2));
+  if (ultimaAmostra !== n){ ultimaAmostra = n; renderFireAmostra(); }   // v3.20
   if (botao){
     botao.classList.add('tocando');
     setTimeout(() => botao.classList.remove('tocando'), 180);
@@ -1651,6 +1857,7 @@ function renderMaster(){
   b.classList.toggle('on', mudo);
   b.setAttribute('aria-pressed', mudo ? 'true' : 'false');
   pintarFader('mFader');
+  renderBarraStatus();   // v3.19
 }
 
 /* v3.15 — MUTE GERAL. Liga com "M0". Desliga voltando ao último nível de
@@ -1714,7 +1921,12 @@ function renderFire(){
   wrap.innerHTML = '';
   [1,2,3,4].forEach(s => {
     const b = document.createElement('button');
-    b.textContent = SLOT_NAMES[s];
+    // v3.19 — o timbre que vai tocar, e o slot menor e apagado
+    const d = state.slots[s];
+    const nome = (d && d.n != null) ? nomeDoNumero(d.n) : '—';
+    b.innerHTML = '<span class="fnome"></span><span class="fslot"></span>';
+    b.querySelector('.fnome').textContent = nome;
+    b.querySelector('.fslot').textContent = SLOT_NAMES[s];
     b.onclick = () => send('D' + s);
     wrap.appendChild(b);
   });
@@ -2307,6 +2519,21 @@ faderSoPelaAlca($('#volFader'));   // v3.18
   vf.addEventListener('change', () => { if (volJanela.n != null && volJanela.vol != null) enviarVolumeTimbre(volJanela.n, +vf.value); });
   $('#volTocar').onclick = () => { if (volJanela.n != null) tocarAmostra(volJanela.n, null); };
   $('#volFechar').onclick = fecharVolumeTimbre;
+  // v3.19.1 — as chaves do modo: a de 3 posições e a de 2
+  $('#tri').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const alvo = b.dataset.pos === 'FR' ? '01' : b.dataset.pos === 'SB' ? '00' : (duoMetro ? '11' : '10');
+    pedirModo(alvo);
+  });
+  $('#chaveDuo').onclick = () => {
+    duoMetro = !duoMetro;
+    const pos = posDaTri(modoPedido || modoPedal);
+    if (pos === 'SOM'){
+      if (!rx){ duoMetro = !duoMetro; avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+      pedirModo(duoMetro ? '11' : '10');                     // só vale em AT·MN
+    }
+    else renderModo();                                       // fora dele: só a posição muda
+  };
+  renderModo(); renderBarraStatus();
   $('#volDlg').addEventListener('close', () => { volJanela.n = null; volJanela.vol = null; });
 }
 
