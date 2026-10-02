@@ -1,6 +1,11 @@
 // StompBox Remote — cache offline.
 // Ao publicar uma versão nova, mude o número do CACHE para forçar a atualização.
 //
+// v3.20 — só o número (▶ do sampler toca o último sample).
+// v3.19.1 — só o número (chaves do modo como as do pedal: 3 posições + 2).
+// v3.19 — só o número (modo pelo celular, barra de status, disparos nos slots).
+//         A partir daqui o arquivo sai como StompBox_Remote_vX.YY_sw.js; no site
+//         ele continua se chamando sw.js.
 // v3.18 — só o número (segurar um timbre abre o fader dele).
 // v3.17.1 — só o número (o 00 MUTE de enfeite no sampler).
 // v3.17 — só o número (modo sampler).
@@ -21,7 +26,7 @@
 //  5) Offline, uma navegação que não bate exatamente com o que está
 //     guardado (ex.: endereço com ?parâmetro) recebe o index.html do
 //     cache, em vez da página de erro do navegador.
-const CACHE = 'stompbox-v3.18';
+const CACHE = 'stompbox-v3.20';
 const ARQUIVOS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', ev => {
