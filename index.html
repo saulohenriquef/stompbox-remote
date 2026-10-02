@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.20 "Mixing Station + Repertório + Cena + Sampler"
+ STOMPBOX REMOTE — v3.20.2 "Mixing Station + Repertório + Cena + Sampler"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -221,6 +221,30 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v3.20.2 — FR E MN TROCADOS DE LUGAR (casada com o firmware v37.1):
+        1) Os nomes estavam invertidos, na página e no firmware. Agora:
+             01 = MN — Metrônomo     11 = FR — Free Run
+           Os comandos e os pinos não mudaram (C01 continua sendo só o pino
+           7, C11 os dois); só o nome que aparece trocou.
+        2) A chave de 2 fica [ MN ◯ FR ] e a posição da de 3 virou "MN·FR".
+        3) A página mostra o nome pelo NÚMERO que o pedal manda, então com
+           um firmware v37.0 ela já mostra o nome certo; a barra do OLED só
+           acerta com a v37.1.
+
+ v3.20.1 — CHAVES DO MODO CORRIGIDAS (firmware v37.0 sem mudança):
+        1) A v3.19.1 desenhou as chaves erradas. No pedal:
+             - a de 3 POSIÇÕES: no meio, SB (modo normal); do lado da chave
+               de 2, FR ou MN; do outro lado, AT.
+             - a de 2 POSIÇÕES: escolhe entre FR e MN.
+           O balão agora é assim: [ AT | SB | FR·MN ] [ FR ◯ MN ], com a
+           posição FR·MN virada pra chave de 2.
+        2) O FIRMWARE JÁ ESTAVA CERTO pra essa ligação: AT = só o pino 11
+           (chave 2) no GND, FR = só o pino 7 (chave 1), MN = os dois — que
+           é o caso fechado pelo diodo. Os comandos seguem C00/C01/C10/C11.
+        3) A chave de 2 só vale com a de 3 em FR·MN; nas outras posições,
+           mexer nela só muda a posição dela (não manda nada), e ela guarda
+           a posição — como no pedal.
 
  v3.20 — DISPARO TAMBÉM NO QUADRADO DO SAMPLER (firmware v37.0 sem mudança):
         1) O quinto lugar da fileira de disparos (embaixo do Sampler), que
@@ -875,10 +899,10 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 .tri{position:relative;display:grid;grid-template-columns:repeat(3,1fr);width:156px;height:32px;border-radius:16px;background:#3a444f;padding:0;flex:none}
 .tri button{position:relative;z-index:1;background:transparent;border:none;color:#c9d1d9;font-size:11px;font-weight:700;padding:0}
 .tri .knob{position:absolute;top:3px;width:calc((100% - 6px)/3);height:26px;border-radius:13px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .15s;left:calc(3px + (100% - 6px)/3)}
-.tri[data-pos="FR"] .knob{left:3px}
+.tri[data-pos="AT"] .knob{left:3px}
 .tri[data-pos="SB"] .knob{left:calc(3px + (100% - 6px)/3)}
-.tri[data-pos="SOM"] .knob{left:calc(3px + 2*(100% - 6px)/3)}
-.tri[data-pos="FR"] button[data-pos="FR"],.tri[data-pos="SB"] button[data-pos="SB"],.tri[data-pos="SOM"] button[data-pos="SOM"]{color:#12161b}
+.tri[data-pos="MET"] .knob{left:calc(3px + 2*(100% - 6px)/3)}
+.tri[data-pos="AT"] button[data-pos="AT"],.tri[data-pos="SB"] button[data-pos="SB"],.tri[data-pos="MET"] button[data-pos="MET"]{color:#12161b}
 .tri.pend,.duo.pend{opacity:.5}
 .duo{display:flex;align-items:center;gap:6px}
 .duo .dRot{font-size:10px;font-weight:700;color:var(--dim)}
@@ -931,15 +955,15 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 <section class="box">
   <div class="chaves">
     <div class="tri" id="tri" data-pos="SB" role="radiogroup" aria-label="Chave de 3 posições">
-      <button data-pos="FR" role="radio">FR</button>
+      <button data-pos="AT" role="radio">AT</button>
       <button data-pos="SB" role="radio">SB</button>
-      <button data-pos="SOM" role="radio">AT·MN</button>
+      <button data-pos="MET" role="radio">MN·FR</button>
       <span class="knob"></span>
     </div>
     <div class="duo" id="duo">
-      <span class="dRot" id="dRitmos">RITMOS</span>
-      <button class="ios" id="chaveDuo" role="switch" aria-checked="false" aria-label="Ritmos ou metrônomo"></button>
-      <span class="dRot" id="dMetro">METRÔ</span>
+      <span class="dRot" id="dFR">MN</span>
+      <button class="ios" id="chaveDuo" role="switch" aria-checked="false" aria-label="MN ou FR"></button>
+      <span class="dRot" id="dMN">FR</span>
     </div>
   </div>
   <div class="modoNome" style="margin:8px 0 0"><span class="mono" id="modoBits">--</span><span id="modoNome">—</span></div>
@@ -1012,7 +1036,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v3.20 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
+    <p class="note">StompBox Remote v3.20.2 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
   </div>
 </details>
 
@@ -1301,7 +1325,7 @@ function pintarStatus(txt, kind){
   $('#dot').className = 'dot' + (kind ? ' ' + kind : '');
 }
 // v3.19 — barra de status: modo, volume geral e BT
-const MODOS = { '00': ['SB', 'StompBox'], '01': ['FR', 'Free Run'], '10': ['AT', 'Automático'], '11': ['MN', 'Metrônomo'] };
+const MODOS = { '00': ['SB', 'StompBox'], '01': ['MN', 'Metrônomo'], '10': ['AT', 'Automático'], '11': ['FR', 'Free Run'] };   // v3.20.2: MN = 01, FR = 11
 let modoPedal = null, modoPedido = null, modoTimer = null;
 function renderBarraStatus(){
   const m = modoPedal && MODOS[modoPedal];
@@ -1680,22 +1704,22 @@ function fecharVolumeTimbre(){
 /* v3.19 — MODO DA STOMPBOX ("Cnn", firmware v37). As chaves daqui mostram o
    que o PEDAL diz; o toque só pede. Chave 2 à esquerda, chave 1 à direita:
    lendo da esquerda pra direita sai o número do modo. */
-// v3.19.1 — chave de 3 posições (FR | SB | AT·MN) + chave de 2 (RITMOS | METRÔ).
-// A de 2 só vale com a de 3 em AT·MN; nos outros modos ela guarda a posição.
-let duoMetro = false;   // posição da chave de 2: false = RITMOS (AT), true = METRÔ (MN)
-function posDaTri(bits){ return bits === '01' ? 'FR' : (bits === '10' || bits === '11') ? 'SOM' : 'SB'; }
+// v3.20.1 — como no pedal: chave de 3 posições (AT | SB | FR·MN) + chave de
+// 2 (FR | MN). A de 2 só vale com a de 3 em FR·MN; fora dela, guarda a posição.
+let duoMetro = false;   // posição da chave de 2: false = MN (01), true = FR (11) — v3.20.2
+function posDaTri(bits){ return bits === '10' ? 'AT' : (bits === '01' || bits === '11') ? 'MET' : 'SB'; }
 function renderModo(){
   const bits = modoPedido || modoPedal;
-  if (bits === '10') duoMetro = false;
+  if (bits === '01') duoMetro = false;
   if (bits === '11') duoMetro = true;
   const pos = posDaTri(bits);
   const tri = $('#tri');
   tri.dataset.pos = pos;
   tri.querySelectorAll('button').forEach(b => b.setAttribute('aria-checked', b.dataset.pos === pos ? 'true' : 'false'));
   $('#chaveDuo').setAttribute('aria-checked', duoMetro ? 'true' : 'false');
-  $('#dRitmos').classList.toggle('on', !duoMetro);
-  $('#dMetro').classList.toggle('on', duoMetro);
-  $('#duo').classList.toggle('inativa', pos !== 'SOM');
+  $('#dFR').classList.toggle('on', !duoMetro);
+  $('#dMN').classList.toggle('on', duoMetro);
+  $('#duo').classList.toggle('inativa', pos !== 'MET');
   tri.classList.toggle('pend', !!modoPedido);
   $('#duo').classList.toggle('pend', !!modoPedido);
   const m = bits && MODOS[bits];
@@ -2521,15 +2545,15 @@ faderSoPelaAlca($('#volFader'));   // v3.18
   $('#volFechar').onclick = fecharVolumeTimbre;
   // v3.19.1 — as chaves do modo: a de 3 posições e a de 2
   $('#tri').querySelectorAll('button').forEach(b => b.onclick = () => {
-    const alvo = b.dataset.pos === 'FR' ? '01' : b.dataset.pos === 'SB' ? '00' : (duoMetro ? '11' : '10');
+    const alvo = b.dataset.pos === 'AT' ? '10' : b.dataset.pos === 'SB' ? '00' : (duoMetro ? '11' : '01');
     pedirModo(alvo);
   });
   $('#chaveDuo').onclick = () => {
     duoMetro = !duoMetro;
     const pos = posDaTri(modoPedido || modoPedal);
-    if (pos === 'SOM'){
+    if (pos === 'MET'){
       if (!rx){ duoMetro = !duoMetro; avisoStatus('Sem conexão — nada enviado', 'err'); return; }
-      pedirModo(duoMetro ? '11' : '10');                     // só vale em AT·MN
+      pedirModo(duoMetro ? '11' : '01');                     // só vale em FR·MN
     }
     else renderModo();                                       // fora dele: só a posição muda
   };
