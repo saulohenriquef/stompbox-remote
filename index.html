@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v3.20.2 "Mixing Station + Repertório + Cena + Sampler"
+ STOMPBOX REMOTE — v4.3 "Mixing Station + Repertório + Cena + Sampler"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -10,7 +10,7 @@
  PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth"), mais o que
  a página usa das versões seguintes: "BOOT=" (v32), "E?" (v33), e o MUTE
  de slot "s00", o MUTE geral "M0" e o volume absoluto "Vnn=vvv"/"Vnn?"
- (v34), o sampler "Ann" (v36) e o modo "Cnn" (v37). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
+ (v34), o sampler "Ann" (v36), o modo "Cnn" (v37), o "VS" (v38) e o "VX" (v38.1). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
  é o antigo "volta um timbre" — a página mostra o que o pedal responder.
 
  ------------------------------------------------------------
@@ -221,6 +221,105 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v4.3 — CORREÇÃO DA SELEÇÃO DOS SLOTS NO MODO ESCURO + CORES SÓBRIAS
+        (firmware v38.1 sem mudança):
+        1) BUG DA v4.2: no modo escuro, o slot selecionado perdia a cor (o
+           cartão ficava preto), e também sumiam as barrinhas coloridas no
+           topo de cada slot, o traço colorido dos botões do Disparo, o
+           retorno colorido ao tocar neles e o verde das chaves ligadas.
+           Causa: o modo escuro da v4.2 era um bloco de regras "html.escuro …"
+           por cima do tema claro; o prefixo deixava essas regras MAIS FORTES
+           que as regras de cor de cada slot (as de :nth-child), que então
+           perdiam. A v4.1 não tinha o problema.
+        2) A CORREÇÃO: cada modo agora é uma FOLHA DE ESTILO INTEIRA — o modo
+           claro é o CSS de antes da v4.1, o escuro é o CSS da v4.1 — e o
+           botão ◐ liga uma e desliga a outra. Dentro de cada folha a ordem e
+           a força das regras são as originais, então nada mais briga.
+        3) CORES SÓBRIAS NO MODO ESCURO: as cores dos slots e do sampler
+           ficaram bem menos vivas (azul, verde, vermelho, amarelo e laranja
+           apagados) — continuam marcando o slot selecionado, as barrinhas,
+           os disparos e a grade. O modo claro segue com as cores de antes.
+        4) A cor do BT, do MUTE, dos faders e das chaves não mudou.
+
+ v4.2 — MODO CLARO E MODO ESCURO (firmware v38.1 sem mudança):
+        1) As cores de antes da v4.1 voltaram como MODO CLARO, e o tema
+           preto da v4.1 virou o MODO ESCURO. Um botão ◐ no topo, ao lado
+           dos selos da barra de status, alterna os dois. A escolha fica
+           guardada no aparelho; a primeira vez abre no escuro.
+        2) O modo escuro é o mesmo da v4.1, regra por regra: cores vivas
+           (slots, sampler, MUTE, BT, faders, chaves, repertório) iguais nos
+           dois modos.
+        3) O tema é aplicado antes de a página aparecer (sem piscar o outro
+           tema na abertura), e a cor da barra do navegador acompanha.
+        4) Todo o resto igual à v4.1, inclusive o "Apagar volumes gravados".
+
+ v4.1 — FUNDO PRETO (OLED) E APAGAR VOLUMES GRAVADOS (casada com o
+        firmware v38.1):
+        1) TEMA PRETO, mais sóbrio, no estilo do Tap Tempo Trainer: fundo
+           totalmente preto (#000) — no OLED, pixel preto fica apagado e
+           não gasta bateria, o que conta numa página que fica muito tempo
+           com a tela acesa. Balões, botões e campos viraram tons neutros
+           quase pretos (sem o azulado de antes), com bordas cinza discretas;
+           os degradês do fundo saíram; textos em cinza neutro. A barra de
+           status perdeu o fundo claro dos selos (só contorno).
+        2) AS CORES VIVAS FICARAM COMO ESTAVAM: as dos slots, o laranja do
+           sampler, o vermelho do MUTE, o azul do BT e dos faders, o verde
+           das chaves, as cores do repertório por BPM.
+        3) APAGAR VOLUMES GRAVADOS: no balão da Cena, embaixo do "Gravar
+           volumes no pedal", o botão "Apagar volumes gravados" manda "VX"
+           (firmware v38.1). O pedal apaga da flash todos os volumes
+           gravados e VOLTA OS VOLUMES AO DA TABELA DO FIRMWARE NA HORA.
+           Pede confirmação (também corta o som por um instante). A barra
+           mostra quantos existiam; sem resposta em 2 s, avisa que precisa
+           do firmware v38.1. O painel de volume relê o timbre aberto.
+           A cena (salvar/carregar) não muda.
+
+ v4.0 — CATEGORIAS, NÚMEROS NO CATÁLOGO E TAPS DO PEDAL NO ANDAMENTO
+        (firmware v38.0 sem mudança):
+        1) CATEGORIAS NA ORDEM PERSONALIZADA. No "editar minha ordem", o
+           botão "+ Categoria" cria um título (ex.: "Bumbos", "Efeitos")
+           acima do timbre marcado — toque no nome de um timbre pra
+           marcar; sem nada marcado, a categoria entra no topo. O nome da
+           categoria se edita ali mesmo, ela sobe e desce com as setas como
+           os timbres, e o ✕ apaga. Na grade, com a ordem personalizada, cada
+           categoria vira um título de largura inteira antes do seu grupo.
+           Categoria sem nome é descartada ao salvar. "Restaurar ordem do
+           índice" tira as categorias.
+        2) NÚMEROS NO CATÁLOGO. No "editar catálogo", cada linha tem à
+           esquerda o número do timbre (01, 02…), mais apagado e fora do
+           texto: não dá pra editar, só ajuda a achar o lugar. Como é o
+           número da LINHA, inserir um nome no meio renumera tudo abaixo —
+           a lista continua seguindo a ordem do pedal. A caixa não quebra
+           linha (um nome por linha, sempre).
+        3) TAPS DO PEDAL NO ANDAMENTO. No metrônomo com o click pelo
+           Bluetooth, o pedal manda "TAP" a cada pisada (o Tap Tempo
+           Trainer já usava; esta página ignorava). Agora a página mede a
+           frase e mostra o BPM calculado no balão Andamento, a cada tap a
+           partir do 2º, com "do pedal" embaixo do número. Frase nova depois
+           de 2 s ou de 1,5 tempo sem tap, como no pedal. Quando o pedal
+           larga o metrônomo, a grade "L" traz o andamento exato e ele
+           substitui a estimativa. SÓ MOSTRA: nada é mandado de volta pro
+           pedal (quem decide o andamento é o pedal). A estimativa pelos
+           taps oscila um pouco, porque o Bluetooth atrasa cada mensagem de
+           um jeito; o valor da grade é o exato.
+
+ v3.21 — GRAVAR OS VOLUMES NO PEDAL (casada com o firmware v38.0):
+        1) No balão da Cena, um botão novo: "Gravar volumes no pedal". Ele
+           manda "VS" e o pedal grava na flash (NVS) os volumes de timbre
+           que estão diferentes da tabela do firmware — só o que mudou
+           desde a última gravação. Eles passam a valer sozinhos ao ligar o
+           pedal, sem celular.
+        2) Antes de mandar, a página pede confirmação: gravar na flash
+           corta o som do pedal por um instante — use entre músicas.
+        3) O pedal responde "VS=n" (n = quantos volumes foram gravados ou
+           apagados agora; 0 = já estava tudo gravado) e a barra mostra.
+           "VS=ERRO" ou sem resposta em 2 s: a barra avisa (sem resposta =
+           firmware anterior à v38).
+        4) Pra tirar um volume gravado: volte o timbre ao valor da tabela e
+           grave de novo — a entrada dele é apagada.
+        5) O "Salvar cena" / "Carregar cena" continua EXATAMENTE como
+           estava: a cena fica no celular; a gravação é no pedal.
 
  v3.20.2 — FR E MN TROCADOS DE LUGAR (casada com o firmware v37.1):
         1) Os nomes estavam invertidos, na página e no firmware. Agora:
@@ -434,8 +533,9 @@
 <title>StompBox Remote</title>
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#171310">
-<style>
+<meta name="theme-color" content="#000000">
+
+<style id="cssClaro">
 :root{
   --base:#11151a;--base2:#0b0e12;
   --panel:#1a2027;--panel2:#222a33;--panel3:#29323c;
@@ -670,6 +770,17 @@ h2.fechado .seta{transform:rotate(-90deg)}
 .orderRow .nome{flex:1;font-size:13px;color:#dbe1e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .orderRow button{width:32px;height:32px;background:#29323c;border:1px solid #3a4753;border-radius:6px;font-size:15px;color:#b9c3cc;flex:none}
 .orderRow button:disabled{opacity:.28}
+/* v4.0 — categorias na ordem personalizada */
+.orderRow .nome{cursor:pointer}
+.orderRow.sel{border-color:var(--blue);background:#1c2a38}
+.orderRow.cat{background:#1a2027;border-style:dashed}
+.orderRow.cat input{flex:1;min-width:0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px}
+.orderRow .rem{color:#ff8c95}
+.catHdr{grid-column:1/-1;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);padding:8px 2px 3px;border-bottom:1px solid var(--line);margin-top:2px}
+/* v4.0 — catálogo com o número de cada linha, apagado e fora do texto */
+.catEdit{display:flex;height:260px;border:1px solid #35404b;border-radius:6px;background:#202831;overflow:hidden}
+.catNums{margin:0;padding:8px 6px 8px 8px;text-align:right;color:#56616c;user-select:none;-webkit-user-select:none;overflow:hidden;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;background:#1b222a;border-right:1px solid #2c3640;flex:none;white-space:pre}
+.catEdit textarea{flex:1;height:100%;border:none;border-radius:0;white-space:pre;overflow:auto;resize:none;background:transparent}
 
 /* Caixas / mixer */
 .box{
@@ -911,6 +1022,510 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 .modoNome .mono{font-size:20px;font-weight:700}
 #modoNome{font-size:12px;color:var(--dim)}
 </style>
+<style id="cssEscuro" media="not all">
+:root{
+  /* v4.1 — fundo preto (OLED): neutros quase pretos, sem azulado */
+  --base:#000;--base2:#000;
+  --panel:#0a0a0a;--panel2:#111;--panel3:#161616;
+  --line:#262626;--line2:#333;
+  --ink:#e6e6e6;--dim:#8a8a8a;--muted:#666;
+  --blue:#4da3ff;--cyan:#42d9d0;--green:#45d483;
+  --amber:#ffb84d;--red:#ff5c68;--purple:#a98cff;
+  /* v4.3 — no modo escuro, as cores dos slots e do sampler ficam sóbrias */
+  --slot1:#4a7fb8;--slot2:#4f9a63;--slot3:#b5524c;--slot4:#b8a03a;
+  --sampler:#c08440;
+  --r:8px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;background:var(--base2)}
+body{
+  margin:0;
+  background:#000000;   /* v4.1 — preto puro: no OLED, pixel apagado */
+  color:var(--ink);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:15px;line-height:1.35;
+  padding:0 9px 30px;max-width:720px;margin-inline:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button[disabled]{opacity:.42}
+button,.btn{user-select:none;-webkit-user-select:none;transition:background .1s,border-color .1s,transform .06s}
+button:active{transform:translateY(1px)}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+
+/* Topo */
+.topStack{
+  position:sticky;top:0;z-index:6;
+  background:rgba(13,17,21,.94);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(70,81,93,.45);
+  padding-bottom:7px;margin:0 -10px;padding-left:10px;padding-right:10px;
+}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 3px 9px;}
+.dot{width:9px;height:9px;border-radius:50%;background:#414141;box-shadow:0 0 0 3px rgba(74,83,93,.12);flex:none}
+.dot.on{background:var(--green);box-shadow:0 0 10px rgba(69,212,131,.55)}
+.dot.busy{background:var(--amber);box-shadow:0 0 10px rgba(255,184,77,.4)}
+.dot.err{background:var(--red);box-shadow:0 0 10px rgba(255,92,104,.4)}
+#status{flex:1;color:var(--dim);font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{
+  background:linear-gradient(180deg,#111111,#0e0e0e);
+  border:1px solid var(--line2);border-radius:7px;padding:8px 13px;
+  box-shadow:0 2px 5px rgba(0,0,0,.22);
+}
+.btn.primary{border-color:#3d89c9;color:#d9edff;background:linear-gradient(180deg,#205c8e,#174b76)}
+.btn:active{transform:translateY(1px)}
+
+/* Slots / canais */
+.slots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-top:7px}   /* v3.17: 4 slots + sampler */
+.slot{
+  background:linear-gradient(180deg,#0c0c0c,#0a0a0a);
+  border:1px solid var(--line);border-radius:8px;
+  padding:7px 6px 9px 6px;text-align:left;display:block;
+  min-height:64px;box-shadow:0 2px 7px rgba(0,0,0,.2);
+  position:relative;overflow:hidden;
+}
+.slot::before{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:#434343;
+}
+.slot:nth-child(1)::before{background:var(--slot1)}
+.slot:nth-child(2)::before{background:var(--slot2)}
+.slot:nth-child(3)::before{background:var(--slot3)}
+.slot:nth-child(4)::before{background:var(--slot4)}
+.slot:nth-child(5)::before{background:var(--sampler)}   /* v3.17 */
+.slot::after{
+  content:"";position:absolute;width:6px;height:6px;border-radius:50%;
+  right:7px;top:7px;background:#414141;
+}
+.slot[aria-pressed="true"]{
+  border-color:#575757;background:linear-gradient(180deg,#101010,#0d0d0d);
+  box-shadow:inset 0 0 0 1px rgba(77,163,255,.16),0 3px 9px rgba(0,0,0,.28);
+}
+/* cartão selecionado preenche com a cor cheia do próprio slot (mesmo mapa de cor da faixa ::before) */
+.slot:nth-child(1)[aria-pressed="true"]{background:var(--slot1);border-color:color-mix(in srgb, var(--slot1) 75%, black 25%)}
+.slot:nth-child(2)[aria-pressed="true"]{background:var(--slot2);border-color:color-mix(in srgb, var(--slot2) 75%, black 25%)}
+.slot:nth-child(3)[aria-pressed="true"]{background:var(--slot3);border-color:color-mix(in srgb, var(--slot3) 75%, black 25%)}
+.slot:nth-child(4)[aria-pressed="true"]{background:var(--slot4);border-color:color-mix(in srgb, var(--slot4) 75%, black 25%)}
+.slot:nth-child(5)[aria-pressed="true"]{background:var(--sampler);border-color:color-mix(in srgb, var(--sampler) 75%, black 25%)}
+/* v3.17 — o quadrado do sampler: o "número" é o símbolo de tocar */
+.slot.sampler .num{color:var(--sampler)}
+.slot.sampler[aria-pressed="true"] .num{color:#080808}
+/* v3.17 — com o sampler ligado, os nomes da grade e dos favoritos ficam laranja */
+#grid.sampler .tim .t,#favbar.sampler .tim .t{color:var(--sampler)}
+/* v3.18 — segurar um balão abre o fader do timbre; sem menu de toque longo */
+.tim{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+#volDlg .volTopo{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+#volDlg h3{margin:0}
+#volFechar{width:38px;height:38px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:17px;flex:0 0 auto}
+#volTocar{width:100%;margin-top:10px}
+#volDlg .note{margin-top:6px}
+/* v3.17.1 — no sampler, o 00 MUTE fica só de enfeite: segura o lugar na grade, apagado */
+.tim.mute.enfeite{opacity:.35;pointer-events:none}
+#grid.sampler .tim.mute.enfeite .t{color:#ff8c95}
+.tim.tocando{background:var(--sampler);border-color:var(--sampler)}
+.tim.tocando .t,.tim.tocando .n{color:#080808 !important}
+.nudge.desligado button{opacity:.35;pointer-events:none}
+.slot[aria-pressed="true"]::after{
+  background:#080808;opacity:.3;box-shadow:none;
+}
+.slot .lbl{font-size:8px;color:var(--dim);display:block;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .num{font-size:19px;line-height:1.15;letter-spacing:-.02em;font-weight:600;color:#646464;display:block}
+.slot .nm{font-size:10px;color:#dedede;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;margin-top:1px}
+/* texto escuro no cartão selecionado — mesmo contraste calculado pros balões (v3.11) */
+.slot[aria-pressed="true"] .lbl{color:#080808;opacity:.72}
+.slot[aria-pressed="true"] .num{color:#080808}
+.slot[aria-pressed="true"] .nm{color:#080808}
+
+/* Metrônomo (slot 5) — leitura fora da barra fixa, não faz parte da linha dos 4 pedais */
+.slotMetro{
+  background:linear-gradient(180deg,#0c0c0c,#0a0a0a);border:1px solid var(--line);
+  border-radius:8px;padding:7px 10px;margin-top:6px;opacity:.78;
+  font-size:12px;color:#dedede;display:none;
+}
+.slotMetro b{color:var(--dim);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
+.slotMetro .num{color:#646464;font-weight:600;margin-right:6px}
+
+/* Navegação */
+.nudge{display:flex;align-items:center;gap:7px;margin:7px 0 13px}
+.nudge button{
+  flex:none;width:52px;height:42px;background:#0c0c0c;
+  border:1px solid var(--line);border-radius:7px;font-size:22px;color:#e0e0e0;
+}
+.nudge button:active{background:#121212;border-color:var(--line2)}
+.nudge span{flex:1;text-align:center;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* Títulos */
+h2{
+  font-size:11px;font-weight:700;color:#6c6c6c;margin:18px 2px 7px;
+  display:flex;align-items:center;gap:8px;
+  text-transform:uppercase;letter-spacing:.08em;
+  border-bottom:1px solid #131313;padding-bottom:6px;
+}
+h2::before{content:"";width:3px;height:13px;border-radius:2px;background:var(--blue);opacity:.8}
+h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#323232,transparent);opacity:.65}
+h2 button{
+  margin-left:auto;font-size:10px;color:#7199bb;
+  border-bottom:1px solid #4c4c4c;padding:0;text-transform:none;letter-spacing:0;
+}
+
+/* Timbres */
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;--activeColor:var(--blue)}
+@media(min-width:420px){.grid{grid-template-columns:repeat(3,1fr)}}
+.tim{
+  background:#0b0b0b;
+  border:2px solid color-mix(in srgb, var(--activeColor) 55%, #2d2d2d 45%);
+  border-radius:7px;
+  padding:7px 8px;text-align:left;position:relative;min-height:54px;
+  transition:border-color .12s;
+}
+.tim:active{background:#111111}
+.tim .n{font-size:10px;color:#5b5b5b;display:block}
+.tim .t{font-size:13px;color:#e0e0e0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tim.cur{
+  border-color:color-mix(in srgb, var(--activeColor) 75%, black 25%);
+  background:var(--activeColor);
+  box-shadow:0 2px 12px color-mix(in srgb, var(--activeColor) 50%, transparent 50%);
+}
+.tim.cur .n{color:#080808;opacity:.75}
+.tim.cur .t{color:#080808;font-weight:700}
+.tim .badge{position:absolute;top:6px;right:7px;font-size:10px;color:#909090}
+/* v3.16 — balões recolhíveis: o título abre e fecha */
+h2[data-rec]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+h2 .seta{font-size:10px;color:#5f5f5f;transition:transform .15s;display:inline-block}
+h2.fechado .seta{transform:rotate(-90deg)}
+.recolhido{display:none !important}
+/* v3.16 — faders só pela alça: o trilho não recebe toque, a rolagem segue livre */
+.fader-zone{touch-action:pan-y}
+.fader-zone .fader{pointer-events:none}
+/* v3.16 — Meus presets */
+.presets.meus .ed{position:absolute;right:0;top:0;width:34px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#959595}
+.presets.meus button{padding-right:30px}
+#meusVazio{grid-column:1/-1;font-size:12px;color:#585858;padding:10px 4px}
+.meuPreSlots{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:10px 0}
+.meuPreSlots label{font-size:12px;color:#a5a5a5}
+.meuPreSlots select{width:100%}
+#meuPreNome{width:100%;margin-top:8px;box-sizing:border-box}
+/* v3.15 — o timbre 00 MUTE */
+.tim.mute .t{color:#ff8c95;font-weight:700}
+.tim.mute.cur{background:var(--red);border-color:var(--red)}
+.tim.mute.cur .t{color:#080808}
+.slot.mudo .num,.slot.mudo .nm{color:var(--red)}
+/* v3.15 — botão MUTE do volume geral */
+#mMute{width:auto;padding:0 12px;font-size:12px;font-weight:700;letter-spacing:.06em;color:#ffb3b9;border-color:#373737;background:#0c0c0c}
+#mMute.on{background:var(--red);border-color:var(--red);color:#080808;box-shadow:0 0 12px rgba(255,92,104,.45)}
+/* v3.15 — balão da cena */
+.box.cena::before{content:"CENA"}
+.cenaTxt{font-size:13px;margin:0 0 4px;color:#e0e0e0}
+.cenaBtns{display:flex;gap:7px;margin-top:9px}
+.cenaBtns .btn{flex:1}
+#cenaLimpar{margin-top:9px;background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;padding:0}
+/* v3.14 — timbre PEDIDO, esperando a confirmação do pedal ("T<slot>=") */
+.tim.pend{border-style:dashed;border-color:var(--activeColor)}
+.slot.pend .num,.slot.pend .nm{opacity:.55}
+.tim.cur .badge{color:#080808;opacity:.7}
+
+/* Ordenar timbres */
+.sortBar{display:flex;gap:5px;margin-bottom:8px;align-items:stretch}
+.sortBar button{
+  flex:1;min-height:32px;background:#0e0e0e;border:1px solid #323232;border-radius:6px;
+  font-size:11px;color:#c2c2c2;padding:0 4px;
+}
+.sortBar button.cur{border-color:#4e8ebd;color:#c9e7ff;background:#1d3547}
+.sortEdit{
+  flex:0 0 auto;font-size:10px;color:#7199bb;background:none;border:none;
+  border-bottom:1px solid #4c4c4c;padding:0 2px;min-height:auto;
+}
+
+/* Favoritos */
+.favbar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;--activeColor:var(--blue)}
+.favbar .tim{padding:6px 4px;min-height:48px}
+.favbar .tim .n{font-size:9px}
+.favbar .tim .t{font-size:9.5px}
+.favbar .tim .badge{font-size:8px;top:3px;right:4px}
+.tim.vazio{
+  background:transparent;border:2px dashed #373737;display:flex;
+  align-items:center;justify-content:center;color:#505050;font-size:18px;font-weight:300;
+}
+.tim.chosen{border-color:var(--amber);background:color-mix(in srgb, var(--amber) 30%, #080808 70%)}
+.tim.chosen .n,.tim.chosen .t{color:var(--amber)}
+
+/* Modal de reordenar */
+#orderList{max-height:50vh;overflow:auto;display:grid;gap:5px;margin:8px 0}
+.orderRow{display:flex;align-items:center;gap:8px;background:#0e0e0e;border:1px solid #323232;border-radius:6px;padding:7px 9px}
+.orderRow .num{font-size:11px;color:#909090;width:20px;flex:none}
+.orderRow .nome{flex:1;font-size:13px;color:#e0e0e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orderRow button{width:32px;height:32px;background:#121212;border:1px solid #373737;border-radius:6px;font-size:15px;color:#c2c2c2;flex:none}
+.orderRow button:disabled{opacity:.28}
+/* v4.0 — categorias na ordem personalizada */
+.orderRow .nome{cursor:pointer}
+.orderRow.sel{border-color:var(--blue);background:#0f0f0f}
+.orderRow.cat{background:#0b0b0b;border-style:dashed}
+.orderRow.cat input{flex:1;min-width:0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px}
+.orderRow .rem{color:#ff8c95}
+.catHdr{grid-column:1/-1;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--dim);padding:8px 2px 3px;border-bottom:1px solid var(--line);margin-top:2px}
+/* v4.0 — catálogo com o número de cada linha, apagado e fora do texto */
+.catEdit{display:flex;height:260px;border:1px solid #323232;border-radius:6px;background:#0e0e0e;overflow:hidden}
+.catNums{margin:0;padding:8px 6px 8px 8px;text-align:right;color:#4c4c4c;user-select:none;-webkit-user-select:none;overflow:hidden;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5;background:#0c0c0c;border-right:1px solid #131313;flex:none;white-space:pre}
+.catEdit textarea{flex:1;height:100%;border:none;border-radius:0;white-space:pre;overflow:auto;resize:none;background:transparent}
+
+/* Caixas / mixer */
+.box{
+  background:linear-gradient(180deg,#0c0c0c,#0a0a0a);
+  border:1px solid var(--line);border-radius:8px;padding:11px;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);position:relative;
+}
+.box::before{
+  content:"MIX";position:absolute;right:9px;top:7px;
+  font-size:8px;letter-spacing:.13em;color:#404040;pointer-events:none;
+}
+.head{display:flex;align-items:center;gap:7px}
+.head .read{flex:1;text-align:center}
+.head .read b{font-size:28px;font-weight:500;display:block;line-height:1;color:#f3f3f3;text-shadow:0 0 14px rgba(255,255,255,.08)}
+.head .read i{font-size:10px;color:var(--muted);font-style:normal;display:block;margin-top:3px}
+.head button{
+  width:48px;height:44px;border:1px solid #353535;border-radius:7px;
+  font-size:19px;background:#0f0f0f;color:#e2e2e2;
+}
+.head button:active{background:#131313;border-color:#505050}
+#tap{width:auto;padding:0 17px;min-width:70px;border-color:#347bb2;color:#bfe2ff;background:#1b3b55;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+#mAsk,#vAsk{width:auto;padding:0 12px;font-size:13px;color:#aeaeae}
+
+/* Faders */
+.fader-zone{position:relative;padding:0 2px}
+.fader-zone::before{
+  content:"";position:absolute;left:13px;right:13px;top:25px;height:7px;
+  border-radius:5px;
+  background:linear-gradient(90deg,#245b83 0 20%,#257f79 20% 58%,#788331 58% 78%,#8b632e 78% 90%,#7b343c 90% 100%);
+  opacity:.22;pointer-events:none;z-index:0;
+}
+.fader-zone::after{
+  content:"";position:absolute;left:13px;top:25px;
+  width:var(--level,0%);max-width:calc(100% - 26px);height:7px;
+  border-radius:5px;background:linear-gradient(90deg,#328fd0,#38bcb2 65%,#d3aa42 88%,#d55b62);
+  opacity:var(--level-alpha,.1);pointer-events:none;z-index:0;
+}
+.fader-zone .level-markers{
+  position:absolute;left:13px;right:13px;top:17px;height:22px;
+  pointer-events:none;
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(6.25% - 1px),rgba(150,165,178,.3) calc(6.25% - 1px),rgba(150,165,178,.3) 6.25%);
+  mask-image:linear-gradient(90deg,transparent 0,#000000 8%,#000000 92%,transparent 100%);
+  z-index:1;
+}
+.fader{
+  -webkit-appearance:none;appearance:none;width:100%;height:46px;
+  background:transparent;margin:8px 0 0;display:block;position:relative;z-index:2;
+}
+.fader:disabled{opacity:.35}
+.fader::-webkit-slider-runnable-track{
+  height:7px;border-radius:4px;border:1px solid #050505;
+  background:linear-gradient(90deg,rgba(77,163,255,.22),rgba(77,163,255,.08)),linear-gradient(180deg,#040404,#090909);
+}
+.fader::-webkit-slider-thumb{
+  -webkit-appearance:none;width:25px;height:38px;margin-top:-16px;border-radius:4px;
+  background:linear-gradient(90deg,transparent 0 44%,#62b7ff 45% 55%,transparent 56%),linear-gradient(180deg,#5b5b5b 0%,#363636 43%,#101010 50%,#444444 57%,#2d2d2d 100%);
+  border:1px solid #080808;box-shadow:0 2px 5px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05) inset;
+}
+.fader::-moz-range-track{height:7px;border-radius:4px;border:1px solid #050505;background:linear-gradient(90deg,rgba(77,163,255,.22),rgba(77,163,255,.08)),#070707}
+.fader::-moz-range-thumb{
+  width:25px;height:38px;border-radius:4px;border:1px solid #080808;
+  background:linear-gradient(180deg,#5b5b5b 0%,#363636 43%,#101010 50%,#444444 57%,#2d2d2d 100%);
+}
+.ticks{height:11px;margin:0 13px;background-repeat:repeat-x;opacity:.5}
+.scale{display:flex;justify-content:space-between;font-size:10px;color:#5c5c5c;margin:2px 12px 0}
+
+/* Volume por timbre */
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
+.pick button{
+  min-height:39px;background:#0e0e0e;border:2px solid #323232;border-radius:6px;
+  padding:8px 0;font-size:11px;color:#c2c2c2;font-weight:500;
+}
+.pick button:nth-child(1){border-color:color-mix(in srgb, var(--slot1) 50%, #323232 50%)}
+.pick button:nth-child(2){border-color:color-mix(in srgb, var(--slot2) 50%, #323232 50%)}
+.pick button:nth-child(3){border-color:color-mix(in srgb, var(--slot3) 50%, #323232 50%)}
+.pick button:nth-child(4){border-color:color-mix(in srgb, var(--slot4) 50%, #323232 50%)}
+.pick button:nth-child(1).cur{background:var(--slot1);border-color:color-mix(in srgb, var(--slot1) 75%, black 25%)}
+.pick button:nth-child(2).cur{background:var(--slot2);border-color:color-mix(in srgb, var(--slot2) 75%, black 25%)}
+.pick button:nth-child(3).cur{background:var(--slot3);border-color:color-mix(in srgb, var(--slot3) 75%, black 25%)}
+.pick button:nth-child(4).cur{background:var(--slot4);border-color:color-mix(in srgb, var(--slot4) 75%, black 25%)}
+.pick button.cur{color:#080808;font-weight:700}
+.vlabel{text-align:center;font-size:11px;color:var(--muted);min-height:19px}
+.vlabel b{color:#eaeaea;font-size:13px}
+
+/* Presets */
+.presets{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.presets button{
+  background:#0b0b0b;border:1px solid #2d2d2d;border-radius:7px;
+  padding:8px 10px;text-align:left;min-height:55px;position:relative;
+}
+.presets .n{font-size:10px;color:#5b5b5b;display:block;letter-spacing:.08em}
+.presets .t{font-size:13px;color:#e0e0e0;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.presets button.cur{
+  border-color:#666666;background:#0f0f0f;box-shadow:inset 3px 0 var(--blue);
+}
+.presets button.cur .n,.presets button.cur .t{color:#b9ddfb}
+.presets button.cur::after{
+  content:"RECALL";position:absolute;right:8px;top:8px;
+  font-size:7px;color:#6da7d1;letter-spacing:.08em;
+}
+
+/* Disparo */
+.fire{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.fire button{
+  min-height:58px;background:linear-gradient(180deg,#0e0e0e,#0b0b0b);
+  border:1px solid #353535;border-radius:7px;padding:16px 0;
+  font-size:13px;color:#dcdcdc;font-weight:500;letter-spacing:.02em;
+  position:relative;overflow:hidden;
+}
+.fire button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:#323232}
+.fire button:active::after{background:var(--cyan)}
+.fire button:nth-child(1)::after{background:var(--slot1)}
+.fire button:nth-child(2)::after{background:var(--slot2)}
+.fire button:nth-child(3)::after{background:var(--slot3)}
+.fire button:nth-child(4)::after{background:var(--slot4)}
+.fire button:nth-child(1):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot1) 30%, #0e0e0e 70%),#0b0b0b)}
+.fire button:nth-child(2):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot2) 30%, #0e0e0e 70%),#0b0b0b)}
+.fire button:nth-child(3):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot3) 30%, #0e0e0e 70%),#0b0b0b)}
+.fire button:nth-child(4):active{background:linear-gradient(180deg,color-mix(in srgb, var(--slot4) 30%, #0e0e0e 70%),#0b0b0b)}
+.fire button.wide{
+  grid-column:1/-1;border-color:#434343;color:#ffd38a;
+  background:linear-gradient(180deg,#0d0d0d,#0a0a0a);
+  padding:13px 0;font-size:12px;
+}
+
+/* Console */
+.panel{
+  border:1px solid #2d2d2d;border-radius:8px;margin-top:17px;
+  overflow:hidden;background:#090909;
+}
+.panel summary{
+  padding:11px 12px;color:#6c6c6c;font-size:11px;cursor:pointer;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.panel .body{padding:0 11px 11px;display:grid;gap:9px}
+#log{
+  background:#040404;border:1px solid #121212;border-radius:6px;
+  padding:8px;height:150px;overflow:auto;font-size:11px;
+  white-space:pre-wrap;color:#656565;
+}
+#log .tx{color:#d0d0d0}#log .rx{color:#62b7ff}#log .er{color:#ff707b}
+.row{display:flex;gap:7px;align-items:center}
+.row label{font-size:11px;color:#6c6c6c;flex:1}
+select,input[type=text],textarea{
+  background:#0e0e0e;color:var(--ink);border:1px solid #323232;
+  border-radius:6px;padding:8px;font:inherit;
+}
+input[type=text]{flex:1;min-width:0}
+textarea{width:100%;height:230px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5}
+.note{font-size:10px;color:#585858;margin:0}
+.fireNota{margin-top:7px}   /* v3.14 — o que o 8888 faz em cada modo */
+
+
+/* ---------- andamento manual / repertório ---------- */
+.tempo-box{overflow:hidden}
+.tempo-manual{display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.tempo-manual input{flex:1;min-width:0;height:44px;font-size:22px;font-weight:600;text-align:center;background:#080808;border-color:#3e3e3e;color:#f2f2f2;font-variant-numeric:tabular-nums}
+.tempo-manual input:focus{border-color:#4da3ff;box-shadow:0 0 0 2px rgba(77,163,255,.12)}
+.tempo-unit{font-size:10px;color:#636363;letter-spacing:.08em;margin-left:-48px;pointer-events:none}
+#bpmSend{height:44px;min-width:76px}
+.tempo-rep{width:44px!important;padding:0!important;color:#9bcfff!important;border-color:#347bb2!important;background:#1b3b55!important;font-size:20px!important}
+
+/* ---------- repertório (baseado no Tap Tempo Trainer) ---------- */
+#repertorioFundo,#gerenciarFundo{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:14px}
+#repertorioFundo.aberto,#gerenciarFundo.aberto{display:flex}
+#repertorioCaixa,#gerenciarCaixa{display:flex;flex-direction:column;width:100%;max-width:440px;max-height:90vh;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.7)}
+#repertorioTopo,#gerenciarTopo{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+#repertorioTopo span,#gerenciarTopo span{font-size:12px;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+#repertorioFechar,#gerenciarFechar{margin:0;padding:0 10px;font-size:22px;line-height:1;background:transparent;border:0}
+#repertorioFiltro,#gerenciarFiltro{width:100%;font-size:14px;padding:8px 10px;margin-bottom:10px;background:#080808;color:var(--ink);border:1px solid #323232;border-radius:6px}
+#repertorioLista{flex:1;overflow-y:auto;min-height:60px}
+.repItem{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid #2d2d2d;cursor:pointer}
+.repItem:active{background:#0e0e0e}
+.repTexto{flex:1;min-width:0}.repNome{font-size:15px;color:#eeeeee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.repDescricao{display:block;font-size:12px;font-weight:normal;color:#696969;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.repBpm{font-size:15px;font-weight:bold;font-variant-numeric:tabular-nums}.repCompasso{font-size:12px;font-variant-numeric:tabular-nums;color:var(--dim);min-width:28px;text-align:right}.repEditar,.repRemover{margin:0;padding:2px 7px;font-size:15px;line-height:1;color:var(--dim);background:transparent;border:0}.repEditar:hover,.repRemover:hover{color:#f2f2f2}
+#gerenciarCaixa{overflow-y:auto}.gerSecao{border-top:1px solid var(--line);padding-top:12px;margin-top:14px}.gerSecao:first-of-type{border-top:0;padding-top:0;margin-top:0}.gerSecao.editando{background:#090909;border-radius:10px;padding:10px;margin-left:-10px;margin-right:-10px}.gerTitulo{font-size:11px;letter-spacing:1.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px}.gerDica{font-size:11px;color:#636363;line-height:1.45}.gerSecao input[type=text],.gerSecao input[type=number],.repSelect{width:100%;font-size:14px;padding:8px 10px;margin-bottom:7px;background:#080808;color:var(--ink);border:1px solid #323232;border-radius:6px}.repLinha{display:grid;grid-template-columns:minmax(110px,1fr) auto minmax(80px,1fr);align-items:center;gap:7px;margin:2px 0 7px}.repCampo{position:relative}.repCampo input{margin:0!important;padding-right:42px!important}.sufixo{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10px;color:#5b5b5b;pointer-events:none}.repCheck{font-size:11px;color:#b0b0b0;white-space:nowrap;display:flex;align-items:center;gap:4px}.repSelect{margin:0}.repAcoes{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}.repAcoes .btn{padding:8px 6px;font-size:11px}.gerSecao #gerenciarLista{max-height:34vh;overflow-y:auto}.gerSecao #repertorioAdd,.gerSecao #repertorioCancelar{width:100%;margin-top:2px}.gerSecao.editando #repertorioCancelar{margin-top:7px}
+#repertorioVazio{padding:18px 4px;font-size:13px;color:#585858;text-align:center}
+@media(max-width:420px){.repLinha{grid-template-columns:1fr 1fr}.repSelect{grid-column:1/-1}.tempo-unit{display:none}}
+
+/* Dialogs */
+dialog{
+  border:1px solid #404040;border-radius:10px;background:#0b0b0b;color:var(--ink);
+  width:min(560px,94vw);padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.55);
+}
+dialog::backdrop{background:rgba(0,0,0,.72);backdrop-filter:blur(3px)}
+dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
+.dlgbar{display:flex;gap:7px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+
+@media(min-width:560px){
+  body{max-width:760px;padding-left:12px;padding-right:12px}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .presets{grid-template-columns:repeat(5,1fr)}
+  .fire{grid-template-columns:repeat(4,1fr)}
+  .fire button.wide{grid-column:1/-1}
+}
+::selection{background:#2b618d;color:white}
+/* v3.19 — barra de status no topo */
+.sbar{display:flex;gap:4px;flex:none}
+.sbar .chip{font-size:10px;padding:1px 5px;border-radius:4px;background:transparent;border:1px solid #353535;color:#d0d0d0;font-weight:700;letter-spacing:.3px}   /* v4.1: só contorno */
+.sbar .chip.bt{background:var(--blue);color:#ffffff}
+.sbar .chip.mudo{background:var(--red);color:#ffffff}
+.sbar .chip[hidden]{display:none}
+/* v3.19 — disparo embaixo de cada slot, fixo no topo junto com eles */
+.slotFire{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-top:5px}
+.slotFire button{height:20px;border-radius:6px;border:1px solid var(--line);background:#0b0b0b;color:var(--dim);font-size:10px;padding:0;position:relative;overflow:hidden;line-height:1}
+.slotFire button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px}
+.slotFire button:nth-child(1)::after{background:var(--slot1)}
+.slotFire button:nth-child(2)::after{background:var(--slot2)}
+.slotFire button:nth-child(3)::after{background:var(--slot3)}
+.slotFire button:nth-child(4)::after{background:var(--slot4)}
+.slotFire button:nth-child(5)::after{background:var(--sampler)}   /* v3.20 — último sample */
+.slotFire button:active{background:#121212;color:var(--ink)}
+/* v3.19 — balão do disparo: nome do timbre + nome do slot, menor e apagado */
+.fire button .fnome{display:block;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fire button .fslot{display:block;font-size:10px;color:var(--dim);margin-top:2px}
+/* v3.19 — chaves estilo iPhone do modo */
+.chaves{display:flex;align-items:center;gap:18px}
+.chave{display:flex;flex-direction:column;align-items:center;gap:5px}
+.chave .cRot{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+.ios{width:52px;height:30px;border-radius:15px;background:#353535;border:none;position:relative;padding:0;flex:none}
+.ios::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .15s}
+.ios[aria-checked="true"]{background:#34c759}
+.ios[aria-checked="true"]::after{left:25px}
+.ios.pend{opacity:.5}
+.modoNome{display:flex;flex-direction:column;gap:2px;margin-left:4px}
+/* v3.19.1 — chave de 3 posições estilo iPhone */
+.tri{position:relative;display:grid;grid-template-columns:repeat(3,1fr);width:156px;height:32px;border-radius:16px;background:#353535;padding:0;flex:none}
+.tri button{position:relative;z-index:1;background:transparent;border:none;color:#d1d1d1;font-size:11px;font-weight:700;padding:0}
+.tri .knob{position:absolute;top:3px;width:calc((100% - 6px)/3);height:26px;border-radius:13px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:left .15s;left:calc(3px + (100% - 6px)/3)}
+.tri[data-pos="AT"] .knob{left:3px}
+.tri[data-pos="SB"] .knob{left:calc(3px + (100% - 6px)/3)}
+.tri[data-pos="MET"] .knob{left:calc(3px + 2*(100% - 6px)/3)}
+.tri[data-pos="AT"] button[data-pos="AT"],.tri[data-pos="SB"] button[data-pos="SB"],.tri[data-pos="MET"] button[data-pos="MET"]{color:#080808}
+.tri.pend,.duo.pend{opacity:.5}
+.duo{display:flex;align-items:center;gap:6px}
+.duo .dRot{font-size:10px;font-weight:700;color:var(--dim)}
+.duo .dRot.on{color:var(--ink)}
+.duo.inativa .ios{opacity:.45}
+.modoNome .mono{font-size:20px;font-weight:700}
+#modoNome{font-size:12px;color:var(--dim)}
+</style>
+<style>
+/* v4.2 — botão do tema, no topo (vale nos dois modos) */
+.temaBtn{width:30px;height:30px;border-radius:15px;border:1px solid var(--line2);background:transparent;color:var(--dim);font-size:15px;line-height:1;padding:0;flex:none}
+</style>
+<script>
+/* v4.3 — tema antes de pintar: liga UMA das duas folhas inteiras ("escuro" é o padrão) */
+function aplicarTema(escuro){
+  document.getElementById("cssClaro").media = escuro ? "not all" : "all";
+  document.getElementById("cssEscuro").media = escuro ? "all" : "not all";
+  document.documentElement.classList.toggle("escuro", escuro);
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", escuro ? "#000000" : "#171310");
+}
+try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); } catch (e) { aplicarTema(true); }
+</script>
 </head>
 <body>
 
@@ -918,6 +1533,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   <header class="bar">
     <span class="dot" id="dot"></span>
     <span id="status">Desconectado</span>
+    <button class="temaBtn" id="btnTema" aria-label="Alternar modo claro e escuro" title="Modo claro / escuro">◐</button>
     <span class="sbar" id="sbar"><span class="chip mono" id="sbModo">--</span><span class="chip mono" id="sbVol">V--</span><span class="chip mono bt" id="sbBt" hidden>BT</span></span>
     <button class="btn primary" id="btnConn">Conectar</button>
   </header>
@@ -993,7 +1609,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   </div>
   <div class="head" style="margin-top:7px">
     <button data-bpm="-" aria-label="Menos 1 BPM">–</button>
-    <div class="read"><b class="mono" id="bpmVal">—</b><i>BPM</i></div>
+    <div class="read"><b class="mono" id="bpmVal">—</b><i id="bpmRot">BPM</i></div>
     <button data-bpm="+" aria-label="Mais 1 BPM">+</button>
     <button id="tap">Tap</button>
     <button id="repertorioBtn" class="tempo-rep" title="Repertório" aria-label="Abrir repertório">☰</button>
@@ -1036,7 +1652,7 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v3.20.2 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
+    <p class="note">StompBox Remote v4.3 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
   </div>
 </details>
 
@@ -1051,6 +1667,9 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
   <button class="btn" id="cenaVer" style="width:100%;margin-top:7px">Ver cena salva</button>
   <button id="cenaLimpar">esquecer volumes alterados</button>
   <p class="note" style="margin-top:8px">Guarda os timbres dos 4 slots, o volume geral e só os volumes de timbre mudados pela página. Os slots só trocam no modo 00.</p>
+  <button class="btn" id="gravarVolumes" style="width:100%;margin-top:10px">Gravar volumes no pedal</button>
+  <button class="btn" id="apagarVolumes" style="width:100%;margin-top:6px;color:var(--red);border-color:var(--red);background:transparent">Apagar volumes gravados</button>
+  <p class="note" style="margin-top:6px">Grava na flash do pedal os volumes de timbre diferentes da tabela do firmware — eles valem ao ligar, sem celular. "Apagar" tira todos da flash e volta os volumes aos da tabela na hora. Os dois cortam o som do pedal por um instante: use entre músicas. Gravar precisa do firmware v38; apagar, da v38.1.</p>
 </section>
 
 <dialog id="meuPreDlg">
@@ -1098,8 +1717,8 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 
 <dialog id="catDlg">
   <h3>Catálogo de timbres</h3>
-  <p class="note">Um nome por linha. A primeira linha é o timbre 01. Para acrescentar timbres novos, é só continuar a lista.</p>
-  <textarea id="catText" spellcheck="false"></textarea>
+  <p class="note">Um nome por linha. A primeira linha é o timbre 01. O número à esquerda é só de referência (o número do timbre no pedal) e acompanha a linha: inserir um nome no meio renumera os de baixo.</p>
+  <div class="catEdit"><pre class="catNums" id="catNums" aria-hidden="true"></pre><textarea id="catText" spellcheck="false" wrap="off"></textarea></div>
   <div class="dlgbar">
     <button class="btn" id="catReset">Restaurar padrão</button>
     <button class="btn" id="catCopy">Copiar</button>
@@ -1110,9 +1729,10 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 
 <dialog id="orderDlg">
   <h3>Minha ordem dos timbres</h3>
-  <p class="note">Use as setas pra reorganizar. Isso muda só a ordem que aparece na grade — o número enviado ao pedal continua o mesmo.</p>
+  <p class="note">Use as setas pra reorganizar. Isso muda só a ordem que aparece na grade — o número enviado ao pedal continua o mesmo. Pra criar uma categoria, toque no nome de um timbre e depois em "+ Categoria": ela entra acima dele.</p>
   <div id="orderList"></div>
   <div class="dlgbar">
+    <button class="btn" id="orderCat">+ Categoria</button>
     <button class="btn" id="orderReset">Restaurar ordem do índice</button>
     <button class="btn" id="orderCancel">Cancelar</button>
     <button class="btn primary" id="orderSave">Salvar</button>
@@ -1276,9 +1896,14 @@ function loadSort(){
 }
 function saveSortMode(){ try { localStorage.setItem('sb_sortMode', SORT_MODE); } catch(e){} }
 function saveCustomOrder(){ try { localStorage.setItem('sb_customOrder', JSON.stringify(CUSTOM_ORDER)); } catch(e){} }
+// v4.0 — a ordem personalizada pode ter CATEGORIAS: itens {c: "nome"} entre
+// os números dos timbres.
+const ehCategoria = x => x !== null && typeof x === 'object' && typeof x.c === 'string';
 function sanitizeCustomOrder(){
   const vistos = new Set();
-  CUSTOM_ORDER = CUSTOM_ORDER.filter(i => Number.isInteger(i) && i >= 0 && i < TIMBRES.length && !vistos.has(i) && vistos.add(i));
+  CUSTOM_ORDER = CUSTOM_ORDER.filter(i => ehCategoria(i) ||
+    (Number.isInteger(i) && i >= 0 && i < TIMBRES.length && !vistos.has(i) && vistos.add(i)))
+    .map(i => ehCategoria(i) ? { c: i.c.slice(0, 24) } : i);
   for (let i = 0; i < TIMBRES.length; i++) if (!vistos.has(i)) CUSTOM_ORDER.push(i);
 }
 function ordemExibicao(){
@@ -1287,9 +1912,14 @@ function ordemExibicao(){
   }
   if (SORT_MODE === 'personalizada'){
     sanitizeCustomOrder();
-    return CUSTOM_ORDER.slice();
+    return CUSTOM_ORDER.filter(i => !ehCategoria(i));   // só os timbres (v4.0)
   }
   return TIMBRES.map((_, i) => i);
+}
+// v4.0 — a ordem da GRADE: com a personalizada, vêm junto as categorias
+function ordemDaGrade(){
+  if (SORT_MODE === 'personalizada'){ sanitizeCustomOrder(); return CUSTOM_ORDER.slice(); }
+  return ordemExibicao();
 }
 
 /* ---------- favoritos ---------- */
@@ -1466,6 +2096,34 @@ function handleLine(line){
   log('← ' + line, 'rx');
   conferirEsperas(line);   // v3.15 — o carregamento da cena espera respostas
   let m;
+
+  // TAP (v4.0) — pisada do pedal no metrônomo com click BT: estima o BPM
+  if (line === 'TAP'){ registrarTapDoPedal(); return; }
+  // L <âncora ms> <período µs> (v4.0) — o pedal largou: o andamento exato
+  if ((m = line.match(/^L\s+\d+\s+(\d+)/))){
+    const per = +m[1];
+    if (per > 0) mostrarBpmDoPedal(60000000 / per);
+    return;
+  }
+
+  // VX=2 (v38.1) — volumes gravados apagados; o pedal voltou à tabela
+  if ((m = line.match(/^VX=(\d+)/))){
+    clearTimeout(apagarVolTimer); apagarVolTimer = null;
+    avisoStatus(m[1] === '0' ? 'Não havia volumes gravados — o pedal está nos volumes da tabela'
+      : 'Volumes gravados apagados (' + m[1] + ') — o pedal voltou aos volumes da tabela', 'on', 5000);
+    if (vpt.timbre != null && vpt.timbre !== TIMBRE_MUTE_N) send('V' + pad(vpt.timbre, 2) + '?');          // relê o painel
+    if (volJanela.n != null) send('V' + pad(volJanela.n, 2) + '?');                                     // e a janela do segurar
+    return;
+  }
+
+  // VS=3 / VS=ERRO (v38) — resposta da gravação dos volumes na flash
+  if ((m = line.match(/^VS=(\d+|ERRO)/))){
+    clearTimeout(gravarVolTimer); gravarVolTimer = null;
+    if (m[1] === 'ERRO') avisoStatus('Erro ao gravar os volumes no pedal', 'err', 6000);
+    else if (m[1] === '0') avisoStatus('Volumes já estavam gravados no pedal — nada mudou', 'on', 4000);
+    else avisoStatus('Volumes gravados no pedal (' + m[1] + (m[1] === '1' ? ' alteração)' : ' alterações)'), 'on', 4000);
+    return;
+  }
 
   // C01 FR (v37) — o modo da StompBox: a cada troca, no E? e no C?
   if ((m = line.match(/^C([01])([01])(\s|$)/))){
@@ -1701,6 +2359,36 @@ function fecharVolumeTimbre(){
   try { $('#volDlg').close(); } catch(e){}
 }
 
+/* v3.21 — GRAVAR OS VOLUMES NO PEDAL ("VS", firmware v38). Pede confirmação
+   (gravar na flash corta o som por um instante) e espera "VS=n". */
+let gravarVolTimer = null;
+function gravarVolumesNoPedal(){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (!confirm('Gravar os volumes de timbre na flash do pedal?\n\nO som do pedal corta por um instante — faça entre músicas.')) return;
+  send('VS');
+  avisoStatus('Gravando os volumes no pedal…', 'busy', 3000);
+  clearTimeout(gravarVolTimer);
+  gravarVolTimer = setTimeout(() => {
+    gravarVolTimer = null;
+    avisoStatus('O pedal não respondeu — gravar volumes precisa do firmware v38', 'err', 6000);
+  }, 2000);
+}
+
+/* v4.1 — APAGAR OS VOLUMES GRAVADOS ("VX", firmware v38.1): o pedal apaga
+   da flash e volta os volumes à tabela na hora. */
+let apagarVolTimer = null;
+function apagarVolumesDoPedal(){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (!confirm('Apagar TODOS os volumes gravados no pedal?\n\nOs volumes voltam aos da tabela do firmware na hora, e o som do pedal corta por um instante.')) return;
+  send('VX');
+  avisoStatus('Apagando os volumes gravados…', 'busy', 3000);
+  clearTimeout(apagarVolTimer);
+  apagarVolTimer = setTimeout(() => {
+    apagarVolTimer = null;
+    avisoStatus('O pedal não respondeu — apagar volumes precisa do firmware v38.1', 'err', 6000);
+  }, 2000);
+}
+
 /* v3.19 — MODO DA STOMPBOX ("Cnn", firmware v37). As chaves daqui mostram o
    que o PEDAL diz; o toque só pede. Chave 2 à esquerda, chave 1 à direita:
    lendo da esquerda pra direita sai o número do modo. */
@@ -1817,7 +2505,14 @@ function renderGrid(){
   wrap.classList.toggle('sampler', modoSampler);   // v3.17 — nomes laranja
   wrap.innerHTML = '';
   wrap.appendChild(criarBotaoMute());   // v3.15 — o 00 MUTE é sempre o primeiro (v3.17.1: no sampler, só de enfeite)
-  ordemExibicao().forEach(i => wrap.appendChild(criarBotaoTimbre(i)));
+  ordemDaGrade().forEach(i => {
+    if (ehCategoria(i)){   // v4.0 — título da categoria, largura inteira
+      const h = document.createElement('div');
+      h.className = 'catHdr';
+      h.textContent = i.c;
+      wrap.appendChild(h);
+    } else wrap.appendChild(criarBotaoTimbre(i));
+  });
   renderFavoritos();
 }
 
@@ -1870,7 +2565,34 @@ function renderSortBar(){
   $('#editOrder').style.display = (SORT_MODE === 'personalizada') ? '' : 'none';
 }
 
-function renderTempo(){ const bpm = state.bpm ? state.bpm : null; $('#bpmVal').textContent = bpm || '—'; if (bpm) $('#bpmInput').value = bpm; }
+function renderTempo(){ const bpm = state.bpm ? state.bpm : null; $('#bpmVal').textContent = bpm || '—'; if (bpm) $('#bpmInput').value = bpm; $('#bpmRot').textContent = 'BPM'; }
+
+/* v4.0 — TAPS DO PEDAL NO ANDAMENTO. No metrônomo com click pelo BT, o pedal
+   manda "TAP" a cada pisada. A página mede a frase (média de todos os
+   intervalos) e só MOSTRA o BPM — não manda nada de volta. Frase nova depois
+   de 2 s ou de 1,5 tempo sem tap. A grade "L" (quando o pedal larga) traz o
+   valor exato. */
+const tapsDoPedal = [];
+function mostrarBpmDoPedal(bpm){
+  if (!(bpm >= 30 && bpm <= 300)) return;
+  const b = Math.round(bpm * 10) / 10;
+  state.bpm = Math.round(b);
+  $('#bpmVal').textContent = String(b).replace('.', ',');
+  $('#bpmInput').value = Math.round(b);
+  $('#bpmRot').textContent = 'BPM do pedal';
+}
+function registrarTapDoPedal(){
+  const agora = performance.now();
+  const n = tapsDoPedal.length;
+  if (n){
+    const iv = agora - tapsDoPedal[n - 1];
+    const ultimoIv = n >= 2 ? tapsDoPedal[n - 1] - tapsDoPedal[n - 2] : 0;
+    if (iv > 2000 || (ultimoIv && iv > 1.5 * ultimoIv)) tapsDoPedal.length = 0;   // frase nova
+  }
+  tapsDoPedal.push(agora);
+  const k = tapsDoPedal.length;
+  if (k >= 2) mostrarBpmDoPedal(60000 / ((tapsDoPedal[k - 1] - tapsDoPedal[0]) / (k - 1)));
+}
 
 function renderMaster(){
   const mudo = state.master === 0;   // v3.15 — "VOL GERAL 0/16 MUTE"
@@ -2365,9 +3087,19 @@ $('#preSave').onclick = () => {
 };
 
 const dlg = $('#catDlg');
-$('#editCat').onclick = () => { $('#catText').value = TIMBRES.join('\n'); dlg.showModal(); };
+// v4.0 — números das linhas do catálogo (só referência, fora do texto)
+function renderCatNums(){
+  const n = $('#catText').value.split('\n').length;
+  let t = '';
+  for (let i = 1; i <= n; i++) t += pad(i, 2) + (i < n ? '\n' : '');
+  $('#catNums').textContent = t;
+  $('#catNums').scrollTop = $('#catText').scrollTop;
+}
+$('#catText').addEventListener('input', renderCatNums);
+$('#catText').addEventListener('scroll', () => { $('#catNums').scrollTop = $('#catText').scrollTop; });
+$('#editCat').onclick = () => { $('#catText').value = TIMBRES.join('\n'); renderCatNums(); dlg.showModal(); };
 $('#catCancel').onclick = () => dlg.close();
-$('#catReset').onclick = () => { $('#catText').value = CAT_PADRAO.join('\n'); };
+$('#catReset').onclick = () => { $('#catText').value = CAT_PADRAO.join('\n'); renderCatNums(); };
 $('#catCopy').onclick = async () => {
   try { await navigator.clipboard.writeText($('#catText').value); avisoStatus('Catálogo copiado'); }
   catch(e){ $('#catText').select(); }
@@ -2385,10 +3117,30 @@ document.querySelectorAll('#sortBar [data-sort]').forEach(b => {
 });
 
 let ordemTrabalho = [];
+let ordemMarcada = -1;   // v4.0 — posição do timbre marcado (a categoria nova entra acima dele)
 function renderOrderList(){
   const wrap = $('#orderList');
   wrap.innerHTML = '';
   ordemTrabalho.forEach((i, pos) => {
+    if (ehCategoria(i)){   // v4.0 — linha de categoria: nome editável, setas e ✕
+      const row = document.createElement('div');
+      row.className = 'orderRow cat';
+      row.innerHTML = '<input type="text" maxlength="24" placeholder="Nome da categoria">' +
+        '<button data-dir="up" aria-label="Mover para cima">▲</button>' +
+        '<button data-dir="down" aria-label="Mover para baixo">▼</button>' +
+        '<button class="rem" aria-label="Apagar categoria">✕</button>';
+      const inp = row.querySelector('input');
+      inp.value = i.c;
+      inp.oninput = () => { i.c = inp.value; };
+      const up = row.querySelector('[data-dir="up"]'), down = row.querySelector('[data-dir="down"]');
+      up.disabled = (pos === 0);
+      down.disabled = (pos === ordemTrabalho.length - 1);
+      up.onclick = () => { [ordemTrabalho[pos-1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos-1]]; ordemMarcada = -1; renderOrderList(); };
+      down.onclick = () => { [ordemTrabalho[pos+1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos+1]]; ordemMarcada = -1; renderOrderList(); };
+      row.querySelector('.rem').onclick = () => { ordemTrabalho.splice(pos, 1); ordemMarcada = -1; renderOrderList(); };
+      wrap.appendChild(row);
+      return;
+    }
     const row = document.createElement('div');
     row.className = 'orderRow';
     row.innerHTML = '<span class="num mono"></span><span class="nome"></span>' +
@@ -2399,23 +3151,36 @@ function renderOrderList(){
     const up = row.querySelector('[data-dir="up"]'), down = row.querySelector('[data-dir="down"]');
     up.disabled = (pos === 0);
     down.disabled = (pos === ordemTrabalho.length - 1);
-    up.onclick = () => { [ordemTrabalho[pos-1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos-1]]; renderOrderList(); };
-    down.onclick = () => { [ordemTrabalho[pos+1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos+1]]; renderOrderList(); };
+    up.onclick = () => { [ordemTrabalho[pos-1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos-1]]; ordemMarcada = -1; renderOrderList(); };
+    down.onclick = () => { [ordemTrabalho[pos+1], ordemTrabalho[pos]] = [ordemTrabalho[pos], ordemTrabalho[pos+1]]; ordemMarcada = -1; renderOrderList(); };
+    // v4.0 — tocar no nome marca o timbre (a categoria nova entra acima dele)
+    if (pos === ordemMarcada) row.classList.add('sel');
+    row.querySelector('.nome').onclick = () => { ordemMarcada = (ordemMarcada === pos) ? -1 : pos; renderOrderList(); };
     wrap.appendChild(row);
   });
 }
 const orderDlg = $('#orderDlg');
 function abrirEditorOrdem(){
   sanitizeCustomOrder();
-  ordemTrabalho = CUSTOM_ORDER.slice();
+  ordemTrabalho = CUSTOM_ORDER.map(i => ehCategoria(i) ? { c: i.c } : i);   // cópia (categoria editada só vale ao salvar)
+  ordemMarcada = -1;
   renderOrderList();
   orderDlg.showModal();
 }
 $('#editOrder').onclick = abrirEditorOrdem;
 $('#orderCancel').onclick = () => orderDlg.close();
-$('#orderReset').onclick = () => { ordemTrabalho = TIMBRES.map((_, i) => i); renderOrderList(); };
+$('#orderReset').onclick = () => { ordemTrabalho = TIMBRES.map((_, i) => i); ordemMarcada = -1; renderOrderList(); };
+$('#orderCat').onclick = () => {   // v4.0 — categoria nova acima do timbre marcado (ou no topo)
+  const pos = ordemMarcada >= 0 ? ordemMarcada : 0;
+  ordemTrabalho.splice(pos, 0, { c: '' });
+  ordemMarcada = -1;
+  renderOrderList();
+  const inp = $('#orderList').children[pos] && $('#orderList').children[pos].querySelector('input');
+  if (inp) inp.focus();
+};
 $('#orderSave').onclick = () => {
-  CUSTOM_ORDER = ordemTrabalho.slice();
+  CUSTOM_ORDER = ordemTrabalho.filter(i => !ehCategoria(i) || i.c.trim())   // v4.0: categoria sem nome sai
+    .map(i => ehCategoria(i) ? { c: i.c.trim() } : i);
   saveCustomOrder();
   if (SORT_MODE === 'personalizada') renderGrid();
   orderDlg.close();
@@ -2543,6 +3308,14 @@ faderSoPelaAlca($('#volFader'));   // v3.18
   vf.addEventListener('change', () => { if (volJanela.n != null && volJanela.vol != null) enviarVolumeTimbre(volJanela.n, +vf.value); });
   $('#volTocar').onclick = () => { if (volJanela.n != null) tocarAmostra(volJanela.n, null); };
   $('#volFechar').onclick = fecharVolumeTimbre;
+  $('#gravarVolumes').onclick = gravarVolumesNoPedal;   // v3.21
+  $('#apagarVolumes').onclick = apagarVolumesDoPedal;   // v4.1
+  // v4.2 — modo claro / escuro
+  $('#btnTema').onclick = () => {   // v4.3 — troca a folha inteira
+    const escuro = !document.documentElement.classList.contains('escuro');
+    aplicarTema(escuro);
+    try { localStorage.setItem('sb_tema', escuro ? 'escuro' : 'claro'); } catch(e){}
+  };
   // v3.19.1 — as chaves do modo: a de 3 posições e a de 2
   $('#tri').querySelectorAll('button').forEach(b => b.onclick = () => {
     const alvo = b.dataset.pos === 'AT' ? '10' : b.dataset.pos === 'SB' ? '00' : (duoMetro ? '11' : '01');
