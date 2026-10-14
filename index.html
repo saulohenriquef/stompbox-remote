@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v4.5 "Mixing Station + Repertório + Cena + Sampler"
+ STOMPBOX REMOTE — v4.6 "Mixing Station + Repertório + Cena + Sampler"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -222,6 +222,34 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v4.6 — CADA MODO SÓ COM OS SLOTS QUE O PEDAL USA + STATUS NO CONSOLE
+        (casada com o firmware v39.1):
+        1) BUG DO FR: escolher um timbre no FR mostrava "Modo metrônomo: o
+           timbre … foi pro metrônomo" na barra, a bolinha ficava cinza
+           (parecia desconectado) e o timbre não aparecia selecionado. Agora
+           o slot 1 no FR É o metrônomo: mostra o timbre dele (o T5) e a
+           grade marca esse timbre. O aviso saiu.
+        2) SLOT QUE NÃO VALE NO MODO FICA TODO CINZA — o quadrado, o ▶ e o
+           balão do Disparo: no FR, os slots 2, 3 e 4 (nos modos de
+           metrônomo o pedal só lê o pedal 1); no MN, os quatro (o click é
+           fixo). O Sampler continua valendo: o pedal toca ele em qualquer
+           modo.
+        3) O + E O −: no FR andam no timbre do metrônomo, como no SB (é o
+           botão 1 do pedal); no MN mandam o submodo, a rota do click. Vale
+           pros de cima e pros do balão do modo.
+        4) BOTÃO TAP, só no FR, à esquerda do + de cima: alterna TAP SOM /
+           TAP MUDO (é o botão 2 do pedal) e mostra o estado; verde = SOM.
+        5) O SUBMODO TEM COMANDO PRÓPRIO: "S+" / "S-" (firmware v39.1), pra
+           não misturar com os de timbre. Sem resposta do pedal, a página
+           avisa que precisa do v39.1.
+        6) No FR, o ▶ do slot 1 toca o timbre do metrônomo uma vez (pelo
+           sampler). Antes ele mandava "D1", que no FR é pisada no pedal 1 —
+           e, com o metrônomo rodando, pisada PARA tudo.
+        7) STATUS NO CONSOLE: o "Console e ajustes" repete, inteiro, o status
+           do canto de cima (lá ele corta com "…"). E aviso comum não deixa
+           mais a bolinha cinza: ela mostra a conexão (vermelha num erro,
+           amarela esperando).
 
  v4.5 — BALÃO DO MODO MAIS ENXUTO E CHAVE DE AVIÃO (firmware v39.0 sem mudança):
         1) O + e − do balão do modo viraram dois botões PEQUENOS à direita
@@ -1571,6 +1599,20 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 .aviao[aria-checked="true"] .alav{transform:scaleY(-1)}
 .duo.inativa .aviao{opacity:.5}
 .boxModo::before{content:none}            /* o selo MIX ficaria embaixo do + */
+/* v4.6 — slot que não vale no modo do pedal: tudo cinza (quadrado, ▶ e o balão do Disparo) */
+.slots .slot.fora,.slotFire button.fora,.fire button.fora{filter:grayscale(1);opacity:.4;pointer-events:none}
+/* v4.6 — TAP (só no FR), à esquerda do +: TAP SOM / TAP MUDO */
+.nudge button.tapSub{width:auto;min-width:78px;padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.04em}
+button.tapSub[aria-pressed="true"]{color:var(--green);border-color:var(--green)}
+button.tapSub[hidden]{display:none}
+.nudge.desligado button.tapSub{opacity:1;pointer-events:auto}
+/* v4.6 — no FR o slot 1 é o "Metrônomo": o nome inteiro cabe sem a bolinha do canto */
+.slots .slot.metro::after{display:none}
+.slots .slot.metro .lbl{letter-spacing:0;font-size:7px}
+.chaves{flex-wrap:wrap;row-gap:8px}
+/* v4.6 — o status repetido no Console e ajustes, inteiro */
+.statusEco{display:flex;align-items:flex-start;gap:8px;margin:0 0 10px;font-size:13px;line-height:1.35;color:var(--ink)}
+.statusEco .dot{margin-top:4px}
 #volGravInfo{margin-top:6px;font-size:12px;color:var(--ink)}
 #volGravInfo.err{color:var(--red)}
 #catsLista,#catsTimbres{display:flex;flex-direction:column;gap:5px}
@@ -1610,6 +1652,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 <div class="nudge">
   <button data-nudge="-" aria-label="Timbre anterior">–</button>
   <span id="nudgeLabel">anterior / próximo no slot ativo</span>
+  <button class="tapSub" data-sub="tap" hidden aria-label="Alternar TAP SOM / TAP MUDO">TAP</button>
   <button data-nudge="+" aria-label="Próximo timbre">+</button>
 </div>
 
@@ -1729,6 +1772,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 <details class="panel">
   <summary>Console e ajustes</summary>
   <div class="body">
+    <p class="statusEco"><span class="dot" id="dotEco"></span><span id="statusEco">Desconectado</span></p>
     <div id="log"></div>
     <div class="row">
       <input type="text" id="cmd" placeholder="comando manual, ex. 312" autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -1742,7 +1786,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v4.5 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36)</p>
+    <p class="note">StompBox Remote v4.6 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1)</p>
   </div>
 </details>
 
@@ -2167,6 +2211,9 @@ let statusBase = { txt:'Desconectado', kind:'' }, statusTimer = null;
 function pintarStatus(txt, kind){
   $('#status').textContent = txt;
   $('#dot').className = 'dot' + (kind ? ' ' + kind : '');
+  // v4.6 — repetido, inteiro, no Console e ajustes (no topo ele corta com "…")
+  const e = $('#statusEco'); if (e) e.textContent = txt;
+  const de = $('#dotEco'); if (de) de.className = 'dot' + (kind ? ' ' + kind : '');
 }
 // v3.19 — barra de status: modo, volume geral e BT
 const MODOS = { '00': ['SB', 'StompBox'], '01': ['MN', 'Metrônomo'], '10': ['AT', 'Automático'], '11': ['FR', 'Free Run'] };   // v3.20.2: MN = 01, FR = 11
@@ -2188,7 +2235,7 @@ function setStatus(txt, kind){
 }
 function avisoStatus(txt, kind, ms){
   if (statusTimer) clearTimeout(statusTimer);
-  pintarStatus(txt, kind);
+  pintarStatus(txt, kind || statusBase.kind);   // v4.6 — aviso comum não apaga a bolinha da conexão
   statusTimer = setTimeout(() => { statusTimer = null; pintarStatus(statusBase.txt, statusBase.kind); }, ms || 3000);
 }
 
@@ -2351,7 +2398,9 @@ function handleLine(line){
     // v4.4 — "C01 MN CLICK BT": depois da sigla vem o estado (firmware v39)
     modoExtra = line.replace(/^C[01][01]\s*/, '').replace(/^[A-Z]{2}\s*/, '').trim();
     modoPedido = null; clearTimeout(modoTimer); modoTimer = null;
-    renderModo(); renderBarraStatus(); renderMaisMenos();
+    clearTimeout(submodoTimer); submodoTimer = null;   // v4.6 — o "S+"/"S-" foi respondido
+    renderModo(); renderBarraStatus();
+    renderSlots(); renderGrid();   // v4.6 — cada modo com os slots que o pedal usa (chama o renderMaisMenos)
     return;
   }
 
@@ -2401,11 +2450,10 @@ function handleLine(line){
     garanteTamanho(n);
     // v3.14 — é ESTA resposta que confirma a troca pedida
     if (pendentes[s] && pendentes[s].n === n) resolverPendente(s);
-    // nos modos 01/11 o "1nn" volta como T5 (metrônomo), não como T1
-    if (s === 5 && pendentes[1] && pendentes[1].n === n){
-      resolverPendente(1);
-      avisoStatus('Modo metrônomo: o timbre ' + pad(n, 2) + ' foi pro metrônomo, não pro Pedal 1', '', 5000);
-    }
+    // nos modos 01/11 o "1nn" volta como T5 (metrônomo), não como T1.
+    // v4.6 — no FR o slot 1 É o metrônomo: confirma calado (o aviso
+    // "Modo metrônomo: …" deixava a bolinha cinza e parecia desconexão)
+    if (s === 5 && pendentes[1] && pendentes[1].n === n) resolverPendente(1);
     renderSlots(); renderGrid(); renderMeusPresets();   // v3.16: o preset aceso acompanha
     // v3.15 — o slot do painel de volume trocou de timbre: relê o do novo
     if (s === vpt.slot && vpt.timbre !== n) lerVolume(s);
@@ -2422,16 +2470,48 @@ function handleLine(line){
 }
 
 /* ---------- render ---------- */
+/* v4.6 — QUAIS SLOTS VALEM EM CADA MODO (é o que o pedal lê):
+   SB e AT: os quatro. FR: só o 1 — e ali ele É o metrônomo (o timbre que o
+   botão 1 do pedal troca; o T5). MN: nenhum — o click é fixo. Slot que não
+   vale fica todo cinza: o quadrado, o ▶ e o balão do Disparo. */
+function slotVale(s){
+  if (modoPedal === '01') return false;
+  if (modoPedal === '11') return s === 1;
+  return true;
+}
+function slotAtivo(){   // o slot que a grade e o + e − mexem agora (null: nenhum)
+  if (modoSampler || modoPedal === '01') return null;
+  if (modoPedal === '11') return 1;
+  return state.active;
+}
+function dadosDoSlot(s){ return (modoPedal === '11' && s === 1) ? (state.slots[5] || {}) : (state.slots[s] || {}); }
+function nomeDoSlot(s){ return (modoPedal === '11' && s === 1) ? 'Metrônomo' : (SLOT_NAMES[s] || 'Slot ' + s); }
+// v4.6 — o ▶ de um slot. No FR, o do slot 1 toca o timbre do METRÔNOMO uma
+// vez, pelo sampler ("Ann"): o "D1" ali é pisada no pedal 1 — e, com o
+// metrônomo rodando, a pisada PARA tudo.
+function dispararSlot(s){
+  if (!slotVale(s)) return;
+  if (modoPedal === '11' && s === 1){
+    const d5 = state.slots[5];
+    if (d5 && d5.n) send('A' + pad(d5.n, 2));
+    return;
+  }
+  send('D' + s);
+}
+
 function renderSlots(){
   const wrap = $('#slots');
   wrap.innerHTML = '';
+  const ativo = slotAtivo();
   [1,2,3,4].forEach(s => {
-    const d = state.slots[s] || {};
+    const d = dadosDoSlot(s);   // v4.6 — no FR o slot 1 mostra o metrônomo
+    const vale = slotVale(s);
     const b = document.createElement('button');
-    b.className = 'slot';
-    b.setAttribute('aria-pressed', (!modoSampler && state.active === s) ? 'true' : 'false');   // v3.17
+    b.className = 'slot' + (vale ? '' : ' fora') + (modoPedal === '11' && s === 1 ? ' metro' : '');
+    b.disabled = !vale;
+    b.setAttribute('aria-pressed', ativo === s ? 'true' : 'false');   // v3.17 / v4.6
     b.innerHTML = '<span class="lbl"></span><span class="num mono"></span><span class="nm"></span>';
-    b.querySelector('.lbl').textContent = SLOT_NAMES[s] || ('Slot ' + s);
+    b.querySelector('.lbl').textContent = nomeDoSlot(s);
     const p = pendentes[s];   // v3.14 — pedido esperando a confirmação
     b.classList.toggle('pend', !!p);
     const mudo = !p && d.n === TIMBRE_MUTE_N;   // v3.15
@@ -2451,8 +2531,10 @@ function renderSlots(){
     [1,2,3,4].forEach(s => {
       const f = document.createElement('button');
       f.textContent = '▶';
-      f.setAttribute('aria-label', 'Disparar ' + (SLOT_NAMES[s] || 'slot ' + s));
-      f.onclick = () => send('D' + s);
+      const vale = slotVale(s);
+      f.disabled = !vale; f.classList.toggle('fora', !vale);   // v4.6
+      f.setAttribute('aria-label', (modoPedal === '11' && s === 1) ? 'Ouvir o timbre do metrônomo' : 'Disparar ' + (SLOT_NAMES[s] || 'slot ' + s));
+      f.onclick = () => dispararSlot(s);
       sf.appendChild(f);
     });
     // v3.20 — embaixo do Sampler: toca de novo o último sample disparado
@@ -2476,9 +2558,9 @@ function renderSlots(){
 
   // Slot 5 (metrônomo) fica fora da linha fixa — só leitura, não navega/seleciona.
   const metro = $('#slotMetro'), d5 = state.slots[5];
-  if (d5){
+  if (d5 && modoPedal !== '11'){   // v4.6 — no FR ele já é o slot 1
     metro.style.display = 'block';
-    metro.innerHTML = '<b>Metrônomo</b><span class="num mono"></span><span class="nm"></span> — no FR, escolha na grade com o Pedal 1';
+    metro.innerHTML = '<b>Metrônomo</b><span class="num mono"></span><span class="nm"></span> — no FR, é o slot 1';
     metro.querySelector('.num').textContent = d5.n ? pad(d5.n, 2) : '--';
     metro.querySelector('.nm').textContent = d5.nm || (d5.n ? (TIMBRES[d5.n-1] || '') : '');
   } else {
@@ -2487,28 +2569,43 @@ function renderSlots(){
 
   renderMaisMenos();   // v4.4 — o + e − (os de cima e os do balão do modo)
   $('#gridTitle').textContent = modoSampler ? 'Timbres — Sampler'
-    : 'Timbres — ' + (SLOT_NAMES[state.active] || 'Slot ' + state.active);
+    : modoPedal === '01' ? 'Timbres — o MN não usa os slots'
+    : 'Timbres — ' + nomeDoSlot(slotAtivo());   // v4.6
 }
 
-/* v4.4 — O + E O −. Nos modos de metrônomo (firmware v39) eles fazem o que
-   o botão do pedal faz ali: no MN a rota do click, no FR o TAP SOM/MUDO; o
-   rótulo mostra o estado que o pedal mandou no "C". Nos outros modos,
-   anterior/próximo do slot ativo. Vale pros de cima e pros do balão do modo. */
+/* v4.4 / v4.6 — O + E O −, os de cima e os do balão do modo (iguais):
+   SB e AT: anterior/próximo do slot ativo. FR: o timbre do metrônomo (o
+   slot 1, o botão 1 do pedal). MN: o submodo, a rota do click ("S+"/"S-",
+   firmware v39.1). No FR aparece o TAP, à esquerda do + de cima. */
 function rotuloMaisMenos(){
-  // sem o estado no "C", o firmware é anterior à v39: ali o + e − não fazem isso
-  if ((modoPedal === '01' || modoPedal === '11') && !modoExtra) return (modoPedal === '01' ? 'MN' : 'FR') + ' — o + e − aqui precisam do firmware v39';
-  if (modoPedal === '01') return 'MN · ' + modoExtra + ' — rota do click';
-  if (modoPedal === '11') return 'FR · ' + modoExtra + ' — som do tap';
+  if (modoPedal === '01') return 'MN' + (modoExtra ? ' · ' + modoExtra : '') + ' — rota do click';
   if (modoSampler) return 'Sampler — toque num nome pra tocar';
+  if (modoPedal === '11') return 'Metrônomo — anterior / próximo';
   return (SLOT_NAMES[state.active] || 'Slot ' + state.active) + ' — anterior / próximo';
 }
 function renderMaisMenos(){
-  const metro = modoPedal === '01' || modoPedal === '11';
-  // v3.17 — no sampler o anterior/próximo dos slots desliga (no metrônomo não: ali não é timbre)
-  document.querySelectorAll('.nudge, .modoMM').forEach(n => n.classList.toggle('desligado', modoSampler && !metro));
-  const t = rotuloMaisMenos();
-  $('#nudgeLabel').textContent = t;
-  const ml = $('#modoNudgeLabel'); if (ml) ml.textContent = t;
+  // v3.17 — no sampler o anterior/próximo dos slots desliga (no MN não: ali é a rota do click)
+  document.querySelectorAll('.nudge, .modoMM').forEach(n => n.classList.toggle('desligado', modoSampler && modoPedal !== '01'));
+  $('#nudgeLabel').textContent = rotuloMaisMenos();
+  const fr = modoPedal === '11', som = /TAP SOM/.test(modoExtra);
+  document.querySelectorAll('.tapSub').forEach(b => {
+    b.hidden = !fr;
+    b.setAttribute('aria-pressed', som ? 'true' : 'false');
+    b.textContent = /^TAP /.test(modoExtra) ? modoExtra : 'TAP';
+  });
+}
+/* v4.6 — O SUBMODO TEM COMANDO PRÓPRIO (firmware v39.1): "S+" / "S-". No MN
+   anda na rota do click, no FR alterna o TAP. O pedal responde a linha do
+   modo ("C01 MN CLICK BT"); sem ela, o firmware é anterior. */
+let submodoTimer = null;
+function pedirSubmodo(sinal){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  send('S' + sinal);
+  clearTimeout(submodoTimer);
+  submodoTimer = setTimeout(() => {
+    submodoTimer = null;
+    avisoStatus('O pedal não respondeu ao S' + sinal + ' — precisa do firmware v39.1', 'err', 5000);
+  }, 1500);
 }
 
 // Botão de um timbre (índice 0-based em TIMBRES) — usado na grade e na barra de favoritos.
@@ -2525,14 +2622,14 @@ function criarBotaoTimbre(i){
     ligarSegurar(b, n);                        // v3.18 — segurando, abre o fader (e pode disparar ao soltar)
     return b;
   }
-  const pedido = pendentes[state.active];   // v3.14
-  b.className = 'tim' + (state.slots[state.active] && state.slots[state.active].n === n ? ' cur' : '')
+  const ativo = slotAtivo();   // v4.6 — no FR o 1 (metrônomo); no MN nenhum
+  const pedido = ativo != null ? pendentes[ativo] : null;   // v3.14
+  b.className = 'tim' + (ativo != null && dadosDoSlot(ativo).n === n ? ' cur' : '')
                       + (pedido && pedido.n === n ? ' pend' : '');
   b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
   b.querySelector('.n').textContent = pad(n, 2);
   b.querySelector('.t').textContent = nome;
-  const outros = Object.keys(state.slots).map(Number)
-    .filter(s => s !== state.active && s !== 5 && state.slots[s].n === n);
+  const outros = [1,2,3,4].filter(s => s !== ativo && slotVale(s) && state.slots[s] && state.slots[s].n === n);
   if (outros.length){
     const tag = document.createElement('span');
     tag.className = 'badge mono'; tag.textContent = outros.join('');
@@ -2541,7 +2638,9 @@ function criarBotaoTimbre(i){
   b.onclick = () => {
     // v3.18 — um toque que virou "segurar" só abre a janela: não troca o timbre
     if (b.dataset.segurou){ b.dataset.segurou = ''; return; }
-    pedirTimbre(state.active, n);   // v3.14 — só vale com a confirmação
+    const s = slotAtivo();
+    if (s == null){ avisoStatus('O MN não usa os slots — pra tocar um timbre, ligue o Sampler'); return; }   // v4.6
+    pedirTimbre(s, n);   // v3.14 — só vale com a confirmação
   };
   ligarSegurar(b, n);
   return b;
@@ -2715,9 +2814,10 @@ function tocarAmostra(n, botao){
 function pedirTimbre(s, n){
   if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
   if (modoPedal === '01'){   // v4.4 — no MN o click é fixo
-    avisoStatus('MN: o click é fixo, não há timbre pra escolher — o + e o − mudam a rota do click', 'err', 5000);
+    avisoStatus('O MN não usa os slots — pra tocar um timbre, ligue o Sampler');
     return;
   }
+  if (!slotVale(s)) return;   // v4.6
   if (pendentes[s]) clearTimeout(pendentes[s].timer);
   const pedido = { n: n, timer: null };
   pendentes[s] = pedido;
@@ -2738,7 +2838,7 @@ function expirarPendente(s){
   if (!p) return;
   delete pendentes[s];
   renderSlots(); renderGrid();
-  avisoStatus((SLOT_NAMES[s] || 'Slot ' + s) + ': o pedal não trocou pro ' + pad(p.n, 2) +
+  avisoStatus(nomeDoSlot(s) + ': o pedal não trocou pro ' + pad(p.n, 2) +
               ' — neste modo ele não aceita troca nesse slot', 'err', 5000);
 }
 function limparPendentes(){
@@ -2756,7 +2856,7 @@ function criarBotaoVazio(){
 
 function renderGrid(){
   const wrap = $('#grid');
-  wrap.style.setProperty('--activeColor', modoSampler ? 'var(--sampler)' : (SLOT_COLORS[state.active] || 'var(--blue)'));
+  wrap.style.setProperty('--activeColor', modoSampler ? 'var(--sampler)' : (SLOT_COLORS[slotAtivo()] || 'var(--blue)'));
   wrap.classList.toggle('sampler', modoSampler);   // v3.17 — nomes laranja
   wrap.innerHTML = '';
   wrap.appendChild(criarBotaoMute());   // v3.15 — o 00 MUTE é sempre o primeiro (v3.17.1: no sampler, só de enfeite)
@@ -2777,7 +2877,7 @@ function renderGrid(){
 function criarBotaoMute(){
   const n = TIMBRE_MUTE_N;
   const b = document.createElement('button');
-  if (modoSampler){
+  if (modoSampler || modoPedal === '01' || modoPedal === '11'){   // v4.6 — o metrônomo não tem MUTE; no MN não há slot
     // v3.17.1 — no sampler, SÓ DE ENFEITE: segura o lugar pra grade não
     // andar uma casa, apagado e desligado (o MUTE não é um som)
     b.className = 'tim mute enfeite';
@@ -2804,7 +2904,7 @@ function criarBotaoMute(){
 function renderFavoritos(){
   const wrap = $('#favbar');
   if (!wrap) return;
-  wrap.style.setProperty('--activeColor', modoSampler ? 'var(--sampler)' : (SLOT_COLORS[state.active] || 'var(--blue)'));
+  wrap.style.setProperty('--activeColor', modoSampler ? 'var(--sampler)' : (SLOT_COLORS[slotAtivo()] || 'var(--blue)'));
   wrap.classList.toggle('sampler', modoSampler);   // v3.17
   wrap.innerHTML = '';
   for (let slot = 0; slot < 6; slot++){
@@ -2924,12 +3024,14 @@ function renderFire(){
   [1,2,3,4].forEach(s => {
     const b = document.createElement('button');
     // v3.19 — o timbre que vai tocar, e o slot menor e apagado
-    const d = state.slots[s];
+    const d = dadosDoSlot(s);   // v4.6 — no FR o 1 é o metrônomo
     const nome = (d && d.n != null) ? nomeDoNumero(d.n) : '—';
     b.innerHTML = '<span class="fnome"></span><span class="fslot"></span>';
     b.querySelector('.fnome').textContent = nome;
-    b.querySelector('.fslot').textContent = SLOT_NAMES[s];
-    b.onclick = () => send('D' + s);
+    b.querySelector('.fslot').textContent = nomeDoSlot(s);
+    const vale = slotVale(s);
+    b.disabled = !vale; b.classList.toggle('fora', !vale);   // v4.6 — slot que não vale: cinza
+    b.onclick = () => dispararSlot(s);
     wrap.appendChild(b);
   });
   const l = document.createElement('button');
@@ -3289,11 +3391,13 @@ $('#cenaLimpar').onclick = () => {
   mesaVolumes = {}; salvarMesa(); renderCena();
 };
 $('#btnConn').onclick = () => (rx ? disconnect() : connect());
-document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => {   // v3.17 / v4.4
-  const metro = modoPedal === '01' || modoPedal === '11';
-  if (modoSampler && !metro) return;
-  send(String(state.active) + b.dataset.nudge);
+document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => {   // v3.17 / v4.4 / v4.6
+  if (modoPedal === '01'){ pedirSubmodo(b.dataset.nudge); return; }   // MN: a rota do click
+  const s = slotAtivo();
+  if (s == null) return;                                             // sampler ligado
+  send(String(s) + b.dataset.nudge);                                 // no FR, o 1 = timbre do metrônomo
 });
+document.querySelectorAll('.tapSub').forEach(b => b.onclick = () => pedirSubmodo('+'));   // v4.6 — TAP SOM / MUDO
 document.querySelectorAll('[data-bpm]').forEach(b => b.onclick = () => send('T' + b.dataset.bpm));
 document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => send('M' + b.dataset.m));
 // v3.15 — os passos viraram conta feita aqui, e o valor vai absoluto
