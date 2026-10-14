@@ -1,6 +1,7 @@
 // StompBox Remote — cache offline.
 // Ao publicar uma versão nova, mude o número do CACHE para forçar a atualização.
 //
+// v4.5 — só o número (balão do modo mais enxuto: + e − pequenos, chave de 2 vertical estilo avião).
 // v4.3 — só o número (seleção dos slots no modo escuro corrigida, cores sóbrias).
 // v4.2 — só o número (modo claro e modo escuro).
 // v4.1 — só o número (fundo preto pro OLED, apagar volumes gravados).
@@ -33,7 +34,7 @@
 //  5) Offline, uma navegação que não bate exatamente com o que está
 //     guardado (ex.: endereço com ?parâmetro) recebe o index.html do
 //     cache, em vez da página de erro do navegador.
-const CACHE = 'stompbox-v4.3';
+const CACHE = 'stompbox-v4.5';
 const ARQUIVOS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', ev => {
