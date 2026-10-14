@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v4.6 "Mixing Station + Repertório + Cena + Sampler"
+ STOMPBOX REMOTE — v4.7 "Mixing Station + Repertório + Cena + Sampler"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -222,6 +222,23 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v4.7 — MN SEM TIMBRES À VISTA, DISPAROS COM NOME E TAP COM ÍCONE
+        (firmware v39.1 sem mudança):
+        1) DISPAROS NOS MODOS DE METRÔNOMO (MN e FR), embaixo dos slots e no
+           balão do Disparo: o do slot 1 virou PISAR — o mesmo que pisar no
+           pedal 1: tap e, com o metrônomo tocando, para — e o do slot 2
+           virou LARGADA (o mesmo do 8888: começa no BPM). Na v4.6 o MN
+           tinha ficado sem eles, e no FR o do slot 1 só tocava o timbre do
+           metrônomo. Os do 3 e do 4 seguem cinza: o pedal não usa esses
+           slots ali.
+        2) NO MN, "Favoritos", "Timbres" e "Meus presets" se recolhem
+           sozinhos (não há timbre no MN). Saindo do MN, voltam como
+           estavam. Tocar no título abre mesmo assim, só enquanto durar o MN.
+        3) NO FR, o − e o + do balão do modo deram lugar ao TAP (repetiam
+           os de cima). Os de cima seguem no timbre do metrônomo.
+        4) O TAP mostra o estado com o ícone, e ficou mais estreito:
+           alto-falante = TAP SOM, alto-falante cortado = TAP MUDO.
 
  v4.6 — CADA MODO SÓ COM OS SLOTS QUE O PEDAL USA + STATUS NO CONSOLE
         (casada com o firmware v39.1):
@@ -1602,7 +1619,13 @@ dialog h3{margin:0 0 4px;font-size:15px;font-weight:600}
 /* v4.6 — slot que não vale no modo do pedal: tudo cinza (quadrado, ▶ e o balão do Disparo) */
 .slots .slot.fora,.slotFire button.fora,.fire button.fora{filter:grayscale(1);opacity:.4;pointer-events:none}
 /* v4.6 — TAP (só no FR), à esquerda do +: TAP SOM / TAP MUDO */
-.nudge button.tapSub{width:auto;min-width:78px;padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.04em}
+.nudge button.tapSub{width:auto;padding:0 11px;font-size:12px;font-weight:700;letter-spacing:.04em;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.modoMM button.tapSub{width:auto;padding:0 9px;font-size:11px;font-weight:700;letter-spacing:.04em;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+button.tapSub svg{width:17px;height:17px;flex:none}
+.modoMM button.tapSub svg{width:15px;height:15px}
+.nudge button.tapSub[hidden],.modoMM button[hidden]{display:none}
+/* v4.7 — disparo com nome da função (PISAR, LARGADA) nos modos de metrônomo */
+.slotFire button.func{font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--ink)}
 button.tapSub[aria-pressed="true"]{color:var(--green);border-color:var(--green)}
 button.tapSub[hidden]{display:none}
 .nudge.desligado button.tapSub{opacity:1;pointer-events:auto}
@@ -1711,6 +1734,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
       <div class="duoRot"><span class="dRot" id="dFR">MN</span><span class="dRot" id="dMN">FR</span></div>
     </div>
     <div class="modoMM">
+      <button class="tapSub" data-sub="tap" hidden aria-label="Alternar TAP SOM / TAP MUDO">TAP</button>
       <button data-nudge="-" aria-label="Anterior">–</button>
       <button data-nudge="+" aria-label="Próximo">+</button>
     </div>
@@ -1786,7 +1810,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v4.6 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1)</p>
+    <p class="note">StompBox Remote v4.7 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1)</p>
   </div>
 </details>
 
@@ -2401,6 +2425,7 @@ function handleLine(line){
     clearTimeout(submodoTimer); submodoTimer = null;   // v4.6 — o "S+"/"S-" foi respondido
     renderModo(); renderBarraStatus();
     renderSlots(); renderGrid();   // v4.6 — cada modo com os slots que o pedal usa (chama o renderMaisMenos)
+    recolherNoMN();                // v4.7 — no MN, os balões de timbre se recolhem
     return;
   }
 
@@ -2486,17 +2511,21 @@ function slotAtivo(){   // o slot que a grade e o + e − mexem agora (null: nen
 }
 function dadosDoSlot(s){ return (modoPedal === '11' && s === 1) ? (state.slots[5] || {}) : (state.slots[s] || {}); }
 function nomeDoSlot(s){ return (modoPedal === '11' && s === 1) ? 'Metrônomo' : (SLOT_NAMES[s] || 'Slot ' + s); }
-// v4.6 — o ▶ de um slot. No FR, o do slot 1 toca o timbre do METRÔNOMO uma
-// vez, pelo sampler ("Ann"): o "D1" ali é pisada no pedal 1 — e, com o
-// metrônomo rodando, a pisada PARA tudo.
+/* v4.7 — O QUE CADA DISPARO FAZ NO MODO DO PEDAL. Nos modos de metrônomo
+   (MN e FR) o "D1" é pisar no pedal 1 — tap e, com o metrônomo tocando,
+   para — e o "D2" é a LARGADA (o mesmo do 8888). O 3 e o 4 ali ficam cinza:
+   o pedal não usa esses slots. Nos outros modos, o ▶ dispara o slot.
+   null = cinza. */
+function funcaoDoDisparo(s){
+  const metro = modoPedal === '01' || modoPedal === '11';
+  if (metro && s === 1) return { cmd: 'D1', curto: 'PISAR', nome: 'Pisar', det: 'pedal 1: tap · tocando, para' };
+  if (metro && s === 2) return { cmd: 'D2', curto: 'LARGADA', nome: 'Largada', det: 'começa no BPM (8888)' };
+  if (!slotVale(s)) return null;
+  return { cmd: 'D' + s, curto: '▶', nome: null, det: null };
+}
 function dispararSlot(s){
-  if (!slotVale(s)) return;
-  if (modoPedal === '11' && s === 1){
-    const d5 = state.slots[5];
-    if (d5 && d5.n) send('A' + pad(d5.n, 2));
-    return;
-  }
-  send('D' + s);
+  const f = funcaoDoDisparo(s);
+  if (f) send(f.cmd);
 }
 
 function renderSlots(){
@@ -2530,10 +2559,10 @@ function renderSlots(){
     sf.innerHTML = '';
     [1,2,3,4].forEach(s => {
       const f = document.createElement('button');
-      f.textContent = '▶';
-      const vale = slotVale(s);
-      f.disabled = !vale; f.classList.toggle('fora', !vale);   // v4.6
-      f.setAttribute('aria-label', (modoPedal === '11' && s === 1) ? 'Ouvir o timbre do metrônomo' : 'Disparar ' + (SLOT_NAMES[s] || 'slot ' + s));
+      const fn = funcaoDoDisparo(s);   // v4.7 — PISAR / LARGADA nos modos de metrônomo
+      f.textContent = fn ? fn.curto : '▶';
+      f.disabled = !fn; f.classList.toggle('fora', !fn); f.classList.toggle('func', !!(fn && fn.nome));
+      f.setAttribute('aria-label', fn && fn.nome ? fn.nome + ' — ' + fn.det : 'Disparar ' + (SLOT_NAMES[s] || 'slot ' + s));
       f.onclick = () => dispararSlot(s);
       sf.appendChild(f);
     });
@@ -2583,16 +2612,23 @@ function rotuloMaisMenos(){
   if (modoPedal === '11') return 'Metrônomo — anterior / próximo';
   return (SLOT_NAMES[state.active] || 'Slot ' + state.active) + ' — anterior / próximo';
 }
+// v4.7 — os ícones do TAP (alto-falante normal e cortado)
+const ICONE_SOM = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5v5h4l5 4.5v-14l-5 4.5z" fill="currentColor"/><path d="M15.5 9a4.5 4.5 0 0 1 0 6M18.5 6.5a8.5 8.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const ICONE_MUDO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9.5v5h4l5 4.5v-14l-5 4.5z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 function renderMaisMenos(){
   // v3.17 — no sampler o anterior/próximo dos slots desliga (no MN não: ali é a rota do click)
   document.querySelectorAll('.nudge, .modoMM').forEach(n => n.classList.toggle('desligado', modoSampler && modoPedal !== '01'));
   $('#nudgeLabel').textContent = rotuloMaisMenos();
-  const fr = modoPedal === '11', som = /TAP SOM/.test(modoExtra);
+  const fr = modoPedal === '11', som = /TAP SOM/.test(modoExtra), mudo = /TAP MUDO/.test(modoExtra);
   document.querySelectorAll('.tapSub').forEach(b => {
     b.hidden = !fr;
     b.setAttribute('aria-pressed', som ? 'true' : 'false');
-    b.textContent = /^TAP /.test(modoExtra) ? modoExtra : 'TAP';
+    // v4.7 — o estado vai no ícone: alto-falante (SOM) ou cortado (MUDO)
+    b.innerHTML = 'TAP' + (som ? ICONE_SOM : mudo ? ICONE_MUDO : '');
+    b.setAttribute('aria-label', som ? 'TAP SOM — tocar deixa mudo' : mudo ? 'TAP MUDO — tocar liga o som' : 'Alternar o som do tap');
   });
+  // v4.7 — no FR o balão do modo só tem o TAP: o − e o + repetiam os de cima
+  document.querySelectorAll('.modoMM [data-nudge]').forEach(b => { b.hidden = fr; });
 }
 /* v4.6 — O SUBMODO TEM COMANDO PRÓPRIO (firmware v39.1): "S+" / "S-". No MN
    anda na rota do click, no FR alterna o TAP. O pedal responde a linha do
@@ -3025,12 +3061,12 @@ function renderFire(){
     const b = document.createElement('button');
     // v3.19 — o timbre que vai tocar, e o slot menor e apagado
     const d = dadosDoSlot(s);   // v4.6 — no FR o 1 é o metrônomo
+    const fn = funcaoDoDisparo(s);   // v4.7 — nos modos de metrônomo: Pisar / Largada
     const nome = (d && d.n != null) ? nomeDoNumero(d.n) : '—';
     b.innerHTML = '<span class="fnome"></span><span class="fslot"></span>';
-    b.querySelector('.fnome').textContent = nome;
-    b.querySelector('.fslot').textContent = nomeDoSlot(s);
-    const vale = slotVale(s);
-    b.disabled = !vale; b.classList.toggle('fora', !vale);   // v4.6 — slot que não vale: cinza
+    b.querySelector('.fnome').textContent = fn && fn.nome ? fn.nome : nome;
+    b.querySelector('.fslot').textContent = fn && fn.det ? fn.det : nomeDoSlot(s);
+    b.disabled = !fn; b.classList.toggle('fora', !fn);   // v4.6 — slot que não vale: cinza
     b.onclick = () => dispararSlot(s);
     wrap.appendChild(b);
   });
@@ -3716,8 +3752,21 @@ function conteudoDoBalao(h){
   }
   return lista;
 }
+/* v4.7 — NO MN (não há timbre) Favoritos, Timbres e Meus presets se
+   recolhem sozinhos; saindo do MN, voltam como estavam. Fica POR CIMA do
+   estado salvo, sem mexer nele: tocar no título abre e fecha só enquanto
+   durar o MN. */
+const RECOLHE_NO_MN = ['favoritos', 'timbres', 'meuspresets'];
+let recolhidosMN = null;   // Map balão -> fechado, só enquanto o pedal está no MN
+function recolherNoMN(){
+  const noMN = modoPedal === '01';
+  if (noMN === !!recolhidosMN) return;
+  recolhidosMN = noMN ? new Map(RECOLHE_NO_MN.map(k => [k, true])) : null;
+  document.querySelectorAll('h2[data-rec]').forEach(h => { if (RECOLHE_NO_MN.includes(h.dataset.rec)) aplicarRecolhido(h); });
+}
 function aplicarRecolhido(h){
-  const fechado = recolhidos.includes(h.dataset.rec);
+  const k = h.dataset.rec;
+  const fechado = (recolhidosMN && recolhidosMN.has(k)) ? recolhidosMN.get(k) : recolhidos.includes(k);
   h.classList.toggle('fechado', fechado);
   h.setAttribute('aria-expanded', fechado ? 'false' : 'true');
   conteudoDoBalao(h).forEach(el => el.classList.toggle('recolhido', fechado));
@@ -3729,6 +3778,7 @@ document.querySelectorAll('h2[data-rec]').forEach(h => {
   h.addEventListener('click', e => {
     if (e.target.closest('button')) return;         // "editar", "novo"… continuam botões
     const k = h.dataset.rec;
+    if (recolhidosMN && recolhidosMN.has(k)){ recolhidosMN.set(k, !recolhidosMN.get(k)); aplicarRecolhido(h); return; }   // v4.7 — só enquanto durar o MN
     recolhidos = recolhidos.includes(k) ? recolhidos.filter(x => x !== k) : recolhidos.concat(k);
     try { localStorage.setItem(CHAVE_RECOLHIDOS, JSON.stringify(recolhidos)); } catch(_){}
     aplicarRecolhido(h);
