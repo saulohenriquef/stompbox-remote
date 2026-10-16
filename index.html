@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v4.7 "Mixing Station + Repertório + Cena + Sampler"
+ STOMPBOX REMOTE — v5.1 "Mixing Station + Repertório + Cena + Sampler"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -11,7 +11,8 @@
  a página usa das versões seguintes: "BOOT=" (v32), "E?" (v33), e o MUTE
  de slot "s00", o MUTE geral "M0" e o volume absoluto "Vnn=vvv"/"Vnn?"
  (v34), o sampler "Ann" (v36), o modo "Cnn" (v37), o "VS" (v38), o "VX" (v38.1) e
- o + e − nos modos de metrônomo com o estado no "C" (v39). Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
+ o + e − nos modos de metrônomo com o estado no "C" (v39); da v40, a troca de timbre feita no
+ botão do pedal chega como a mesma linha "T". Firmware anterior à v34 ignora o M0 e o Vnn; o "s00", nele, ainda
  é o antigo "volta um timbre" — a página mostra o que o pedal responder.
 
  ------------------------------------------------------------
@@ -222,6 +223,62 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v5.1 — VISOR QUE AMPLIA, LED AZUL NOS DISPAROS E ÍCONE NOVO (firmware v40.0):
+        1) O visor grande embaixo do desenho saiu: o balão mostra só o
+           gabinete. Tocar na tela do desenho amplia o módulo inteiro — a
+           moldura, os quatro parafusos e a tela — para o dobro (largura e
+           altura x2), crescendo pra baixo pra não cobrir o LED; tocar de
+           novo volta. Ampliado, a tela é repintada com o dobro de pontos e
+           o vão entre os pixels, como o OLED visto de perto. Pelo teclado:
+           Enter ou espaço; o Esc volta.
+        2) O LED RGB em cima do visor pisca AZUL quando a página dispara um
+           timbre — o ▶ dos slots no SB e no AT, e o sampler —, como no
+           pedal. O pedal deixa aceso enquanto o som toca; a página não sabe
+           quanto dura cada som e acende por 0,25 s. Slot em MUTE não acende
+           (o pedal não toca). No MN e no FR o PISAR é tap e a LARGADA
+           começa o metrônomo: acende só o tap com som (FR com TAP SOM). O
+           tap do pé no click BT (a linha "TAP") pisca 80 ms, como no pedal.
+        3) FIRMWARE v40: a troca de timbre no BOTÃO do pedal chega aqui
+           ("T1=05 CARRILL", só do slot que mudou, 0,4 s depois do último
+           aperto). A página já entendia essa linha: os slots, a grade e o
+           visor simulado acompanham sem mudança nesta versão.
+        4) FIRMWARE v40: o "M?" que a página manda ao conectar não mostra
+           mais a tela de VOLUME no pedal, e o visor daqui acompanha — a
+           resposta a um "M?" não muda a tela; M+, M−, Mnn, M0 e o botão do
+           pedal seguem mostrando VOLUME por 0,6 s. (Com firmware anterior à
+           v40, o pedal ainda mostra a tela no M? e o visor daqui não.)
+        5) ÍCONE NOVO: o gabinete da StompBox (o do Painel, versão 1, com os
+           dois botões de fliperama), visto de onde se toca, em perspectiva,
+           sob um canhão de luz âmbar; o visor do ícone mostra a tela do SB
+           com as fontes do firmware. Arquivos novos no site: icon-192.png,
+           icon-512.png e icon-maskable-512.png (o "maskable" é o que o
+           Android recorta em círculo ou squircle na tela inicial). O
+           icon.svg foi redesenhado e o manifest.json lista os quatro; o
+           fundo da tela de abertura acompanha o escuro do ícone. O ícone
+           antigo (o pedal laranja da v1.0) ficou guardado fora do site.
+
+ v5.0 — SIMULAÇÃO DO PEDAL (firmware v39.1 sem mudança):
+        1) BALÃO NOVO "Simulação do Pedal": o desenho da StompBox como ela
+           está hoje, copiado da foto — o gabinete com os painéis, o disco do
+           centro com o LED RGB em cima do visor, o botão do timbre do slot
+           1, as duas chaves de modo, o botão do pad, o vão do meio e as
+           travas. Os botões que ainda faltam no gabinete ficam pra depois.
+        2) O VISOR SIMULADO: o OLED desenhado pixel a pixel com as MESMAS
+           fontes e contas do firmware (a 5x7 da Adafruit GFX e a StompSlot13
+           das linhas de timbre): a barra de status (modo, rota do click ou
+           TAP, BT e volume), as telas do SB, MN, FR e AT, e os avisos que a
+           página provoca — BLUETOOTH CONECTADO, preset, volume geral, volume
+           por timbre e volumes na flash —, cada um pelo tempo que o pedal
+           mostra. Fundo anil e pixels brancos, como na foto.
+        3) Embaixo do desenho, o mesmo visor AMPLIADO, pra ler no celular
+           (no desenho ele fica no tamanho de verdade, pequeno).
+        4) O que só acontece dentro do pedal o visor daqui não mostra: taps
+           no pé (o BPM vem do que o pedal responde à página; a LARGADA e o
+           PISAR da página ele acompanha), o passo do smart (mostra o 1º), a
+           contagem do MUTE ("S2", sem o "#n") e o "PAD" da barra.
+        5) Conferido pixel a pixel contra o firmware v39.1 rodando no
+           simulador.
 
  v4.7 — MN SEM TIMBRES À VISTA, DISPAROS COM NOME E TAP COM ÍCONE
         (firmware v39.1 sem mudança):
@@ -1633,6 +1690,23 @@ button.tapSub[hidden]{display:none}
 .slots .slot.metro::after{display:none}
 .slots .slot.metro .lbl{letter-spacing:0;font-size:7px}
 .chaves{flex-wrap:wrap;row-gap:8px}
+/* v5.0 — Simulação do Pedal: o desenho da StompBox (SVG na escala da foto) e o visor */
+.boxSim::before{content:none}
+.pedalSim{position:relative;width:100%;aspect-ratio:870/606}
+.pedalSim svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+/* v5.1 — o módulo do visor (moldura, parafusos e a tela) por cima do desenho,
+   na mesma escala dele. Tocar amplia para o dobro, crescendo pra baixo a
+   partir da borda de cima (o LED, logo acima, continua à vista). */
+.pedalSim .modulo{position:absolute;left:37.7011%;top:19.1419%;width:23.908%;height:21.9472%;transform-origin:50% 0;transition:transform .22s ease,filter .22s ease;cursor:zoom-in;-webkit-tap-highlight-color:transparent;border-radius:2px}
+.pedalSim .modulo svg{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible}
+.pedalSim .modulo canvas{position:absolute;left:8.6538%;top:9.7744%;width:82.6923%;height:64.6617%;display:block}
+.pedalSim .modulo.zoom{transform:scale(2);cursor:zoom-out;filter:drop-shadow(0 5px 9px rgba(0,0,0,.6));z-index:2}
+.pedalSim .modulo:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.pedalSim .modulo{transition:none}}
+/* v5.1 — o LED RGB pisca azul nos disparos da página, como no pedal */
+.pedalSim #pdLedBrilho{transition:opacity .04s linear}
+.pedalSim.ledAzul #pdLedCor{fill:url(#pdLedAzul)}
+.pedalSim.ledAzul #pdLedBrilho{fill:#2f7dff;opacity:.95}
 /* v4.6 — o status repetido no Console e ajustes, inteiro */
 .statusEco{display:flex;align-items:flex-start;gap:8px;margin:0 0 10px;font-size:13px;line-height:1.35;color:var(--ink)}
 .statusEco .dot{margin-top:4px}
@@ -1698,6 +1772,82 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 
 <h2 data-rec="presets"><span>Presets</span><button id="editPre">editar nomes</button></h2>
 <section class="presets" id="presets"></section>
+
+<h2 data-rec="simulacao">Simulação do Pedal</h2>
+<section class="box boxSim" id="simPedal">
+  <div class="pedalSim">
+<svg class="pedalSvg" viewBox="168 84 870 606" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs>
+ <linearGradient id="pdCorpo" x1="0" y1="0" x2="1" y2=".6"><stop offset="0" stop-color="#46424d"/><stop offset=".5" stop-color="#34303a"/><stop offset="1" stop-color="#27242c"/></linearGradient>
+ <linearGradient id="pdFace" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#302c36"/><stop offset="1" stop-color="#3a3640"/></linearGradient>
+ <radialGradient id="pdDisco" cx=".42" cy=".35" r=".78"><stop offset="0" stop-color="#37333d"/><stop offset="1" stop-color="#28252d"/></radialGradient>
+ <linearGradient id="pdMetal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdfdfd"/><stop offset=".45" stop-color="#b9bfc4"/><stop offset="1" stop-color="#6b7178"/></linearGradient>
+ <linearGradient id="pdLatao" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3ead2"/><stop offset=".5" stop-color="#b4a27a"/><stop offset="1" stop-color="#6d5f43"/></linearGradient>
+ <linearGradient id="pdLatao2" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#e9dec2"/><stop offset="1" stop-color="#8b7b58"/></linearGradient>
+ <linearGradient id="pdCromo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8c939b"/><stop offset=".4" stop-color="#ffffff"/><stop offset="1" stop-color="#7a828b"/></linearGradient>
+ <radialGradient id="pdTampa" cx=".36" cy=".32" r=".8"><stop offset="0" stop-color="#5d626c"/><stop offset=".45" stop-color="#1b1d22"/><stop offset="1" stop-color="#090a0c"/></radialGradient>
+ <radialGradient id="pdLed" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#ececea"/><stop offset="1" stop-color="#a3a6ab"/></radialGradient>
+ <radialGradient id="pdLedAzul" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#e8f2ff"/><stop offset=".42" stop-color="#5ea2ff"/><stop offset="1" stop-color="#0b4fd6"/></radialGradient>
+ <linearGradient id="pdVao" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".8"/><stop offset=".45" stop-color="#000" stop-opacity=".2"/><stop offset="1" stop-color="#000" stop-opacity=".05"/></linearGradient>
+ <linearGradient id="pdTrava" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#46424d"/><stop offset="1" stop-color="#36323c"/></linearGradient>
+ <pattern id="pdCouro" width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="#141317"/><circle cx="2" cy="2.2" r="1.6" fill="#1d1c21"/><circle cx="6" cy="5.6" r="1.4" fill="#1a191e"/><circle cx="6.2" cy="1.2" r=".8" fill="#18171c"/></pattern>
+ <pattern id="pdCamadas" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)"><rect width="4" height="1.1" fill="#fff" opacity=".035"/></pattern>
+ <filter id="pdSombra" x="-6%" y="-6%" width="112%" height="120%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".55"/></filter>
+ <filter id="pdBrilho" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="5"/></filter>
+</defs>
+<rect x="222" y="88" width="22" height="12" rx="2" fill="#24212a" stroke="#121015" stroke-width="1.5"/>
+<rect x="956" y="88" width="22" height="12" rx="2" fill="#24212a" stroke="#121015" stroke-width="1.5"/>
+<rect x="176" y="96" width="848" height="524" rx="10" fill="url(#pdCorpo)" stroke="#0f0e11" stroke-width="2.5" filter="url(#pdSombra)"/>
+<rect x="176" y="96" width="848" height="524" rx="10" fill="url(#pdCamadas)"/>
+<rect x="181.5" y="101.5" width="837" height="513" rx="7" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1.5"/>
+<path d="M218 138H488L452 196H218Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<path d="M218 237H436V297H218Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<path d="M218 338H452L488 396H218Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<path d="M712 138H982V196H748Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<path d="M764 237H982V297H764Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<path d="M748 338H982V396H712Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<path d="M219 437H379Q386 437 386 444V571Q386 578 379 578H219Q212 578 212 571V444Q212 437 219 437Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<path d="M821 437H981Q988 437 988 444V571Q988 578 981 578H821Q814 578 814 571V444Q814 437 821 437Z" fill="url(#pdFace)" stroke="#121015" stroke-width="3" stroke-linejoin="round"/>
+<g fill="none" stroke-width="2"><g stroke="rgba(0,0,0,.45)"><path d="M220 141.5H484"/><path d="M220 240.5H434"/><path d="M220 341.5H454"/><path d="M716 141.5H980"/><path d="M766 240.5H980"/><path d="M750 341.5H980"/><path d="M216 440.5H384"/><path d="M818 440.5H986"/></g><g stroke="rgba(255,255,255,.08)"><path d="M220 193H454"/><path d="M220 294H434"/><path d="M220 393H486"/><path d="M750 193H980"/><path d="M766 294H980"/><path d="M714 393H980"/><path d="M216 575H384"/><path d="M818 575H986"/></g></g>
+<circle cx="600" cy="268" r="132" fill="url(#pdDisco)" stroke="#121015" stroke-width="3"/>
+<circle cx="600" cy="268" r="128.5" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="1.5"/>
+<circle id="pdLedBrilho" cx="600" cy="176" r="15" fill="#fff" opacity="0" filter="url(#pdBrilho)"/>
+<circle cx="600" cy="176" r="8.5" fill="#18161b"/><circle id="pdLedCor" cx="600" cy="176" r="7" fill="url(#pdLed)" stroke="#8b8e94" stroke-width=".8"/><ellipse cx="597.6" cy="173.4" rx="2.6" ry="1.8" fill="#fff" opacity=".9"/>
+<polygon points="938.6,165.8 930.8,173.6 920.2,170.8 917.4,160.2 925.2,152.4 935.8,155.2" fill="url(#pdLatao)" stroke="#3a3122" stroke-width="1"/><circle cx="928" cy="163" r="6.8" fill="url(#pdLatao2)" stroke="#4a3e2a" stroke-width=".8"/><path d="M922.5 161.5L926 150.5A6.6 6.6 0 0 1 938.6 154.4L935.1 165.4Z" fill="#0d0e11"/><ellipse cx="932.3" cy="152.4" rx="6.6" ry="5.4" transform="rotate(18 932.3 152.4)" fill="url(#pdTampa)" stroke="#000" stroke-width=".8"/><ellipse cx="930.4" cy="150.6" rx="2.2" ry="1.4" fill="#fff" opacity=".35"/>
+<path d="M806 267H816M811 262V272" stroke="#9a96a0" stroke-width="1.3" stroke-linecap="round"/>
+<polygon points="876.6,265.8 868.8,273.6 858.2,270.8 855.4,260.2 863.2,252.4 873.8,255.2" fill="url(#pdLatao)" stroke="#3a3122" stroke-width="1"/><circle cx="866" cy="263" r="6.8" fill="url(#pdLatao2)" stroke="#4a3e2a" stroke-width=".8"/><path d="M863.8 263.0L864.8 252.0L868.6 252.0L868.2 263.0Z" fill="url(#pdCromo)" stroke="#59606a" stroke-width=".6"/><ellipse cx="866.7" cy="251.5" rx="3.4" ry="2.9" fill="url(#pdCromo)" stroke="#59606a" stroke-width=".6"/><ellipse cx="866.0" cy="250.7" rx="1.4" ry="1" fill="#fff" opacity=".85"/>
+<polygon points="938.6,264.8 930.8,272.6 920.2,269.8 917.4,259.2 925.2,251.4 935.8,254.2" fill="url(#pdLatao)" stroke="#3a3122" stroke-width="1"/><circle cx="928" cy="262" r="6.8" fill="url(#pdLatao2)" stroke="#4a3e2a" stroke-width=".8"/><path d="M925.8 262.0L926.8 251.0L930.6 251.0L930.2 262.0Z" fill="url(#pdCromo)" stroke="#59606a" stroke-width=".6"/><ellipse cx="928.7" cy="250.5" rx="3.4" ry="2.9" fill="url(#pdCromo)" stroke="#59606a" stroke-width=".6"/><ellipse cx="928.0" cy="249.7" rx="1.4" ry="1" fill="#fff" opacity=".85"/>
+<circle cx="299" cy="507" r="34" fill="#0b0a0d" stroke="#18161b" stroke-width="2"/>
+<circle cx="299" cy="507" r="26" fill="#0e0f12"/><circle cx="294" cy="502" r="23.5" fill="url(#pdTampa)" stroke="#000" stroke-width="1"/><path d="M281 497A17 17 0 0 1 300 486" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width="2.5" stroke-linecap="round"/>
+<circle cx="901" cy="506" r="14" fill="url(#pdLatao)" stroke="#4a3e2a" stroke-width="1"/><circle cx="901" cy="506" r="9.5" fill="url(#pdMetal)" stroke="#555b62" stroke-width=".8"/><path d="M895.8 506.0H906.2M901.0 500.8V511.2" stroke="#5d646b" stroke-width="2.1" stroke-linecap="round"/>
+<path d="M434 436H766Q772 436 772 442V618H428V442Q428 436 434 436Z" fill="url(#pdCouro)" stroke="#121015" stroke-width="3"/>
+<rect x="429.5" y="437.5" width="341" height="180" fill="url(#pdVao)"/>
+<rect x="443" y="539" width="314" height="42" fill="#3b3741" stroke="#141217" stroke-width="2"/><path d="M445 541.5H755" stroke="rgba(255,255,255,.12)" stroke-width="1.5"/><rect x="443" y="580" width="314" height="36" fill="#26232b" stroke="#141217" stroke-width="2"/><path d="M578 581A22 22 0 0 0 622 581V616H578Z" fill="#302c35" stroke="#141217" stroke-width="1.5"/><circle cx="600" cy="594" r="8" fill="#08080a"/><circle cx="600" cy="594" r="3.8" fill="url(#pdMetal)"/><rect x="266" y="603" width="84" height="83" rx="5" fill="url(#pdTrava)" stroke="#141217" stroke-width="2"/>
+<path d="M270 626H346" stroke="#1a181e" stroke-width="3"/><path d="M270 628H346" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+<path d="M270 640H346" stroke="#1a181e" stroke-width="3"/><path d="M270 642H346" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+<path d="M270 654H346" stroke="#1a181e" stroke-width="3"/><path d="M270 656H346" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+<path d="M270 668H346" stroke="#1a181e" stroke-width="3"/><path d="M270 670H346" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+<rect x="852" y="603" width="84" height="83" rx="5" fill="url(#pdTrava)" stroke="#141217" stroke-width="2"/>
+<path d="M856 626H932" stroke="#1a181e" stroke-width="3"/><path d="M856 628H932" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+<path d="M856 640H932" stroke="#1a181e" stroke-width="3"/><path d="M856 642H932" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+<path d="M856 654H932" stroke="#1a181e" stroke-width="3"/><path d="M856 656H932" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+<path d="M856 668H932" stroke="#1a181e" stroke-width="3"/><path d="M856 670H932" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+</svg>
+    <div class="modulo" id="moduloVisor" role="button" tabindex="0" aria-pressed="false" aria-label="Visor da StompBox: toque para ampliar">
+<svg viewBox="496 200 208 133" aria-hidden="true">
+<rect x="506" y="204" width="188" height="127" rx="3" fill="#0d0c10" stroke="#060608" stroke-width="1.5"/>
+<rect x="514" y="213" width="172" height="86" fill="#2b1f6e"/>
+<rect x="514" y="300" width="172" height="26" fill="#121116"/>
+<circle cx="503" cy="207" r="5.5" fill="url(#pdMetal)" stroke="#555b62" stroke-width=".8"/><path d="M500.0 207.0H506.0M503.0 204.0V210.0" stroke="#5d646b" stroke-width="1.2" stroke-linecap="round"/>
+<circle cx="697" cy="207" r="5.5" fill="url(#pdMetal)" stroke="#555b62" stroke-width=".8"/><path d="M694.0 207.0H700.0M697.0 204.0V210.0" stroke="#5d646b" stroke-width="1.2" stroke-linecap="round"/>
+<circle cx="503" cy="323" r="5.5" fill="url(#pdMetal)" stroke="#555b62" stroke-width=".8"/><path d="M500.0 323.0H506.0M503.0 320.0V326.0" stroke="#5d646b" stroke-width="1.2" stroke-linecap="round"/>
+<circle cx="697" cy="323" r="5.5" fill="url(#pdMetal)" stroke="#555b62" stroke-width=".8"/><path d="M694.0 323.0H700.0M697.0 320.0V326.0" stroke="#5d646b" stroke-width="1.2" stroke-linecap="round"/>
+</svg>
+      <canvas id="visorMini" aria-hidden="true"></canvas>
+    </div>
+  </div>
+  <p class="note">Toque no visor para ampliar; toque de novo para voltar. Ele é desenhado com o que o pedal manda pelo Bluetooth, com as mesmas letras e posições do firmware. Taps no pé, o passo do smart e a contagem do MUTE ficam só no pedal.</p>
+</section>
 
 <h2 data-rec="modo">Modo da StompBox</h2>
 <section class="box boxModo">
@@ -1810,7 +1960,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v4.7 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1)</p>
+    <p class="note">StompBox Remote v5.1 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40)</p>
   </div>
 </details>
 
@@ -2312,6 +2462,7 @@ async function abrirGatt(){
   retries = 0;
   bootAvisado = false; state.boot = null;   // v3.14 — o BOOT= desta conexão
   setStatus((dev.name || 'StompBox') + ' conectada', 'on');
+  visorAviso(oledAvisoBT, 1500);   // v5.0 — o pedal mostra "BLUETOOTH CONECTADO" por 1,5 s
   $('#btnConn').textContent = 'Desconectar';
   log('— conectado —');
   keepAwake();
@@ -2324,6 +2475,7 @@ async function abrirGatt(){
 
 function onDrop(){
   rx = tx = null; releaseWake();
+  agendarVisor();   // v5.0 — sem o "BT" na barra
   $('#btnConn').textContent = 'Conectar';
   limparPendentes();   // v3.14 — sem conexão, nenhum pedido vai ser confirmado
   /* v3.14 — um laço de reconexão de cada vez: a queda de uma tentativa que
@@ -2358,11 +2510,13 @@ function disconnect(){
   limparPendentes();   // v3.14
   $('#btnConn').textContent = 'Conectar';
   setStatus('Desconectado');
+  agendarVisor();   // v5.0
 }
 
 /* ---------- envio ---------- */
 let queue = Promise.resolve();
 function send(cmd){
+  visorComando(cmd);   // v5.0 — LARGADA / PISAR e os avisos de volume, pro visor simulado
   queue = queue.then(async () => {
     if (!rx) { log('sem conexão: ' + cmd, 'er'); return; }
     const data = enc.encode(cmd + term());
@@ -2376,11 +2530,13 @@ function send(cmd){
 /* ---------- recepção ---------- */
 function onNotify(ev){
   dec.decode(ev.target.value).split(/[\r\n]+/).forEach(l => { if (l.trim()) handleLine(l.trim()); });
+  agendarVisor();   // v5.0 — o visor simulado acompanha
 }
 
 function handleLine(line){
   log('← ' + line, 'rx');
   conferirEsperas(line);   // v3.15 — o carregamento da cena espera respostas
+  visorLinha(line);        // v5.0 — BPM, avisos e trocas de modo pro visor simulado
   let m;
 
   // TAP (v4.0) — pisada do pedal no metrônomo com click BT: estima o BPM
@@ -3736,6 +3892,366 @@ faderSoPelaAlca($('#volFader'));   // v3.18
   $('#volDlg').addEventListener('close', () => { volJanela.n = null; volJanela.vol = null; });
 }
 
+const OLED_FONTE_CLASSICA = 'AAAAAAA+W09bPj5rT2s+HD58PhwYPH48GBxXfVccHF5/XhwAGDwYAP/nw+f/ABgkGAD/59vn/zBIOgYOJil5KSZAfwUFB0B/BSU/WjznPFp/PhwcCAgcHD5/FCJ/IhRfXwBfXwYJfwF/AGaJlWpgYGBgYJSi/6KUCAR+BAgQIH4gEAgIKhwICBwqCAgeEBAQEAweDB4MMDg+ODAGDj4OBgAAAAAAAABfAAAABwAHABR/FH8UJCp/KhIjEwhkYjZJViBQAAgHAwAAHCJBAABBIhwAKhx/HCoICD4ICACAcDAACAgICAgAAGBgACAQCAQCPlFJRT4AQn9AAHJJSUlGIUFJTTMYFBJ/ECdFRUU5PEpJSTFBIREJBzZJSUk2RklJKR4AABQAAABANAAAAAgUIkEUFBQUFABBIhQIAgFZCQY+QV1ZTnwSERJ8f0lJSTY+QUFBIn9BQUE+f0lJSUF/CQkJAT5BQVFzfwgICH8AQX9BACBAQT8BfwgUIkF/QEBAQH8CHAJ/fwQIEH8+QUFBPn8JCQkGPkFRIV5/CRkpRiZJSUkyAwF/AQM/QEBAPx8gQCAfP0A4QD9jFAgUYwMEeAQDYVlJTUMAf0FBQQIECBAgAEFBQX8EAgECBEBAQEBAAAMHCAAgVFR4QH8oREQ4OERERCg4REQofzhUVFQYAAh+CQIYpKSceH8IBAR4AER9QAAgQEA9AH8QKEQAAEF/QAB8BHgEeHwIBAR4OERERDj8GCQkGBgkJBj8fAgEBAhIVFRUJAQEP0QkPEBAIHwcIEAgHDxAMEA8RCgQKERMkJCQfERkVExEAAg2QQAAAHcAAABBNggAAgECBAI8JiMmPB6hoWESOkBAIHo4VFRVWSFVVXlBIlRUeEIhVVR4QCBUVXlADB5SchI5VVVVWTlUVFRZOVVUVFgAAEV8QQACRX1CAAFFfEB9EhESffAoJSjwfFRVRQAgVFR8VHwKCX9JMklJSTI6REREOjJKSEgwOkFBIXo6QkAgeACdoKB9PUJCQj09QEBAPTwk/yQkSH5JQ2YrL/wvK/8JKfYgwIh+CQMgVFR5QQAARH1BMEhISjI4QEAiegB6CgpyfQ0ZMX0mKSkvKCYpKSkmMEhNQCA4CAgICAgICAg4LxDIrLovECg0+gAAewAACBQqFCIiFCoUCFUAVQBVqlWqVar/Vf9V/wAAAP8AEBAQ/wAUFBT/ABAQ/wD/EBDwEPAUFBT8ABQU9wD/AAD/AP8UFPQE/BQUFxAfEBAfEB8UFBQfABAQEPAAAAAAHxAQEBAfEBAQEPAQAAAA/xAQEBAQEBAQEP8QAAAA/xQAAP8A/wAAHxAXAAD8BPQUFBcQFxQU9AT0AAD/APcUFBQUFBQU9wD3FBQUFxQQEB8QHxQUFPQUEBDwEPAAAB8QHwAAAB8UAAAA/BQAAPAQ8BAQ/xD/FBQU/xQQEBAfAAAAAPAQ///////w8PDw8P///wAAAAAA//8PDw8PDzhERDhE/EpKSjR+AgIGBgJ+An4CY1VJQWM4REQ8BEB+IB4gBgJ+AgKZpeelmRwqSSocTHIBckwwSk1NMDBIeEgwvGJaRj0+SUlJAH4BAQF+KioqKipERF9EREBRSkRAQERKUUAAAP8BA+CA/wAACAhrawg2EjYkNgYPCQ8GAAAYGAAAABAQADBA/wEBAB8BAR4AGR0XEgA8PDw8AAAAAAA=';
+const OLED_SLOT13 = { bitmap: '/+PAmZASFv8kJP7+SEgQT/TT48Xf4QQwizNkbQegScFISRkiPBh8YGBx29/O7nvgLW22zZDJtttvYBBXzNxAGBgY//8YGBj+/PATIiZEyDD7Nmz58+b88PLDDDDDP/xz+MMMYxj/8HPww3nww9/gOHHizZ//jBj/DD6cMPf4GPuGD92z5uzw/DHGGMMcYDP883/8883wM+zzz/fDn+DwPPA/gAEPPODwPAcB/wAA/4DgPAcPOOCAZ8YzOYBjAB4YZAp5kmyZLn7AGEPwHA8NhsNzGfzHwYD9nx/v2PH//Bj/jgwYMGB+fP7Ox8PDw8f+/P8MP/8MP/z/DD//DDDAHH7iwMDPw8N/PsPDw///w8PDw///wDMzMzMz/MfM2PDw+NzOx8MMMMMMP/zj/P8/X9/3fN8HwcDj4/PT28vPx8cYfufDw8PDw/58/Z8eP/8wYMAYfufDw8PDw/58Dgb8zs7M+NzOxsc5+xYPj4OH/fj/GBgYGBgYGBjHjx48ePG/fOOxmM5jYbD4OBwAznnPKeU/vPec845xwMbZscOPm2PG42Y+PBwYGBgY/hhwwww4f/7/zMzMzP/ERGIjEf2222/wcWhA/ND6M//PfsDBgwfu+PHj7fg91jhh08AMMN/PPPP98DzNn/YMT4A72f+xjGMAfzzzz/fD/cDDDD/vPPPPMPP/8Gw22238wYMGbZ48fN2c///w//u8zzPM8zzM/7zzzzzAPGZm52Z+PP3fHjx9v2DBgH8888/3wwww//GMYwD+cfHP4GM/9jGPOM8888/3wMbNm2PHBgDZ7vd6tXO5nM9njHtswMbNmWPHBgxw4P/M7n/gHPMMM88MMMOH////wOPDDDDxzDDDPPue', glifos: [[0,0,0,4,0,0],[0,2,9,5,2,-10],[3,4,3,6,1,-10],[5,8,9,10,1,-10],[14,6,12,8,1,-10],[23,11,10,12,0,-10],[37,8,10,10,1,-10],[47,1,3,4,1,-10],[48,3,12,5,1,-10],[53,3,12,5,1,-10],[58,6,6,6,0,-10],[63,8,8,10,1,-9],[71,2,4,4,1,-3],[72,3,2,5,1,-5],[73,2,2,4,1,-3],[74,4,10,4,0,-10],[79,7,10,8,1,-10],[88,6,9,8,1,-10],[95,6,10,8,1,-10],[103,6,10,8,1,-10],[111,7,9,8,1,-10],[119,6,9,8,1,-10],[126,7,10,8,1,-10],[135,6,9,8,1,-10],[142,6,10,8,1,-10],[150,6,10,8,1,-10],[158,2,7,5,1,-8],[160,2,9,5,1,-8],[163,8,8,10,1,-8],[171,8,4,10,1,-7],[175,8,8,10,1,-8],[183,5,10,7,1,-10],[190,10,11,12,1,-10],[204,9,9,9,0,-10],[215,7,9,9,1,-10],[223,7,10,9,1,-10],[232,8,9,10,1,-10],[241,6,9,8,1,-10],[248,6,9,8,1,-10],[255,8,10,10,1,-10],[265,8,9,10,1,-10],[274,2,9,4,1,-10],[277,4,12,4,-1,-10],[283,8,9,9,1,-10],[292,6,9,7,1,-10],[299,10,9,12,1,-10],[311,8,9,10,1,-10],[320,8,10,10,1,-10],[330,7,9,9,1,-10],[338,8,12,10,1,-10],[350,8,9,9,1,-10],[359,7,10,8,1,-10],[368,8,9,8,0,-10],[377,7,9,10,1,-10],[385,9,9,9,0,-10],[396,11,9,13,1,-10],[409,7,9,9,1,-10],[417,8,9,8,-1,-10],[426,7,9,8,1,-10],[434,4,12,5,1,-10],[440,4,10,4,0,-10],[445,3,12,5,1,-10],[450,6,3,10,2,-10],[453,6,1,6,0,2],[454,2,2,6,1,-11],[455,6,7,8,1,-8],[461,7,10,8,1,-10],[470,6,7,7,0,-8],[476,6,10,8,1,-10],[484,7,7,8,0,-8],[491,5,10,5,0,-10],[498,6,10,8,1,-8],[506,6,10,8,1,-10],[514,2,10,4,1,-10],[517,3,13,4,-1,-10],[522,7,10,8,1,-10],[531,2,10,4,1,-10],[534,10,7,12,1,-8],[543,6,7,8,1,-8],[549,8,7,8,0,-8],[556,7,10,8,1,-8],[565,6,10,8,1,-8],[573,5,7,6,1,-8],[578,5,7,7,1,-8],[583,5,9,6,0,-10],[589,6,7,8,1,-8],[595,7,7,8,0,-8],[602,9,7,11,1,-8],[610,6,7,8,1,-8],[616,7,10,8,0,-8],[625,5,7,7,1,-8],[630,6,12,8,1,-10],[639,2,13,4,1,-10],[643,6,12,8,1,-10],[652,8,2,10,1,-6]], primeiro: 32, ultimo: 126, avanco: 15 };
+const OLED_NOMES = ["CAJON B", "BUMBO 24", "BUMBO 22", "BUMBO 20", "BUMBO 808", "CARRILHAO", "PANDEIROLA", "COWBELL", "AFOXE", "ARO DE CAIXA", "CHIMBAL", "BLOCO L", "BLOCO H", "TRI ABERTO", "TRI ABAFADO", "MARACA", "SURDO", "CRASH 16", "SPLASH 10", "CRASH 18", "BUMBO FSA", "VIOLAO B", "VIOLAO A", "CAIXA REVERB", "CAIXA ZEZE", "CARRILHAO 2", "LASER GUN", "GUN RELOAD", "CHICOTE", "NEXTEL", "CAJON+CR16", "CAJON+CR18", "CAJON+PAND", "BLOCOS L/H", "TRI SMART"];
+const OLED_CURTOS = ["CAJON B", "BB 24", "BB 22", "BB 20", "BE 808", "CARRILL", "PANDEIL", "COWBELL", "AFOX3", "ARO CX", "CHIMBAL", "BLOCO L", "BLOCO H", "TRI ABE", "TRI ABA", "MARACA", "SURDO", "CRASH16", "SPLAS10", "CRASH18", "B FSA", "VIOL B", "VIOL A", "CX REV", "CX ZEZE", "CARRIL2", "LASER", "RELOAD", "CHICOTE", "NEXTEL", "CAJ+C16", "CAJ+C18", "CAJ+PAN", "BLOCOS", "TRI S"];
+/* ---------- v5.0 — SIMULAÇÃO DO PEDAL: O VISOR ----------
+   O OLED da StompBox desenhado AQUI, pixel a pixel, com o mesmo desenho do
+   firmware v39.1: as duas fontes dele (a clássica 5x7 da Adafruit GFX e a
+   StompSlot13 das linhas de timbre), as mesmas contas de posição
+   (getTextBounds, centralização, corte do nome completo pro curto) e as
+   mesmas telas: barra de status, SB, MN, FR, AT e os avisos que a página
+   provoca (Bluetooth, preset, volume, flash). Os dados vêm do que o pedal
+   manda pelo Bluetooth; o que só acontece dentro dele (taps no pé, passo
+   do smart, contagem de disparos no MUTE) a página não vê. */
+const OLED_SMART = { 33: ['L', 'H'], 34: ['1C', '2C', '3O', '4C'] };   // SMARTS do firmware: índice -> rótulos dos passos
+const OLED_PADROES = { 0: 'VANEIRA', 1: 'SAMBA', 11: 'MODA', 12: 'MODA B', 13: 'FORRO', 14: 'FORRO 2' };   // PADROES: timbre que arma -> nome
+const OLED_STATUS = 9, OLED_LINHA = 14, OLED_BASE = 11;   // STATUS_ALTURA, LINHA_TIMBRE_ALTURA, LINHA_TIMBRE_BASE
+const OLED_FONTES = (() => {
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  return { classica: b64(OLED_FONTE_CLASSICA), slot13: Object.assign({}, OLED_SLOT13, { bits: b64(OLED_SLOT13.bitmap) }) };
+})();
+
+// O "display" de 128x64, 1 bit por pixel, com a semântica da Adafruit GFX.
+class TelaOled {
+  constructor(){ this.px = new Uint8Array(128 * 64); this.fonte = null; this.tam = 1; this.cx = 0; this.cy = 0; this.cor = 1; this.quebra = true; }
+  limpar(){ this.px.fill(0); }
+  ponto(x, y, c){ if (x >= 0 && y >= 0 && x < 128 && y < 64) this.px[y * 128 + x] = c; }
+  retCheio(x, y, w, h, c){ for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) this.ponto(i, j, c); }
+  ret(x, y, w, h, c){ this.retCheio(x, y, w, 1, c); this.retCheio(x, y + h - 1, w, 1, c); this.retCheio(x, y, 1, h, c); this.retCheio(x + w - 1, y, 1, h, c); }
+  cursor(x, y){ this.cx = x; this.cy = y; }
+  _classico(x, y, c, s){
+    if (x >= 128 || y >= 64 || x + 6 * s - 1 < 0 || y + 8 * s - 1 < 0) return;
+    const f = OLED_FONTES.classica;
+    for (let i = 0; i < 5; i++){
+      let linha = f[c * 5 + i];
+      for (let j = 0; j < 8; j++, linha >>= 1)
+        if (linha & 1){ if (s === 1) this.ponto(x + i, y + j, this.cor); else this.retCheio(x + i * s, y + j * s, s, s, this.cor); }
+    }
+  }
+  _slot13(x, y, c, s){
+    const f = OLED_FONTES.slot13, g = f.glifos[c - f.primeiro];
+    let bo = g[0], bits = 0, bit = 0;
+    for (let yy = 0; yy < g[2]; yy++) for (let xx = 0; xx < g[1]; xx++){
+      if (!(bit++ & 7)) bits = f.bits[bo++];
+      if (bits & 0x80){ if (s === 1) this.ponto(x + g[4] + xx, y + g[5] + yy, this.cor); else this.retCheio(x + (g[4] + xx) * s, y + (g[5] + yy) * s, s, s, this.cor); }
+      bits = (bits << 1) & 0xFF;
+    }
+  }
+  escrever(c){
+    const s = this.tam;
+    if (!this.fonte){
+      if (c === 10){ this.cx = 0; this.cy += s * 8; return; }
+      if (c === 13) return;
+      if (this.quebra && this.cx + s * 6 > 128){ this.cx = 0; this.cy += s * 8; }
+      this._classico(this.cx, this.cy, c & 0xFF, s);
+      this.cx += s * 6;
+      return;
+    }
+    const f = OLED_FONTES.slot13;
+    if (c === 10){ this.cx = 0; this.cy += s * f.avanco; return; }
+    if (c === 13 || c < f.primeiro || c > f.ultimo) return;
+    const g = f.glifos[c - f.primeiro];
+    if (g[1] > 0 && g[2] > 0){
+      if (this.quebra && this.cx + s * (g[4] + g[1]) > 128){ this.cx = 0; this.cy += s * f.avanco; }
+      this._slot13(this.cx, this.cy, c, s);
+    }
+    this.cx += g[3] * s;
+  }
+  imprimir(txt){ for (const ch of String(txt)) this.escrever(ch.charCodeAt(0)); }
+  // getTextBounds da Adafruit GFX (charBounds incluso)
+  limites(txt, x, y){
+    let minx = 0x7FFF, miny = 0x7FFF, maxx = -1, maxy = -1;
+    const s = this.tam, f = OLED_FONTES.slot13;
+    for (const ch of String(txt)){
+      const c = ch.charCodeAt(0);
+      if (!this.fonte){
+        if (c === 10){ x = 0; y += s * 8; continue; }
+        if (c === 13) continue;
+        if (this.quebra && x + s * 6 > 128){ x = 0; y += s * 8; }
+        const x2 = x + s * 6 - 1, y2 = y + s * 8 - 1;
+        if (x2 > maxx) maxx = x2; if (y2 > maxy) maxy = y2; if (x < minx) minx = x; if (y < miny) miny = y;
+        x += s * 6;
+      } else {
+        if (c === 10){ x = 0; y += s * f.avanco; continue; }
+        if (c === 13 || c < f.primeiro || c > f.ultimo) continue;
+        const g = f.glifos[c - f.primeiro];
+        if (this.quebra && x + (g[4] + g[1]) * s > 128){ x = 0; y += s * f.avanco; }
+        const x1 = x + g[4] * s, y1 = y + g[5] * s, x2 = x1 + g[1] * s - 1, y2 = y1 + g[2] * s - 1;
+        if (x1 < minx) minx = x1; if (y1 < miny) miny = y1; if (x2 > maxx) maxx = x2; if (y2 > maxy) maxy = y2;
+        x += g[3] * s;
+      }
+    }
+    const r = { x1: x, y1: y, w: 0, h: 0 };
+    if (maxx >= minx){ r.x1 = minx; r.w = maxx - minx + 1; }
+    if (maxy >= miny){ r.y1 = miny; r.h = maxy - miny + 1; }
+    return r;
+  }
+  centrado(txt, y){ const b = this.limites(txt, 0, 0); this.cursor(Math.trunc((128 - b.w) / 2), y); this.imprimir(txt); }
+}
+
+/* ----- as telas, na ordem do firmware ----- */
+const oledPad = n => String(n).padStart(2, '0');
+function oledTextoQueCabe(t, idx, larguraMax){   // textoTimbreQueCabe()
+  const s = oledPad(idx + 1) + ' ' + OLED_NOMES[idx];
+  if (t.limites(s, 0, 0).w <= larguraMax) return s;
+  return oledPad(idx + 1) + ' ' + OLED_CURTOS[idx];
+}
+// O passo do smart: a página não vê os toques, então mostra o 1º (o da escolha do timbre).
+function oledLarguraPasso(idx){ const r = OLED_SMART[idx]; return r ? r[0].length * 6 : 0; }
+function oledPasso(t, idx, y){
+  const r = OLED_SMART[idx]; if (!r) return;
+  t.tam = 1; t.cursor(128 - r[0].length * 6 - 2, y + 4); t.imprimir(r[0]); t.tam = 2;
+}
+function oledTimbreCentrado(t, idx, base, reserva){   // desenharTimbreCentrado()
+  t.quebra = false; t.fonte = 'slot13'; t.tam = 1;
+  const larg = 128 - 4 - reserva, txt = oledTextoQueCabe(t, idx, larg), b = t.limites(txt, 0, 0);
+  t.cursor(2 + Math.trunc((larg - b.w) / 2) - b.x1, base); t.imprimir(txt);
+  t.fonte = null; t.quebra = true;
+}
+function oledTextoCentradoSlot(t, txt, base){        // desenharTextoCentradoSlot()
+  t.quebra = false; t.fonte = 'slot13'; t.tam = 1;
+  const b = t.limites(txt, 0, 0);
+  t.cursor(Math.trunc((128 - b.w) / 2) - b.x1, base); t.imprimir(txt);
+  t.fonte = null; t.quebra = true;
+}
+function oledBarra(t, e){                             // desenharBarraStatus()
+  const modo = { '00': 'SB', '01': 'MN', '10': 'AT', '11': 'FR' }[e.modo] || 'SB';
+  const extra = (e.modo === '01' || e.modo === '11') ? (e.extra || '') : '';   // o "PAD" do SB/AT a página não sabe
+  const esq = modo + (e.resetAnormal ? '!' : '') + (extra ? ' ' + extra : '');
+  const dir = (e.bt ? 'BT ' : '') + (e.volume === 0 ? 'MUTE' : 'V' + (e.volume == null ? '--' : e.volume));
+  t.retCheio(0, 0, 128, OLED_STATUS, 1);
+  t.fonte = null; t.tam = 1; t.quebra = false; t.cor = 0;
+  t.cursor(2, 1); t.imprimir(esq);
+  t.cursor(128 - 2 - dir.length * 6, 1); t.imprimir(dir);
+  t.cor = 1; t.quebra = true;
+}
+function oledTelaSB(t, e){                            // atualizarDisplay()
+  t.limpar(); oledBarra(t, e); t.cor = 1;
+  for (let i = 0; i < 4; i++){
+    const n = e.slots[i], y = OLED_STATUS + i * OLED_LINHA;
+    if (n == null) continue;                           // slot sem leitura
+    t.quebra = false; t.fonte = 'slot13'; t.tam = 1;
+    if (n === 0){ t.cursor(1, y + OLED_BASE); t.imprimir('S' + (i + 1)); t.fonte = null; t.quebra = true; continue; }
+    const idx = n - 1, res = oledLarguraPasso(idx);
+    const txt = oledTextoQueCabe(t, idx, 128 - 2 - (res ? res + 4 : 0));
+    t.cursor(1, y + OLED_BASE); t.imprimir(txt);
+    t.fonte = null; t.quebra = true;
+    oledPasso(t, idx, y);
+  }
+}
+function oledTelaMN(t, e){                            // mostrarBPM()
+  t.limpar(); oledBarra(t, e);
+  if (e.moldura) t.ret(0, OLED_STATUS, 128, 64 - OLED_STATUS, 1);
+  t.cor = 1; t.tam = 4;
+  if (!(e.bpm > 0)){ t.cursor(22, 15); t.imprimir('---'); }
+  else t.centrado(e.bpm.toFixed(1), 15);
+  t.ret(6, 52, 116, 8, 1);                             // barra de tendência: a moldura (os taps a página não vê)
+}
+function oledTelaFR(t, e){                            // desenharBpmETimbre(true, …)
+  t.limpar(); oledBarra(t, e); t.cor = 1;
+  if (e.moldura) t.ret(0, OLED_STATUS, 128, 64 - OLED_STATUS, 1);
+  t.tam = 3; t.centrado(e.bpm > 0 ? e.bpm.toFixed(1) : '---', 12);
+  const m = e.metro;
+  if (m) oledTimbreCentrado(t, m - 1, 48, 0);
+  if (m != null){ t.tam = 1; t.centrado(OLED_PADROES[m - 1] || 'RETO', 55); }
+}
+function oledTelaAT(t, e){                            // desenharTelaAuto()
+  t.limpar(); oledBarra(t, e); t.cor = 1;
+  if (e.moldura) t.ret(0, OLED_STATUS, 128, 64 - OLED_STATUS, 1);
+  const n = e.slots[0];
+  if (n === 0) oledTextoCentradoSlot(t, 'S1', 27);
+  else if (n != null){ const res = oledLarguraPasso(n - 1); oledTimbreCentrado(t, n - 1, 27, res ? res + 4 : 0); oledPasso(t, n - 1, 16); }
+  t.tam = 3; t.centrado(e.bpm > 0 ? String(Math.floor(e.bpm + 0.5)) : 'AUTO', 36);
+}
+function oledTelaModo(t, e){
+  if (e.modo === '01') oledTelaMN(t, e);
+  else if (e.modo === '11') oledTelaFR(t, e);
+  else if (e.modo === '10') oledTelaAT(t, e);
+  else oledTelaSB(t, e);
+}
+// Os avisos (somem sozinhos: 1,5 s o do Bluetooth e o da flash; 0,6 s preset e volumes)
+function oledAvisoBT(t){ t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('BLUETOOTH', 8); t.tam = 2; t.centrado('CONECTADO', 28); }
+function oledAvisoPreset(t, nome){ t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('PRESET', 8); t.tam = 2; t.centrado(nome, 28); }
+function oledAvisoVolumeTimbre(t, idx, v){
+  t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.cursor(2, 4); t.imprimir(OLED_CURTOS[idx] || '');
+  t.tam = 3; t.centrado(String(v), 26);
+}
+function oledAvisoVolumeGeral(t, nivel){
+  t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('VOLUME', 2);
+  if (nivel === 0){ t.tam = 3; t.centrado('MUTE', 22); return; }
+  t.tam = 3; t.centrado(String(nivel), 16);
+  t.tam = 1; t.centrado((nivel - 16) + ' dB', 43);
+  t.ret(8, 54, 112, 6, 1);
+  const p = Math.trunc(110 * nivel / 16); if (p > 0) t.retCheio(9, 55, p, 4, 1);
+}
+function oledAvisoFlash(t, grande, detalhe){
+  t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('VOLUMES NA FLASH', 6);
+  t.tam = 2; t.centrado(grande, 24); t.tam = 1; t.centrado(detalhe, 50);
+}
+/* v5.0 — o que o visor desenha: o que a página sabe do pedal. O BPM só
+   chega quando o pedal responde à página ("BPM=", "L", "RST"); a largada e
+   a parada pelos disparos (LARGADA / PISAR) a página acompanha sozinha. */
+const visor = { bpm: 0, moldura: false, rodando: false, aviso: null, avisoAte: 0, avisoTimer: null, mPerguntas: 0, mPerguntaMs: 0, tPedido: 0, agendado: false };
+const telaVisor = new TelaOled();
+function visorEstado(){
+  const n = s => (state.slots[s] && state.slots[s].n != null) ? state.slots[s].n : null;
+  return { modo: modoPedal || '00', extra: modoExtra, bt: !!rx, volume: state.master == null ? null : state.master,
+           resetAnormal: !!(state.boot && state.boot !== 'POWERON'), slots: [n(1), n(2), n(3), n(4)], metro: n(5),
+           bpm: visor.bpm, moldura: visor.moldura };
+}
+function visorZerarBpm(){ visor.bpm = 0; visor.moldura = false; visor.rodando = false; }
+function visorAviso(fn, ms){
+  visor.aviso = fn; visor.avisoAte = Date.now() + ms;
+  clearTimeout(visor.avisoTimer);
+  visor.avisoTimer = setTimeout(() => { visor.aviso = null; agendarVisor(); }, ms + 10);
+  agendarVisor();
+}
+// o que chega do pedal (chamada no começo do handleLine, antes dos "return")
+function visorLinha(line){
+  let m;
+  if (line === 'TAP'){ piscarLedSim(LED_TAP_MS); return; }   // v5.1 — o tap do pé no click BT pisca o LED, como no pedal
+  if ((m = line.match(/^BPM\s*[:=]?\s*(\d+)/i))){
+    visor.bpm = +m[1];
+    if (!visor.bpm) visorZerarBpm();
+    else if (Date.now() - visor.tPedido < 3000){ visor.moldura = true; visor.tPedido = 0; }   // "Tnnn": a borda do BPM externo
+  }
+  else if (line === 'RST') visorZerarBpm();
+  else if ((m = line.match(/^L\s+\d+\s+(\d+)/))){ if (+m[1] > 0){ visor.bpm = 60000000 / +m[1]; visor.rodando = true; } }
+  else if ((m = line.match(/^C([01])([01])(\s|$)/))){
+    const novo = m[1] + m[2], metro = b => b === '01' || b === '11';
+    // troca de modo zera a medição — menos entre MN e FR, que só trocam o som
+    if (modoPedal != null && novo !== modoPedal && !(metro(novo) && metro(modoPedal))) visorZerarBpm();
+  }
+  else if ((m = line.match(/^VS=(\S+)/))){
+    const v = m[1];
+    visorAviso(t => v === 'ERRO' ? oledAvisoFlash(t, 'ERRO', 'NAO GRAVOU')
+      : oledAvisoFlash(t, 'GRAVADO', v === '0' ? 'NADA MUDOU' : v + (v === '1' ? ' ALTERACAO' : ' ALTERACOES')), 1500);
+  }
+  else if ((m = line.match(/^VX=(\d+)/))){
+    const v = m[1];
+    visorAviso(t => oledAvisoFlash(t, 'APAGADO', v === '0' ? 'NADA GRAVADO' : v + (v === '1' ? ' APAGADO' : ' APAGADOS')), 1500);
+  }
+  else if ((m = line.match(/^VOL\s+GERAL\s+(\d+)/i))){
+    // v5.1 (firmware v40) — a resposta a um "M?" (a página pergunta ao
+    // conectar) não muda a tela do pedal. As outras — M+, M−, Mnn, M0 e o
+    // botão do pedal — mostram a tela de VOLUME por 0,6 s.
+    const n = +m[1];
+    if (visor.mPerguntas > 0 && Date.now() - visor.mPerguntaMs < 3000) visor.mPerguntas--;
+    else { visor.mPerguntas = 0; visorAviso(t => oledAvisoVolumeGeral(t, n), 600); }
+  }
+  else if ((m = line.match(/^VOL\s+(\d+)\s+.*?=\s*(\d+)\s*$/i))){
+    const n = +m[1], v = +m[2];
+    if (volPedidos[n] != null) visorAviso(t => oledAvisoVolumeTimbre(t, n - 1, v), 600);   // só quando a página mudou o volume
+  }
+  else if ((m = line.match(/^P(\d+)\s*(.*)$/))){
+    const nome = m[2].trim() || PRESETS[+m[1]] || '';
+    visorAviso(t => oledAvisoPreset(t, nome), 600);
+  }
+}
+// o que a página manda (chamada no send)
+function visorComando(cmd){
+  ledSimComando(cmd);   // v5.1 — antes de mexer no "rodando": o LED olha o estado de antes do comando
+  if (cmd === 'M?'){ visor.mPerguntas++; visor.mPerguntaMs = Date.now(); }   // v5.1 — a resposta não muda a tela (v40)
+  if (/^T\d+$/.test(cmd)) visor.tPedido = Date.now();
+  if (modoPedal !== '01' && modoPedal !== '11') return;
+  const bt = modoPedal === '01' && modoExtra === 'CLICK BT';
+  if (cmd === 'D1' || cmd === '9999'){            // PISAR: tocando, para; armado por "Tnnn", larga
+    if (visor.rodando) visorZerarBpm();
+    else if (visor.moldura && visor.bpm > 0) visor.rodando = true;
+  } else if (cmd === 'D2' || cmd === '8888'){     // LARGADA: com BPM, larga; tocando no click BT, reseta
+    if (visor.rodando){ if (bt) visorZerarBpm(); }
+    else if (visor.bpm > 0) visor.rodando = true;
+  } else return;
+  agendarVisor();
+}
+function agendarVisor(){
+  if (visor.agendado) return;
+  visor.agendado = true;
+  (window.requestAnimationFrame || (f => setTimeout(f, 16)))(() => { visor.agendado = false; desenharVisor(); });
+}
+function desenharVisor(){
+  const t = telaVisor;
+  const temDados = modoPedal != null || [1, 2, 3, 4].some(s => state.slots[s] && state.slots[s].n != null);
+  if (visor.aviso && Date.now() < visor.avisoAte) visor.aviso(t);
+  else if (!temDados) t.limpar();                  // nunca falou com o pedal: visor apagado
+  else oledTelaModo(t, visorEstado());
+  const h = document.querySelector('h2[data-rec="simulacao"]');
+  if (h && h.classList.contains('fechado')) return;   // recolhido: não pinta
+  // v5.1 — ampliado, o dobro de pontos e o vão bem leve entre os pixels, como o OLED de perto
+  const mod = document.getElementById('moduloVisor'), zoom = !!(mod && mod.classList.contains('zoom'));
+  pintarVisor($('#visorMini'), t.px, zoom ? 8 : 4, zoom ? 0.4 : 0);
+}
+// O vidro: fundo anil e pixels brancos, como na foto do pedal, com um leve brilho.
+const VISOR_FUNDO = '#2b1f6e', VISOR_PIXEL = '#f3f5ff';
+function pintarVisor(cv, px, k, vao){
+  if (!cv) return;
+  let ctx = null; try { ctx = cv.getContext('2d'); } catch(e){}
+  if (!ctx) return;
+  const W = 128 * k, H = 64 * k;
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  const off = cv._camada || (cv._camada = document.createElement('canvas'));
+  if (off.width !== W || off.height !== H){ off.width = W; off.height = H; }
+  const o = off.getContext('2d');
+  if (!o) return;
+  o.clearRect(0, 0, W, H); o.fillStyle = VISOR_PIXEL;
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 128; x++) if (px[y * 128 + x]) o.fillRect(x * k, y * k, k - vao, k - vao);
+  ctx.fillStyle = VISOR_FUNDO; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.filter = 'blur(' + (k * 0.6) + 'px)'; ctx.globalAlpha = .55; ctx.drawImage(off, 0, 0); ctx.restore();
+  ctx.drawImage(off, 0, 0);
+}
+agendarVisor();
+
+/* v5.1 — tocar no visor do desenho amplia o módulo (moldura, parafusos e
+   tela) para o dobro; tocar de novo volta. */
+function ampliarVisor(sim){
+  const mod = document.getElementById('moduloVisor');
+  if (!mod) return;
+  mod.classList.toggle('zoom', sim);
+  mod.setAttribute('aria-pressed', sim ? 'true' : 'false');
+  mod.setAttribute('aria-label', sim ? 'Visor da StompBox ampliado: toque para voltar' : 'Visor da StompBox: toque para ampliar');
+  agendarVisor();
+}
+(() => {
+  const mod = document.getElementById('moduloVisor');
+  if (!mod) return;
+  mod.addEventListener('click', () => ampliarVisor(!mod.classList.contains('zoom')));
+  mod.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); ampliarVisor(!mod.classList.contains('zoom')); }
+    else if (e.key === 'Escape') ampliarVisor(false);
+  });
+})();
+
+/* v5.1 — O LED RGB em cima do visor pisca AZUL, como no pedal, quando a
+   página dispara um timbre. No pedal ele fica aceso enquanto o som toca; a
+   página não sabe quanto dura cada som e acende por LED_DISPARO_MS. Slot em
+   MUTE não acende (o pedal não toca). No MN e no FR o D1 é PISAR (tap;
+   tocando, para) e o D2 é a LARGADA: no pedal, só o tap com som acende
+   (FR com TAP SOM). Sem conexão nada sai, e nada acende. */
+const LED_DISPARO_MS = 250, LED_TAP_MS = 80;   // LED_TAP_MS: o mesmo do firmware
+let ledSimTimer = null;
+function piscarLedSim(ms){
+  const p = document.querySelector('.pedalSim');
+  if (!p) return;
+  p.classList.add('ledAzul');
+  clearTimeout(ledSimTimer);
+  ledSimTimer = setTimeout(() => p.classList.remove('ledAzul'), ms);
+}
+function ledSimComando(cmd){
+  if (!rx) return;
+  let m;
+  if ((m = cmd.match(/^A(\d+)$/))){ if (+m[1] > 0) piscarLedSim(LED_DISPARO_MS); return; }   // sampler (o 00 é o MUTE)
+  if (!(m = cmd.match(/^(?:D([1-4])|(9999)|(8888))$/))) return;
+  const s = m[1] ? +m[1] : (m[2] ? 1 : 2);
+  if (modoPedal === '01' || modoPedal === '11'){
+    if (s === 1 && !visor.rodando && modoPedal === '11' && /TAP SOM/.test(modoExtra)) piscarLedSim(LED_DISPARO_MS);
+    return;
+  }
+  const d = state.slots[s];
+  if (!(d && d.n === 0)) piscarLedSim(LED_DISPARO_MS);
+}
+
 /* ---------- v3.16 — BALÕES RECOLHÍVEIS ----------
    Tocar no título recolhe o balão, como o "Console e ajustes". Recolhe tudo
    o que vem depois do título até o próximo título (ou o painel do console,
@@ -3770,6 +4286,7 @@ function aplicarRecolhido(h){
   h.classList.toggle('fechado', fechado);
   h.setAttribute('aria-expanded', fechado ? 'false' : 'true');
   conteudoDoBalao(h).forEach(el => el.classList.toggle('recolhido', fechado));
+  if (k === 'simulacao' && !fechado) agendarVisor();   // v5.0 — abriu: pinta o visor
 }
 document.querySelectorAll('h2[data-rec]').forEach(h => {
   const seta = document.createElement('span');
