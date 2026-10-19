@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v5.1 "Mixing Station + Repertório + Cena + Sampler"
+ STOMPBOX REMOTE — v6.3 "Mixing Station + Repertório + Cena + Sampler + Modo offline"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -223,6 +223,86 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v6.3 — O GABINETE PRESO EMBAIXO DA TELA E AS CATEGORIAS PRONTAS (firmware v40.0):
+        1) Com a StompBox simulada ligada, o gabinete (só ele) fica preso
+           embaixo da tela, numa faixa fixa: dá pra rolar até a grade, os
+           presets ou o modo e ver o visor e o LED reagindo. Ele ocupa 24% da
+           altura da tela, inteiro e centrado, e a página ganha uma folga
+           embaixo do tamanho da faixa, pra nada ficar escondido atrás dela.
+           O botão de ligar vai junto; desligando, o gabinete volta pro balão
+           "Simulação do Pedal". Tocar no visor continua ampliando, e o visor
+           continua sendo desenhado mesmo com o balão recolhido.
+        2) Categorias prontas: os 35 timbres do firmware v40 por tipo de
+           instrumento, em 10 categorias — Bumbos e surdo, Cajón, Caixas,
+           Pratos, Triângulo, Pandeirola e chocalhos, Blocos e cowbell,
+           Carrilhões, Violão e Efeitos (os mix de cajón vão no Cajón; os
+           smart, no Triângulo e nos Blocos). Valem enquanto o aparelho não
+           tiver categorias salvas. No editor de categorias, o botão "Usar as
+           categorias prontas" põe estas no lugar das de agora, e dá pra
+           mexer antes de salvar. Vão pelo número do timbre, então acertam
+           mesmo com nomes trocados no catálogo. Pra ver: "Categoria", em cima
+           da grade.
+        - sw.js: só o número.
+
+ v6.2 — O BOTÃO DE LIGAR NO GABINETE E O SPLASH DA STOMPBOX (firmware v40.0):
+        1) O modo offline liga e desliga num botão de verdade, no desenho: o
+           botão redondo de metal no rebaixo de baixo, no meio do gabinete
+           (onde ficava o furo). Desligado, o anel fica escuro; ligado, o
+           anel e o símbolo acendem em roxo, a cor do modo offline. Ligar
+           pergunta antes, como na v6.1; desligar é só tocar de novo. O botão
+           "Ligar o modo offline" embaixo do desenho saiu.
+        2) Ao ligar, a StompBox simulada faz o boot do firmware: o splash
+           com "StompBox", a versão (v40.0), o PAD OFF e a barra enchendo em
+           3 s, um quadro a cada 50 ms, e o LED passeando pelas cores na
+           ordem do pedal (a "abertura colorida" da v19.0): azul, vermelho,
+           verde, magenta, amarelo, ciano, branco, e apaga. Depois vem a tela
+           do pedal pronto, ainda sem o BT na barra, e 0,8 s depois a página
+           conecta: BLUETOOTH CONECTADO e o resto como na v6.1.
+        3) A barra de status acompanha: "Ligando a StompBox simulada…",
+           "StompBox simulada ligada · conectando…" e "Modo offline · a
+           página faz o papel da StompBox". Tocar no botão no meio do boot
+           desliga na hora, como tirar o pedal da tomada.
+        4) As contas da barra e do LED são feitas em float, como no ESP32,
+           pra virarem no mesmo quadro que no pedal. Conferido contra o
+           firmware v40 no simulador: os 62 quadros do splash iguais pixel a
+           pixel, o LED nas mesmas cores e nos mesmos quadros, e a tela do
+           pedal pronto igual à do fim do setup().
+        - sw.js: só o número.
+
+ v6.1 — MODO OFFLINE SIMPLES: SÓ A TELA (firmware v40.0):
+        1) Refeito do jeito pedido: sem rodar o firmware e sem arquivo além da
+           página. O stompbox.wasm da v6.0 saiu (pode apagar do site). Na v6.0
+           o modo offline não ligava no celular ("failed to fetch": a página
+           não conseguia baixar o arquivo do firmware).
+        2) Ligado o modo offline, a própria página faz o papel da StompBox:
+           guarda os slots, o modo, o volume geral, os volumes dos timbres e o
+           andamento, e responde a cada comando com as MESMAS linhas que o
+           pedal v40 responde. Os cartões, a grade, o balão do modo, o volume
+           e o visor simulado mostram tudo como se ela estivesse conectada:
+           ao ligar, o BLUETOOTH CONECTADO; depois, cada troca de timbre,
+           preset, modo, submodo, volume, andamento e a gravação dos volumes,
+           com as telas de aviso do pedal. O LED pisca azul nos disparos.
+           A StompBox de mentira começa como o pedal ligado: 01 CAJON B,
+           06 CARRILHAO, 13 BLOCO H, 12 BLOCO L, metrônomo no 08 COWBELL, SB,
+           volume 16. Os presets são os dez do firmware.
+        3) Como na v6.0: o botão no balão "Simulação do Pedal" (com
+           confirmação); a barra com "Modo offline", a bolinha roxa e o selo
+           OFFLINE no lugar do BT; o selo MODO OFFLINE no desenho; a cena
+           protegida (o que se salva ou muda nela no offline não é gravado no
+           celular); desligar pelo mesmo botão ou conectando a StompBox de
+           verdade; e, ao sair, a página volta ao que mostrava antes.
+        4) Por ser só a tela, fica de fora o que acontece dentro do pedal: o
+           som, o passo do smart (a tela mostra o 1º) e os pulsos do
+           metrônomo tocando (a LARGADA e o PISAR mudam a tela como com o
+           pedal).
+        - sw.js: o stompbox.wasm saiu da lista.
+
+ v6.0 — MODO OFFLINE COM O FIRMWARE EM WEBASSEMBLY — SUBSTITUÍDO NA v6.1:
+        rodava o firmware v40 inteiro dentro da página (stompbox.wasm). No
+        celular não ligou ("failed to fetch") e era mais do que o pedido —
+        a ideia era só a tela. Ficou registrado aqui; a v6.1 refez do jeito
+        simples.
 
  v5.1 — VISOR QUE AMPLIA, LED AZUL NOS DISPAROS E ÍCONE NOVO (firmware v40.0):
         1) O visor grande embaixo do desenho saiu: o balão mostra só o
@@ -1707,6 +1787,49 @@ button.tapSub[hidden]{display:none}
 .pedalSim #pdLedBrilho{transition:opacity .04s linear}
 .pedalSim.ledAzul #pdLedCor{fill:url(#pdLedAzul)}
 .pedalSim.ledAzul #pdLedBrilho{fill:#2f7dff;opacity:.95}
+/* v6.1 — modo offline: a bolinha roxa, o selo OFFLINE na barra e no desenho, o botão */
+.dot.sim{background:var(--purple);box-shadow:0 0 10px rgba(169,140,255,.55)}
+.sbar .chip.off{background:var(--purple);border-color:var(--purple);color:#12161b}
+.offlineSelo{position:absolute;left:2.2%;top:3.2%;font:700 10px/1 system-ui,sans-serif;letter-spacing:.8px;color:#12161b;background:var(--purple);border-radius:4px;padding:3px 6px;pointer-events:none}
+.offlineSelo[hidden]{display:none}
+#offlineInfo{margin-top:10px}
+/* v6.2 — o botão de ligar a StompBox simulada, no rebaixo de baixo do gabinete.
+   O desenho (aro, anel de LED, tampa) está no SVG; por cima, um botão de
+   verdade, transparente, maior que o desenho pro dedo achar. */
+.pedalSim .ligaOn{opacity:0;transition:opacity .12s ease}
+.pedalSim .ligaOff{transition:opacity .12s ease}
+.pedalSim.simLigado .ligaOn{opacity:1}
+.pedalSim.simLigado .ligaOff{opacity:0}
+.pedalSim #pdLigaTampa{transition:transform .06s ease}
+.pedalSim.ligaApertado #pdLigaTampa{transform:translateY(.8px)}
+.pedalSim #pdLigaSombra{opacity:0}
+.pedalSim.ligaApertado #pdLigaSombra{opacity:.18}
+.pedalSim .botaoLiga,.pedalSim .botaoLiga:active{position:absolute;left:49.6552%;top:83.3333%;width:max(5.6%,44px);aspect-ratio:1;transform:translate(-50%,-50%);border:0;border-radius:50%;background:transparent;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.pedalSim .botaoLiga:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.pedalSim .ligaOn,.pedalSim .ligaOff,.pedalSim #pdLigaTampa{transition:none}}
+/* v6.3 — a StompBox simulada ligada: o gabinete preso embaixo da tela, numa
+   faixa fixa do tamanho da coluna da página, com 24% da altura da tela */
+.simDoca{position:fixed;left:0;right:0;bottom:0;z-index:7;padding:7px 9px calc(7px + env(safe-area-inset-bottom,0px));background:rgba(13,17,21,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid rgba(70,81,93,.45);box-shadow:0 -8px 22px rgba(0,0,0,.35)}
+.simDoca[hidden]{display:none}
+.simDoca .pedalSim{width:min(100%,702px,calc(24vh * 870 / 606));margin:0 auto}
+#simDocaNota{margin:0}
+/* v6.2 — o LED nas cores da abertura do boot: data-led = os pinos acesos
+   (b = azul, LED_PIN; r = vermelho, LED2_PIN; g = verde, LED3_PIN) */
+.pedalSim[data-led] #pdLedBrilho{opacity:.95}
+.pedalSim[data-led="b"] #pdLedCor{fill:url(#pdLedAzul)}
+.pedalSim[data-led="b"] #pdLedBrilho{fill:#2f7dff}
+.pedalSim[data-led="r"] #pdLedCor{fill:url(#pdLedVermelho)}
+.pedalSim[data-led="r"] #pdLedBrilho{fill:#ff3b30}
+.pedalSim[data-led="g"] #pdLedCor{fill:url(#pdLedVerde)}
+.pedalSim[data-led="g"] #pdLedBrilho{fill:#2fdc68}
+.pedalSim[data-led="br"] #pdLedCor{fill:url(#pdLedMagenta)}
+.pedalSim[data-led="br"] #pdLedBrilho{fill:#d23cff}
+.pedalSim[data-led="rg"] #pdLedCor{fill:url(#pdLedAmarelo)}
+.pedalSim[data-led="rg"] #pdLedBrilho{fill:#ffcc2e}
+.pedalSim[data-led="bg"] #pdLedCor{fill:url(#pdLedCiano)}
+.pedalSim[data-led="bg"] #pdLedBrilho{fill:#2fe0ee}
+.pedalSim[data-led="brg"] #pdLedCor{fill:url(#pdLedBranco)}
+.pedalSim[data-led="brg"] #pdLedBrilho{fill:#ffffff}
 /* v4.6 — o status repetido no Console e ajustes, inteiro */
 .statusEco{display:flex;align-items:flex-start;gap:8px;margin:0 0 10px;font-size:13px;line-height:1.35;color:var(--ink)}
 .statusEco .dot{margin-top:4px}
@@ -1737,7 +1860,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
     <span class="dot" id="dot"></span>
     <span id="status">Desconectado</span>
     <button class="temaBtn" id="btnTema" aria-label="Alternar modo claro e escuro" title="Modo claro / escuro">◐</button>
-    <span class="sbar" id="sbar"><span class="chip mono" id="sbModo">--</span><span class="chip mono" id="sbVol">V--</span><span class="chip mono bt" id="sbBt" hidden>BT</span></span>
+    <span class="sbar" id="sbar"><span class="chip mono" id="sbModo">--</span><span class="chip mono" id="sbVol">V--</span><span class="chip mono bt" id="sbBt" hidden>BT</span><span class="chip mono off" id="sbOff" hidden>OFFLINE</span></span>
     <button class="btn primary" id="btnConn">Conectar</button>
   </header>
   <section class="slots" id="slots"></section>
@@ -1775,6 +1898,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 
 <h2 data-rec="simulacao">Simulação do Pedal</h2>
 <section class="box boxSim" id="simPedal">
+  <p class="note" id="simDocaNota" hidden>O gabinete fica preso embaixo da tela enquanto a StompBox simulada estiver ligada.</p>
   <div class="pedalSim">
 <svg class="pedalSvg" viewBox="168 84 870 606" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <defs>
@@ -1794,6 +1918,17 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
  <pattern id="pdCamadas" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)"><rect width="4" height="1.1" fill="#fff" opacity=".035"/></pattern>
  <filter id="pdSombra" x="-6%" y="-6%" width="112%" height="120%"><feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000" flood-opacity=".55"/></filter>
  <filter id="pdBrilho" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="5"/></filter>
+ <linearGradient id="pdLigaAro" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#f7f8f9"/><stop offset=".38" stop-color="#c3c8ce"/><stop offset=".7" stop-color="#7d838b"/><stop offset="1" stop-color="#4c5158"/></linearGradient>
+ <linearGradient id="pdLigaAro2" x1="0" y1="1" x2=".8" y2="0"><stop offset="0" stop-color="#e9ecef"/><stop offset="1" stop-color="#5a6067"/></linearGradient>
+ <radialGradient id="pdLigaTampaG" cx=".36" cy=".3" r=".85"><stop offset="0" stop-color="#f1f3f5"/><stop offset=".5" stop-color="#b6bcc3"/><stop offset="1" stop-color="#6f767e"/></radialGradient>
+ <filter id="pdLigaGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3.4"/></filter>
+ <filter id="pdLigaGlowP" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1.1"/></filter>
+ <radialGradient id="pdLedVermelho" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#ffecea"/><stop offset=".42" stop-color="#ff5b50"/><stop offset="1" stop-color="#c4140c"/></radialGradient>
+ <radialGradient id="pdLedVerde" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#eafff0"/><stop offset=".42" stop-color="#46e07c"/><stop offset="1" stop-color="#0b8f3b"/></radialGradient>
+ <radialGradient id="pdLedMagenta" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#ffeaff"/><stop offset=".42" stop-color="#e05cff"/><stop offset="1" stop-color="#9312c4"/></radialGradient>
+ <radialGradient id="pdLedAmarelo" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#fffbe2"/><stop offset=".42" stop-color="#ffd84a"/><stop offset="1" stop-color="#d49400"/></radialGradient>
+ <radialGradient id="pdLedCiano" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#e8fffe"/><stop offset=".42" stop-color="#45e5ee"/><stop offset="1" stop-color="#0897ab"/></radialGradient>
+ <radialGradient id="pdLedBranco" cx=".4" cy=".36" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".42" stop-color="#f2f5ff"/><stop offset="1" stop-color="#c3cdf5"/></radialGradient>
 </defs>
 <rect x="222" y="88" width="22" height="12" rx="2" fill="#24212a" stroke="#121015" stroke-width="1.5"/>
 <rect x="956" y="88" width="22" height="12" rx="2" fill="#24212a" stroke="#121015" stroke-width="1.5"/>
@@ -1822,7 +1957,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 <circle cx="901" cy="506" r="14" fill="url(#pdLatao)" stroke="#4a3e2a" stroke-width="1"/><circle cx="901" cy="506" r="9.5" fill="url(#pdMetal)" stroke="#555b62" stroke-width=".8"/><path d="M895.8 506.0H906.2M901.0 500.8V511.2" stroke="#5d646b" stroke-width="2.1" stroke-linecap="round"/>
 <path d="M434 436H766Q772 436 772 442V618H428V442Q428 436 434 436Z" fill="url(#pdCouro)" stroke="#121015" stroke-width="3"/>
 <rect x="429.5" y="437.5" width="341" height="180" fill="url(#pdVao)"/>
-<rect x="443" y="539" width="314" height="42" fill="#3b3741" stroke="#141217" stroke-width="2"/><path d="M445 541.5H755" stroke="rgba(255,255,255,.12)" stroke-width="1.5"/><rect x="443" y="580" width="314" height="36" fill="#26232b" stroke="#141217" stroke-width="2"/><path d="M578 581A22 22 0 0 0 622 581V616H578Z" fill="#302c35" stroke="#141217" stroke-width="1.5"/><circle cx="600" cy="594" r="8" fill="#08080a"/><circle cx="600" cy="594" r="3.8" fill="url(#pdMetal)"/><rect x="266" y="603" width="84" height="83" rx="5" fill="url(#pdTrava)" stroke="#141217" stroke-width="2"/>
+<rect x="443" y="539" width="314" height="42" fill="#3b3741" stroke="#141217" stroke-width="2"/><path d="M445 541.5H755" stroke="rgba(255,255,255,.12)" stroke-width="1.5"/><rect x="443" y="580" width="314" height="36" fill="#26232b" stroke="#141217" stroke-width="2"/><g id="pdLiga"><path d="M575.5 616V589A24.5 24.5 0 0 1 624.5 589V616Z" fill="#1d1b21" stroke="#121015" stroke-width="1.5"/><path d="M577.1 615V589A22.9 22.9 0 0 1 622.9 589V615" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="1.2"/><circle cx="600" cy="590.6" r="20.6" fill="#000" opacity=".55" filter="url(#pdLigaGlowP)"/><circle cx="600" cy="589" r="20" fill="url(#pdLigaAro)" stroke="#202328" stroke-width=".9"/><circle cx="600" cy="589" r="18.3" fill="url(#pdLigaAro2)"/><g class="ligaOff"><circle cx="600" cy="589" r="16" fill="none" stroke="#1b1a1f" stroke-width="3"/><circle cx="600" cy="589" r="15.25" fill="none" stroke="#4a4752" stroke-width=".45" opacity=".8"/></g><g class="ligaOn"><circle cx="600" cy="589" r="17" fill="none" stroke="#9c7bff" stroke-width="9.6" opacity=".95" filter="url(#pdLigaGlow)"/><circle cx="600" cy="589" r="16" fill="none" stroke="#c9b8ff" stroke-width="3"/><circle cx="600" cy="589" r="16" fill="none" stroke="#fff" stroke-width="1.05" opacity=".7"/></g><g id="pdLigaTampa"><circle cx="600" cy="589" r="13.2" fill="url(#pdLigaTampaG)" stroke="#2a2e34" stroke-width=".7"/><circle id="pdLigaSombra" cx="600" cy="589" r="13.2" fill="#000"/><g class="ligaOff" fill="none" stroke-width="2.1" stroke-linecap="round"><path d="M595.45 584.76A6.8 6.8 0 1 0 604.55 584.76M600 581.79V589.48" stroke="#fff" opacity=".35" transform="translate(0 .45)"/><path d="M595.45 584.76A6.8 6.8 0 1 0 604.55 584.76M600 581.79V589.48" stroke="#3d424a"/></g><g class="ligaOn" fill="none" stroke-linecap="round"><path d="M595.45 584.76A6.8 6.8 0 1 0 604.55 584.76M600 581.79V589.48" stroke="#9c7bff" stroke-width="5.04" opacity=".9" filter="url(#pdLigaGlowP)"/><path d="M595.45 584.76A6.8 6.8 0 1 0 604.55 584.76M600 581.79V589.48" stroke="#efe9ff" stroke-width="2.1"/></g><ellipse cx="595.64" cy="583.46" rx="5.94" ry="2.9" fill="#fff" opacity=".28"/></g></g><rect x="266" y="603" width="84" height="83" rx="5" fill="url(#pdTrava)" stroke="#141217" stroke-width="2"/>
 <path d="M270 626H346" stroke="#1a181e" stroke-width="3"/><path d="M270 628H346" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
 <path d="M270 640H346" stroke="#1a181e" stroke-width="3"/><path d="M270 642H346" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
 <path d="M270 654H346" stroke="#1a181e" stroke-width="3"/><path d="M270 656H346" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
@@ -1845,8 +1980,11 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 </svg>
       <canvas id="visorMini" aria-hidden="true"></canvas>
     </div>
+    <span class="offlineSelo" id="offlineSelo" hidden>MODO OFFLINE</span>
+    <button type="button" class="botaoLiga" id="btnLiga" aria-pressed="false" aria-label="Ligar a StompBox simulada (modo offline)" title="Ligar a StompBox simulada (modo offline)"></button>
   </div>
-  <p class="note">Toque no visor para ampliar; toque de novo para voltar. Ele é desenhado com o que o pedal manda pelo Bluetooth, com as mesmas letras e posições do firmware. Taps no pé, o passo do smart e a contagem do MUTE ficam só no pedal.</p>
+  <p class="note" id="offlineInfo" hidden>A página está fazendo o papel da StompBox: cada comando aparece no visor como se ela estivesse conectada. Nada vai pro pedal e não sai som. Pra desligar, toque de novo no botão de ligar; conectar a StompBox também desliga.</p>
+  <p class="note" id="simNota">O botão redondo embaixo, no meio do gabinete, liga a StompBox simulada (modo offline), sem o pedal. Toque no visor para ampliar; toque de novo para voltar. Ele é desenhado com o que o pedal manda pelo Bluetooth, com as mesmas letras e posições do firmware. Taps no pé, o passo do smart e a contagem do MUTE ficam só no pedal.</p>
 </section>
 
 <h2 data-rec="modo">Modo da StompBox</h2>
@@ -1960,7 +2098,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v5.1 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40)</p>
+    <p class="note">StompBox Remote v6.3 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40)</p>
   </div>
 </details>
 
@@ -2038,10 +2176,11 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 
 <dialog id="catsDlg">
   <h3>Categorias dos timbres</h3>
-  <p class="note">Crie as categorias, ponha na ordem com ▲▼ e escolha a de cada timbre. Na grade, dentro de cada categoria, os timbres ficam em ordem alfabética; os sem categoria vão no fim.</p>
+  <p class="note">As categorias já vêm prontas, por tipo de instrumento; o botão "Usar as categorias prontas" volta a elas. Crie, renomeie, ponha na ordem com ▲▼ e escolha a de cada timbre. Na grade, dentro de cada categoria, os timbres ficam em ordem alfabética; os sem categoria vão no fim.</p>
   <div class="catsSec">Categorias</div>
   <div id="catsLista"></div>
   <button class="btn" id="catsNova" style="width:100%;margin-top:6px">+ Nova categoria</button>
+  <button class="btn" id="catsProntas" style="width:100%;margin-top:6px">Usar as categorias prontas</button>
   <div class="catsSec">Timbres</div>
   <div id="catsTimbres"></div>
   <div class="dlgbar">
@@ -2131,6 +2270,8 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
   </div>
 </div>
 
+<div class="simDoca" id="simDoca" hidden></div>
+
 <script>
 'use strict';
 
@@ -2161,6 +2302,11 @@ const AMOSTRA_PRAZO_MS = 900;
 
 const enc = new TextEncoder(), dec = new TextDecoder();
 let dev=null, rx=null, tx=null, wl=null;
+// v6.1 — MODO OFFLINE (o bloco "MODO OFFLINE", lá embaixo): a StompBox de mentira e o "rx" que fala com ela
+// v6.2 — fase: 'splash' (o boot), 'pronto' (a tela do pedal, sem Bluetooth) e 'conectado'; tela: o que o visor mostra no boot
+const offline = { ativo: false, pedal: null, guardado: null, fase: null, timer: null, tela: null, t0: 0 };
+const rxOffline = { properties: { writeWithoutResponse: true },
+  async writeValueWithoutResponse(data){ if (offline.ativo && offline.pedal) offEntregar(pedalFalsoResponde(offline.pedal, new TextDecoder().decode(data))); } };
 let wantConnected=false, retries=0;
 let devComOuvinte = null;    // v3.14 — em qual dispositivo o gattserverdisconnected já está preso
 let reconectando = false;    // v3.14 — trava: um laço de reconexão de cada vez
@@ -2194,6 +2340,7 @@ function loadCat(){
 function saveCat(lista){
   TIMBRES = lista.slice();
   try { localStorage.setItem('sb_cat', JSON.stringify(TIMBRES)); } catch(e){}
+  if (!temCategoriasSalvas()) CATEGORIAS = categoriasProntas();   // v6.3 — as prontas seguem os nomes novos
   sanitizeCustomOrder(); saveCustomOrder();
   sanitizeFavoritos(); saveFavoritos();
   renderGrid(); renderSlots();
@@ -2253,8 +2400,33 @@ function ordemDaGrade(){
    catálogo muda os números, mas não os nomes. Na grade: um título por
    categoria, com os timbres em ordem alfabética; os sem categoria no fim. */
 let CATEGORIAS = { lista: [], mapa: {} };
+/* v6.3 — CATEGORIAS PRONTAS: os 35 timbres do firmware v40 por tipo de
+   instrumento. Valem enquanto o aparelho não tiver categorias salvas; o
+   botão "Usar as categorias prontas" do editor as põe no lugar das de agora.
+   Vão pelo NÚMERO do timbre (o nome no catálogo pode ter sido trocado). */
+const CATEGORIAS_PRONTAS = [
+  ['Bumbos e surdo', [2, 3, 4, 5, 21, 17]],          // Bumbo 24, 22, 20, 808, FSA e o Surdo
+  ['Cajón', [1, 31, 32, 33]],                        // B Cajon e os mix (Cajón+Cr16, +Cr18, +Pand)
+  ['Caixas', [10, 24, 25]],                          // Aro de caixa, Caixa reverb, Caixa Zezé
+  ['Pratos', [11, 18, 19, 20]],                      // Chimbal, Crash 16, Splash 10, Crash 18
+  ['Triângulo', [14, 15, 35]],                       // Tri aberto, Tri abafado, Triângulo S
+  ['Pandeirola e chocalhos', [7, 9, 16]],            // Pandeirola, Afoxé, Maraca
+  ['Blocos e cowbell', [12, 13, 34, 8]],             // Bloco L, Bloco H, Blocos S, Cowbell
+  ['Carrilhões', [6, 26]],                           // Carrilhão, Carrilhão 2
+  ['Violão', [22, 23]],                              // Violão B, Violão A
+  ['Efeitos', [27, 28, 29, 30]]                      // Laser Gun, Gun Reload, Chicote, Nextel
+];
+function categoriasProntas(){
+  const lista = [], mapa = {};
+  CATEGORIAS_PRONTAS.forEach(([c, nums]) => {
+    lista.push(c);
+    nums.forEach(n => { const nome = TIMBRES[n - 1]; if (nome && !(nome in mapa)) mapa[nome] = c; });
+  });
+  return { lista: lista, mapa: mapa };
+}
+const temCategoriasSalvas = () => { try { return localStorage.getItem('sb_categorias') != null; } catch(e){ return false; } };
 function loadCategorias(){
-  try { CATEGORIAS = JSON.parse(localStorage.getItem('sb_categorias') || 'null') || { lista: [], mapa: {} }; } catch(e){ CATEGORIAS = { lista: [], mapa: {} }; }
+  try { CATEGORIAS = JSON.parse(localStorage.getItem('sb_categorias') || 'null') || categoriasProntas(); } catch(e){ CATEGORIAS = categoriasProntas(); }   // v6.3: sem nada salvo, as prontas
   if (!Array.isArray(CATEGORIAS.lista)) CATEGORIAS.lista = [];
   if (!CATEGORIAS.mapa || typeof CATEGORIAS.mapa !== 'object') CATEGORIAS.mapa = {};
   CATEGORIAS.lista = CATEGORIAS.lista.filter(c => typeof c === 'string' && c.trim()).map(c => c.trim().slice(0, 24));
@@ -2341,6 +2513,16 @@ $('#catsNova').onclick = () => {
   catsTrab.push(c); renderCatsLista(); atualizarOpcoesCats();
   const ins = $('#catsLista').querySelectorAll('input'); if (ins.length) ins[ins.length - 1].focus();
 };
+$('#catsProntas').onclick = () => {   // v6.3 — as prontas no editor (só valem se salvar)
+  const p = categoriasProntas();
+  catsProxId = 1;
+  catsTrab = p.lista.map(n => ({ id: catsProxId++, nome: n }));
+  const idDe = {}; catsTrab.forEach(c => { idDe[c.nome] = c.id; });
+  catsMapaTrab = {};
+  Object.keys(p.mapa).forEach(nome => { catsMapaTrab[nome] = idDe[p.mapa[nome]]; });
+  renderCatsLista(); renderCatsTimbres();
+  avisoStatus('Categorias prontas no editor — toque em Salvar pra usar');
+};
 $('#catsCancel').onclick = () => { try { $('#catsDlg').close(); } catch(e){} };
 $('#catsSave').onclick = () => {
   const validas = catsTrab.filter(c => c.nome.trim());
@@ -2399,7 +2581,8 @@ function renderBarraStatus(){
   const v = $('#sbVol');
   v.textContent = state.master === 0 ? 'MUTE' : (state.master ? 'V' + state.master : 'V--');
   v.classList.toggle('mudo', state.master === 0);
-  $('#sbBt').hidden = !rx;
+  $('#sbBt').hidden = !rx || offline.ativo;
+  $('#sbOff').hidden = !offline.ativo;   // v6.1
 }
 function setStatus(txt, kind){
   statusBase = { txt: txt, kind: kind || '' };
@@ -2432,6 +2615,7 @@ async function connect(){
   }catch(err){
     if (err && err.name === 'NotFoundError') setStatus('Nenhum dispositivo escolhido');
     else { setStatus('Falhou: ' + (err.message||err), 'err'); log('ERRO ' + (err.message||err), 'er'); }
+    if (offline.ativo) setTimeout(offStatus, 2500);   // v6.1 — não conectou: segue no offline (v6.2: na fase em que estiver)
   }
 }
 
@@ -2448,6 +2632,7 @@ async function abrirGatt(){
   const svc = await server.getPrimaryService(SVC);
   const novoRx = await svc.getCharacteristic(CH_RX);
   const novoTx = await svc.getCharacteristic(CH_TX);
+  if (offline.ativo) desligarOffline(true);   // v6.1 — a StompBox de verdade chegou
   /* v3.14 — O OUVINTE VAI NO OBJETO DESTA CONEXÃO, e antes de assinar.
      O Chrome cria objetos novos a cada conexão: preso só no primeiro, a
      página reconectava e deixava de receber. Prender de novo no mesmo
@@ -3335,7 +3520,7 @@ async function keepAwake(){
 }
 function releaseWake(){ try { if (wl){ wl.release(); wl = null; } } catch(e){} }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && rx) keepAwake();
+  if (document.visibilityState === 'visible' && rx && !offline.ativo) keepAwake();
 });
 
 
@@ -3462,7 +3647,7 @@ function loadCena(){
                                    geral: (+c.geral >= 1 && +c.geral <= MAX_M) ? +c.geral : null } : null;
   } catch(e){ cenaSalva = null; }
 }
-function salvarMesa(){ try { localStorage.setItem(CHAVE_MESA, JSON.stringify(mesaVolumes)); } catch(e){} }
+function salvarMesa(){ if (offline.ativo) return; try { localStorage.setItem(CHAVE_MESA, JSON.stringify(mesaVolumes)); } catch(e){} }   // v6.1: no offline, só na memória
 
 // espera por uma linha do pedal que passe no teste (ou vence o prazo)
 const esperas = [];
@@ -3499,9 +3684,9 @@ function salvarCena(){
   }
   cenaSalva = { quando: new Date().toISOString(), slots: slots,
                 volumes: Object.assign({}, mesaVolumes), geral: ultimoNivelGeral || null };
-  try { localStorage.setItem(CHAVE_CENA, JSON.stringify(cenaSalva)); } catch(e){}
+  if (!offline.ativo){ try { localStorage.setItem(CHAVE_CENA, JSON.stringify(cenaSalva)); } catch(e){} }   // v6.1
   renderCena();
-  avisoStatus('Cena salva', 'on');
+  avisoStatus(offline.ativo ? 'Cena salva só no modo offline — some ao sair dele' : 'Cena salva', 'on');
 }
 
 async function carregarCena(){
@@ -3582,7 +3767,7 @@ $('#cenaLimpar').onclick = () => {
   if (!confirm('Esquecer a lista de volumes mudados? A cena salva continua como está.')) return;
   mesaVolumes = {}; salvarMesa(); renderCena();
 };
-$('#btnConn').onclick = () => (rx ? disconnect() : connect());
+$('#btnConn').onclick = () => ((rx && !offline.ativo) ? disconnect() : connect());   // v6.1 — no offline, conecta o pedal de verdade
 document.querySelectorAll('[data-nudge]').forEach(b => b.onclick = () => {   // v3.17 / v4.4 / v4.6
   if (modoPedal === '01'){ pedirSubmodo(b.dataset.nudge); return; }   // MN: a rota do click
   const s = slotAtivo();
@@ -4174,11 +4359,12 @@ function agendarVisor(){
 function desenharVisor(){
   const t = telaVisor;
   const temDados = modoPedal != null || [1, 2, 3, 4].some(s => state.slots[s] && state.slots[s].n != null);
-  if (visor.aviso && Date.now() < visor.avisoAte) visor.aviso(t);
+  if (offline.tela) offline.tela(t);               // v6.2 — a StompBox simulada ligando: o splash e o pedal pronto
+  else if (visor.aviso && Date.now() < visor.avisoAte) visor.aviso(t);
   else if (!temDados) t.limpar();                  // nunca falou com o pedal: visor apagado
   else oledTelaModo(t, visorEstado());
   const h = document.querySelector('h2[data-rec="simulacao"]');
-  if (h && h.classList.contains('fechado')) return;   // recolhido: não pinta
+  if (h && h.classList.contains('fechado') && !document.querySelector('#simDoca .pedalSim')) return;   // recolhido: não pinta (v6.3: preso embaixo, pinta)
   // v5.1 — ampliado, o dobro de pontos e o vão bem leve entre os pixels, como o OLED de perto
   const mod = document.getElementById('moduloVisor'), zoom = !!(mod && mod.classList.contains('zoom'));
   pintarVisor($('#visorMini'), t.px, zoom ? 8 : 4, zoom ? 0.4 : 0);
@@ -4251,6 +4437,305 @@ function ledSimComando(cmd){
   const d = state.slots[s];
   if (!(d && d.n === 0)) piscarLedSim(LED_DISPARO_MS);
 }
+
+/* ---------- v6.1 — MODO OFFLINE: SÓ A TELA ----------
+   Sem o pedal, a página responde a si mesma. Cada comando que ela mandaria
+   vai pra uma StompBox de mentira (pedalFalsoResponde), que guarda o estado e
+   devolve as MESMAS linhas que o firmware v40 devolve. Elas entram pelo
+   caminho de sempre (handleLine), então os cartões, a grade, o balão do modo
+   e o visor simulado mostram tudo como se a StompBox estivesse conectada.
+   Não roda firmware nem toca som: é só a tela. Os números abaixo vêm do
+   firmware v40 (presets, volumes da tabela, rota do click). */
+const TEXTO_OFFLINE = 'Modo offline · a página faz o papel da StompBox';
+const OFF_NUM = 35, OFF_MUTE = 35;            // timbres do firmware; o 00 MUTE é a posição depois do último
+const OFF_PRESETS = [['FORRO', 1, 7, 15, 14], ['BAIAO', 2, 6, 14, 15], ['SAMBA', 2, 7, 17, 10], ['PAGODE', 1, 7, 17, 8], ['MODA', 4, 6, 12, 13],
+                     ['SERTANEJO', 1, 11, 13, 10], ['ROCK', 3, 11, 32, 10], ['POP/MPB', 21, 11, 31, 19], ['ELETRO', 5, 11, 8, 18], ['AXE', 4, 7, 9, 16]];
+const OFF_VOL = [200, 256, 256, 256, 200, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
+                 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 250, 250, 250, 256, 256];   // VOLUME_TIMBRE
+const OFF_ROTA = ['MUDO', 'CLICK LR', 'CLICK L', 'CLICK BT'], OFF_ROTA_PROX = [3, 2, 0, 1];   // CLICK_ROT_NOME, CLICK_PROXIMO
+const OFF_SIGLA = { '00': 'SB', '01': 'MN', '10': 'AT', '11': 'FR' };
+
+function pedalFalsoNovo(){   // como o pedal ao ligar
+  return { slots: [null, 0, 5, 12, 11], metro: 7, modo: '00', rota: 0, tapSom: false,
+           nivel: 16, antesMute: 16, ajuste: {}, gravado: {}, bpm: 0, ultimoSlot: 1, t0: Date.now() };
+}
+const offNumero = i => i === OFF_MUTE ? 0 : i + 1;
+const offNome = i => i === OFF_MUTE ? 'MUTE' : (OLED_CURTOS[i] || 'TIMBRE ' + (i + 1));
+const offLinhaT = (s, i) => 'T' + s + '=' + pad(offNumero(i), 2) + ' ' + offNome(i);
+const offVolGeral = p => p.nivel === 0 ? 'VOL GERAL 0/16 MUTE' : 'VOL GERAL ' + p.nivel + '/16 ' + (p.nivel - 16) + 'dB';
+const offVolTimbre = (i, v) => 'VOL ' + pad(i + 1, 2) + ' ' + offNome(i) + '=' + v;
+function offLinhaModo(p){
+  const extra = p.modo === '01' ? OFF_ROTA[p.rota] : (p.modo === '11' ? (p.tapSom ? 'TAP SOM' : 'TAP MUDO') : '');
+  return 'C' + p.modo + ' ' + OFF_SIGLA[p.modo] + (extra ? ' ' + extra : '');
+}
+// troca de timbre (absoluta ou +1/−1), com as regras de cada modo do firmware
+function offTrocarTimbre(p, slot, delta, abs){
+  const prox = i => (i + 1) % (OFF_NUM + 1), ant = i => (i + OFF_NUM) % (OFF_NUM + 1);
+  if (p.modo === '01') return [];                       // MN: não há timbre — o pedal descarta
+  if (p.modo === '11'){                                 // FR: só o 1, e ele é o metrônomo (sem MUTE)
+    if (slot !== 1) return [];
+    let i = abs != null ? abs : (delta > 0 ? prox(p.metro) : ant(p.metro));
+    if (abs == null && i === OFF_MUTE) i = delta > 0 ? prox(i) : ant(i);
+    if (i === OFF_MUTE) return [];
+    p.metro = i;
+    return [offLinhaT(5, i)];
+  }
+  p.slots[slot] = abs != null ? abs : (delta > 0 ? prox(p.slots[slot]) : ant(p.slots[slot]));
+  return [offLinhaT(slot, p.slots[slot])];
+}
+// um comando da página -> as linhas que o pedal responderia
+function pedalFalsoResponde(p, bruto){
+  const c = String(bruto).trim().toUpperCase(), c0 = c[0] || '', c1 = c[1] || '';
+  const metro = p.modo === '01' || p.modo === '11', comTap = p.modo !== '00';
+  let m;
+  if (c === 'PING') return ['PONG ' + (Date.now() - p.t0)];
+  if (c === 'E?') return [offLinhaModo(p), offLinhaT(1, p.slots[1]), offLinhaT(2, p.slots[2]), offLinhaT(3, p.slots[3]),
+                          offLinhaT(4, p.slots[4]), offLinhaT(5, p.metro), 'BOOT=POWERON'];
+  if (c0 === 'T'){                                      // andamento: Tnnn, T+ e T−
+    if (c1 === '+' || c1 === '-'){
+      if (!comTap || p.bpm <= 0) return [];
+      p.bpm = Math.max(30, Math.min(300, Math.round(p.bpm) + (c1 === '+' ? 1 : -1)));
+      return ['BPM=' + p.bpm];
+    }
+    if (!(m = c.match(/^T\s*(\d+)/)) || +m[1] < 30 || +m[1] > 300) return [];
+    if (!comTap) return ['ERR Tnnn modo 00'];
+    p.bpm = +m[1];
+    return ['BPM=' + p.bpm];
+  }
+  if (c0 === 'P'){                                      // preset: o nome e os quatro slots
+    if (!(m = c.match(/^P\s*(\d+)/)) || +m[1] < 1 || +m[1] > OFF_PRESETS.length) return [];
+    const pr = OFF_PRESETS[+m[1] - 1];
+    for (let s = 1; s <= 4; s++) p.slots[s] = pr[s] - 1;
+    return ['P' + pad(+m[1], 2) + ' ' + pr[0], offLinhaT(1, p.slots[1]), offLinhaT(2, p.slots[2]), offLinhaT(3, p.slots[3]), offLinhaT(4, p.slots[4])];
+  }
+  if (c0 === 'M'){                                      // volume geral
+    if (c1 === '?') return [offVolGeral(p)];
+    if (c1 === '+' || c1 === '-'){ p.nivel = p.nivel === 0 ? p.antesMute : Math.max(1, Math.min(16, p.nivel + (c1 === '+' ? 1 : -1))); return [offVolGeral(p)]; }
+    if (!(m = c.match(/^M(\d+)/))) return [];
+    const n = +m[1];
+    if (n === 0){ if (p.nivel !== 0) p.antesMute = p.nivel; p.nivel = 0; return [offVolGeral(p)]; }
+    if (n > 16) return [];
+    p.nivel = n;
+    return [offVolGeral(p)];
+  }
+  if (c0 === 'D'){ if (c1 >= '1' && c1 <= '4') p.ultimoSlot = +c1; return []; }   // disparo: não responde (o visor e o LED já acompanham)
+  if (c0 === 'A'){                                      // sampler
+    if (!(m = c.match(/^A(\d{1,2})/)) || +m[1] < 1 || +m[1] > OFF_NUM) return [];
+    return ['A' + pad(+m[1], 2) + ' ' + offNome(+m[1] - 1)];
+  }
+  if (c0 === 'C'){                                      // modo: troca (ou só pergunta) e confirma
+    if (c1 === '?') return [offLinhaModo(p)];
+    if (!/^C[01][01]/.test(c)) return [];
+    const novo = c.slice(1, 3), eMetro = b => b === '01' || b === '11';
+    if (novo !== p.modo && !(eMetro(novo) && eMetro(p.modo))) p.bpm = 0;   // só entre MN e FR o andamento atravessa
+    p.modo = novo;
+    return [offLinhaModo(p)];
+  }
+  if (c0 === 'V'){                                      // volumes dos timbres
+    if (c1 === 'S'){                                    // gravar: conta o que mudou desde a última gravação
+      let n = 0;
+      for (let i = 0; i < OFF_NUM; i++){
+        const v = p.ajuste[i], ajustado = v >= 1 && v <= 256 && v !== OFF_VOL[i];
+        if (ajustado && p.gravado[i] !== v){ p.gravado[i] = v; n++; }
+        else if (!ajustado && p.gravado[i]){ delete p.gravado[i]; n++; }
+      }
+      return ['VS=' + n];
+    }
+    if (c1 === 'X'){ const n = Object.keys(p.gravado).length; p.gravado = {}; p.ajuste = {}; return ['VX=' + n]; }
+    if (c1 === '+' || c1 === '-' || c1 === '?'){       // relativo, no timbre do último slot usado
+      const passo = c[2] === c1 ? 32 : 8, d = c1 === '?' ? 0 : (c1 === '+' ? passo : -passo);
+      const i = (p.ultimoSlot === 1 && metro) ? p.metro : p.slots[p.ultimoSlot];
+      if (i === OFF_MUTE) return [];
+      const v = Math.max(1, Math.min(256, (p.ajuste[i] || OFF_VOL[i]) + d));
+      p.ajuste[i] = v;
+      return [offVolTimbre(i, v)];
+    }
+    if (!(m = c.match(/^V(\d{1,2})(\?|=(\d{1,4}))/)) || +m[1] < 1 || +m[1] > OFF_NUM) return [];
+    const i = +m[1] - 1;
+    if (m[2] === '?') return [offVolTimbre(i, p.ajuste[i] || OFF_VOL[i])];
+    p.ajuste[i] = Math.max(1, Math.min(256, +m[3]));
+    return [offVolTimbre(i, p.ajuste[i])];
+  }
+  if (c0 === 'S'){                                      // submodo: rota do click (MN) / TAP SOM-MUDO (FR)
+    if (c1 !== '+' && c1 !== '-') return [];
+    if (p.modo === '01') p.rota = c1 === '+' ? OFF_ROTA_PROX[p.rota] : OFF_ROTA_PROX.indexOf(p.rota);
+    else if (p.modo === '11') p.tapSom = !p.tapSom;
+    return [offLinhaModo(p)];
+  }
+  // timbre: "+", "−", "1+", "2−", "312", "100" (MUTE), "399" (o próximo)
+  if (c0 === '+' || c0 === '-') return offTrocarTimbre(p, p.ultimoSlot, c0 === '+' ? 1 : -1, null);
+  if ((m = c.match(/^([1-4])([+-])/))){ p.ultimoSlot = +m[1]; return offTrocarTimbre(p, +m[1], m[2] === '+' ? 1 : -1, null); }
+  const dig = c.replace(/\D/g, '');
+  if (dig.startsWith('9999') || dig.startsWith('8888') || dig.length < 3) return [];   // 9999/8888 = disparos
+  const slot = +dig[0], nn = +dig.slice(1, 3);
+  if (slot < 1 || slot > 4) return [];
+  p.ultimoSlot = slot;
+  if (nn === 99) return offTrocarTimbre(p, slot, 1, null);
+  return offTrocarTimbre(p, slot, 0, nn === 0 ? OFF_MUTE : nn - 1);
+}
+// as respostas chegam um instante depois, como pelo Bluetooth, e em ordem
+function offEntregar(linhas){
+  if (!linhas.length) return;
+  setTimeout(() => { if (!offline.ativo) return; linhas.forEach(l => handleLine(l)); agendarVisor(); }, 25);
+}
+
+/* v6.2 — O BOTÃO DE LIGAR NO GABINETE E O BOOT DA STOMPBOX SIMULADA.
+   O botão redondo no rebaixo de baixo do desenho liga e desliga. Ligar
+   pergunta antes. Ligada, a página faz o que o setup() do firmware faz: o
+   splash (mostrarBoasVindas), um quadro a cada 50 ms por 3 s, com a barra
+   pelo tempo que passou, e o LED passeando pelas cores (aberturaColorida).
+   Depois, a tela do pedal pronto, ainda sem o Bluetooth, e a página conecta:
+   BLUETOOTH CONECTADO e o resto como na v6.1. As contas são em float, como
+   no ESP32 (Math.fround), pra barra e o LED virarem no mesmo quadro. */
+const OFF_FIRMWARE = 'v40.0';                         // a versão que a StompBox de mentira imita (aparece no splash)
+const BOAS_VINDAS_MS = 3000, BOAS_VINDAS_FPS_MS = 50;  // BOAS_VINDAS_DURACAO_MS e BOAS_VINDAS_FPS_MS do firmware
+const OFF_CONECTA_MS = 800;                           // do pedal pronto até a página conectar
+// ABERTURA do firmware, por pino: {LED_PIN, LED2_PIN, LED3_PIN} — na montagem do Saulo, {azul, vermelho, verde}
+const ABERTURA = [[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0], [0, 1, 1], [1, 0, 1], [1, 1, 1], [0, 0, 0]];
+function oledBoasVindas(t, progresso, pad){           // mostrarBoasVindas()
+  t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true;
+  t.tam = 2; t.centrado('StompBox', 8);
+  t.tam = 3; t.centrado(OFF_FIRMWARE, 28);
+  t.tam = 1; t.cursor(110, 31); t.imprimir('PAD');
+  if (pad){ t.cursor(116, 41); t.imprimir('ON'); } else { t.cursor(110, 41); t.imprimir('OFF'); }
+  t.ret(8, 54, 112, 6, 1);
+  const preenchido = Math.trunc(Math.fround(110 * progresso));   // (int)((barW - 2) * progresso)
+  if (preenchido > 0) t.retCheio(9, 55, preenchido, 4, 1);
+}
+function ledSimCor(c){                                // os pinos acesos: b = azul, r = vermelho, g = verde
+  const p = document.querySelector('.pedalSim');
+  if (!p) return;
+  if (c) p.dataset.led = c; else delete p.dataset.led;
+}
+function ledAbertura(progresso){                      // aberturaColorida()
+  let passo = Math.trunc(Math.fround(progresso * ABERTURA.length));
+  if (passo >= ABERTURA.length) passo = ABERTURA.length - 1;
+  const [azul, vermelho, verde] = ABERTURA[passo];
+  ledSimCor((azul ? 'b' : '') + (vermelho ? 'r' : '') + (verde ? 'g' : ''));
+}
+// a tela do pedal pronto, do estado da StompBox de mentira (ainda sem o "BT" na barra)
+function offEstadoVisor(p){
+  return { modo: p.modo, extra: p.modo === '01' ? OFF_ROTA[p.rota] : (p.modo === '11' ? (p.tapSom ? 'TAP SOM' : 'TAP MUDO') : ''),
+           bt: false, volume: p.nivel, resetAnormal: false, slots: [1, 2, 3, 4].map(s => offNumero(p.slots[s])),
+           metro: offNumero(p.metro), bpm: 0, moldura: false };
+}
+function offStatus(){
+  if (!offline.ativo) return;
+  if (offline.fase === 'splash') setStatus('Ligando a StompBox simulada…', 'sim');
+  else if (offline.fase === 'pronto') setStatus('StompBox simulada ligada · conectando…', 'sim');
+  else setStatus(TEXTO_OFFLINE, 'sim');
+}
+function offQuadroSplash(){                           // uma volta do do{}while do splash no setup()
+  if (!offline.ativo || offline.fase !== 'splash') return;
+  const decorrido = Math.floor(performance.now() - offline.t0);
+  let progresso = Math.fround(decorrido / BOAS_VINDAS_MS);
+  if (progresso > 1) progresso = 1;
+  offline.tela = t => oledBoasVindas(t, progresso, false);
+  ledAbertura(progresso);
+  agendarVisor();
+  offline.timer = setTimeout(decorrido < BOAS_VINDAS_MS ? offQuadroSplash : offFimDoBoot, BOAS_VINDAS_FPS_MS);
+}
+function offFimDoBoot(){                              // o resto do setup(): os LEDs apagam e a tela do pedal aparece
+  if (!offline.ativo || offline.fase !== 'splash') return;
+  ledSimCor('');
+  offline.fase = 'pronto';
+  const p = offline.pedal;
+  offline.tela = t => oledTelaModo(t, offEstadoVisor(p));
+  agendarVisor(); offStatus();
+  offline.timer = setTimeout(offConectar, OFF_CONECTA_MS);
+}
+function offConectar(){                               // a página conecta na StompBox simulada
+  if (!offline.ativo || offline.fase !== 'pronto') return;
+  offline.fase = 'conectado'; offline.tela = null; offline.timer = null;
+  rx = rxOffline;
+  bootAvisado = false; state.boot = null;
+  offStatus();
+  visorAviso(oledAvisoBT, 1500);                      // como ao conectar: "BLUETOOTH CONECTADO"
+  log('— modo offline: conectada à StompBox simulada (só a tela) —');
+  renderOffline();
+  send('E?');                                         // como ao conectar: o estado completo e o volume
+  offline.timer = setTimeout(() => { if (offline.ativo) send('M?'); }, 600);
+}
+
+function renderOffline(){
+  const ped = document.querySelector('.pedalSim');
+  if (ped) ped.classList.toggle('simLigado', offline.ativo);
+  const b = $('#btnLiga');
+  if (b){
+    const txt = offline.ativo ? 'Desligar a StompBox simulada (modo offline)' : 'Ligar a StompBox simulada (modo offline)';
+    b.setAttribute('aria-pressed', offline.ativo ? 'true' : 'false');
+    b.setAttribute('aria-label', txt); b.title = txt;
+  }
+  $('#offlineSelo').hidden = !offline.ativo;
+  $('#offlineInfo').hidden = !offline.ativo;
+  prenderGabinete(offline.ativo);   // v6.3
+  renderBarraStatus();
+}
+/* v6.3 — LIGADA, A STOMPBOX SIMULADA FICA PRESA EMBAIXO DA TELA. Só o
+   gabinete vai pra faixa fixa (#simDoca); a página ganha folga embaixo do
+   tamanho dela, pra nada ficar escondido. Desligada, volta pro balão. */
+function folgaDaDoca(){
+  const doca = $('#simDoca');
+  const h = (doca && !doca.hidden) ? doca.getBoundingClientRect().height : 0;
+  document.body.style.paddingBottom = h ? Math.ceil(h + 30) + 'px' : '';
+}
+function prenderGabinete(sim){
+  const ped = document.querySelector('.pedalSim'), doca = $('#simDoca'), sec = $('#simPedal');
+  if (!ped || !doca || !sec) return;
+  const naDoca = ped.parentNode === doca;
+  $('#simDocaNota').hidden = !sim; $('#simNota').hidden = sim;
+  if (sim === naDoca) return;
+  const focado = ped.contains(document.activeElement) ? document.activeElement : null;   // o botão de ligar, pelo teclado
+  if (sim){ doca.hidden = false; doca.appendChild(ped); }
+  else { sec.insertBefore(ped, $('#offlineInfo')); doca.hidden = true; }
+  if (focado) try { focado.focus({ preventScroll: true }); } catch(e){}
+  folgaDaDoca(); agendarVisor();
+}
+window.addEventListener('resize', folgaDaDoca);
+if (window.ResizeObserver && $('#simDoca')) new ResizeObserver(folgaDaDoca).observe($('#simDoca'));
+function ligarOffline(){
+  if (offline.ativo) return;
+  if (rx){ avisoStatus('Desconecte a StompBox para ligar a simulada', 'err', 4000); return; }
+  if (!confirm('Ligar a StompBox simulada?\n\nModo offline: sem o pedal, a página faz o papel da StompBox só pra mostrar a tela. Cada comando aparece no visor como se ela estivesse conectada. Nada vai pro pedal e não sai som.\n\nConectar a StompBox de verdade desliga o modo offline.')) return;
+  // o que a página mostrava antes, pra devolver ao sair
+  offline.guardado = { slots: JSON.parse(JSON.stringify(state.slots)), bpm: state.bpm, preset: state.preset, master: state.master,
+                       masterDb: state.masterDb, boot: state.boot, modoPedal, modoExtra, ultimoNivelGeral };
+  offline.pedal = pedalFalsoNovo();
+  offline.ativo = true; offline.fase = 'splash'; offline.t0 = performance.now();
+  log('— modo offline: a StompBox simulada está ligando —');
+  renderOffline(); offStatus();
+  offQuadroSplash();                                  // o primeiro quadro na hora, como o setup()
+}
+function desligarOffline(paraConectar){
+  if (!offline.ativo) return;
+  clearTimeout(offline.timer); offline.timer = null;
+  offline.ativo = false; offline.pedal = null; offline.fase = null; offline.tela = null;
+  ledSimCor('');
+  if (rx === rxOffline) rx = null;
+  limparPendentes();
+  [modoTimer, submodoTimer, amostraTimer, gravarVolTimer, apagarVolTimer, vptTimer].forEach(t => clearTimeout(t));
+  modoTimer = submodoTimer = amostraTimer = gravarVolTimer = apagarVolTimer = vptTimer = null; modoPedido = null;
+  const g = offline.guardado; offline.guardado = null;   // a página volta ao que mostrava antes
+  if (g){
+    state.slots = g.slots; state.bpm = g.bpm; state.preset = g.preset; state.master = g.master; state.masterDb = g.masterDb;
+    state.boot = g.boot; modoPedal = g.modoPedal; modoExtra = g.modoExtra; ultimoNivelGeral = g.ultimoNivelGeral;
+  }
+  visorZerarBpm(); visor.aviso = null;
+  loadCena(); renderCena();                           // a cena de antes (no offline ela não foi gravada)
+  renderOffline();
+  renderModo(); renderSlots(); renderGrid(); renderMaster(); renderTempo(); renderPresets(); renderMeusPresets(); recolherNoMN();
+  agendarVisor();
+  if (!paraConectar){ setStatus('Desconectado'); log('— modo offline desligado —'); }
+}
+(() => {
+  const b = $('#btnLiga'), ped = document.querySelector('.pedalSim');
+  if (!b) return;
+  b.addEventListener('click', () => (offline.ativo ? desligarOffline(false) : ligarOffline()));
+  // v6.2 — a tampa afunda enquanto o dedo está no botão
+  const solta = () => { if (ped) ped.classList.remove('ligaApertado'); };
+  b.addEventListener('pointerdown', () => { if (ped) ped.classList.add('ligaApertado'); });
+  ['pointerup', 'pointercancel', 'pointerleave', 'blur'].forEach(ev => b.addEventListener(ev, solta));
+})();
 
 /* ---------- v3.16 — BALÕES RECOLHÍVEIS ----------
    Tocar no título recolhe o balão, como o "Console e ajustes". Recolhe tudo
