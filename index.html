@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v6.3 "Mixing Station + Repertório + Cena + Sampler + Modo offline"
+ STOMPBOX REMOTE — v7.0 "Mixing Station + Repertório + Cena + Sampler + Modo offline + Backup"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -223,6 +223,29 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v7.0 — O ARQUIVO COM TODAS AS CONFIGURAÇÕES (firmware v40.0):
+        1) Salvar cena agora também salva no celular um arquivo com tudo o
+           que a página guarda: o catálogo, os nomes dos presets, os Meus
+           presets, as categorias, os favoritos, a ordem da grade, o
+           repertório (o mesmo do Tap Tempo Trainer), a cena, os volumes
+           mudados pela página, o tema, o terminador do console e os balões
+           recolhidos. O arquivo vai pra pasta Download, com a data e a hora
+           no nome (StompBox_backup_2026-10-23_12-37.json): cada vez que
+           salva, um arquivo novo. Embaixo dos botões da cena fica escrito o
+           último arquivo salvo neste celular.
+        2) Sem o pedal conectado a cena não muda (como antes), mas o arquivo
+           sai mesmo assim, com a cena que já estava guardada. No modo
+           offline não sai arquivo: lá nada é gravado no celular.
+        3) Botão novo, "Restaurar do arquivo": escolhe um desses arquivos e,
+           depois de confirmar, todas as configurações da página voltam às
+           do arquivo e a página recarrega. Serve pra quando os dados do
+           navegador se perdem, ou pra levar tudo pra outro celular. Só
+           entram as configurações da StompBox Remote: o que outras páginas
+           do mesmo site guardam no celular não é tocado. Arquivo errado (de
+           outro programa, estragado, ou o backup só do repertório) é recusado
+           com um aviso, sem mudar nada.
+        - sw.js: só o número.
 
  v6.3 — O GABINETE PRESO EMBAIXO DA TELA E AS CATEGORIAS PRONTAS (firmware v40.0):
         1) Com a StompBox simulada ligada, o gabinete (só ele) fica preso
@@ -1835,6 +1858,10 @@ button.tapSub[hidden]{display:none}
 .statusEco .dot{margin-top:4px}
 #volGravInfo{margin-top:6px;font-size:12px;color:var(--ink)}
 #volGravInfo.err{color:var(--red)}
+/* v7.0 — o arquivo com todas as configurações */
+#backupInfo{margin:6px 0 0;font-size:12px;color:var(--dim);overflow-wrap:anywhere}
+#backupInfo.ok{color:var(--ink)}
+#backupInfo.err{color:var(--red)}
 #catsLista,#catsTimbres{display:flex;flex-direction:column;gap:5px}
 #catsTimbres{max-height:46vh;overflow:auto;margin-top:6px}
 .catsSec{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin:12px 0 6px}
@@ -2098,7 +2125,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
         <option value="\r\n">CR+LF (\r\n)</option>
       </select>
     </div>
-    <p class="note">StompBox Remote v6.3 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40)</p>
+    <p class="note">StompBox Remote v7.0 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40)</p>
   </div>
 </details>
 
@@ -2111,8 +2138,12 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
     <button class="btn primary" id="cenaCarregar">Carregar cena</button>
   </div>
   <button class="btn" id="cenaVer" style="width:100%;margin-top:7px">Ver cena salva</button>
+  <button class="btn" id="backupRestaurar" style="width:100%;margin-top:7px">Restaurar do arquivo</button>
+  <input type="file" id="backupArquivo" style="display:none">
+  <p id="backupInfo"></p>
   <button id="cenaLimpar">esquecer volumes alterados</button>
   <p class="note" style="margin-top:8px">Guarda os timbres dos 4 slots, o volume geral e só os volumes de timbre mudados pela página. Os slots só trocam no modo 00.</p>
+  <p class="note" style="margin-top:6px">Salvar cena também salva no celular, na pasta Download, um arquivo com todas as configurações da página: catálogo, presets, Meus presets, categorias, favoritos, ordem, repertório e a cena. Se os dados do navegador se perderem, ou num celular novo, toque em "Restaurar do arquivo" e escolha o arquivo mais novo.</p>
   <button class="btn" id="gravarVolumes" style="width:100%;margin-top:10px">Gravar volumes no pedal</button>
   <button class="btn" id="apagarVolumes" style="width:100%;margin-top:6px;color:var(--red);border-color:var(--red);background:transparent">Apagar volumes gravados</button>
   <p id="volGravInfo"></p>
@@ -3677,7 +3708,9 @@ function salvarCena(){
   for (const s of [1,2,3,4]){
     const d = state.slots[s];
     if (!d || d.n == null || pendentes[s]){
-      avisoStatus((SLOT_NAMES[s] || 'Slot ' + s) + ' sem leitura — conecte e espere os cartões', 'err', 5000);
+      // v7.0 — sem leitura a cena não muda; fora do modo offline o arquivo sai mesmo assim, com a cena já guardada
+      const arq = !offline.ativo && salvarArquivoBackup(' (a cena não mudou: ' + (SLOT_NAMES[s] || 'slot ' + s) + ' sem leitura' + (rx ? '' : ', sem o pedal') + ')');
+      avisoStatus((SLOT_NAMES[s] || 'Slot ' + s) + ' sem leitura — a cena não mudou' + (arq ? '; o arquivo foi salvo' : '; conecte e espere os cartões'), 'err', 6000);
       return;
     }
     slots[s] = d.n;
@@ -3686,7 +3719,9 @@ function salvarCena(){
                 volumes: Object.assign({}, mesaVolumes), geral: ultimoNivelGeral || null };
   if (!offline.ativo){ try { localStorage.setItem(CHAVE_CENA, JSON.stringify(cenaSalva)); } catch(e){} }   // v6.1
   renderCena();
-  avisoStatus(offline.ativo ? 'Cena salva só no modo offline — some ao sair dele' : 'Cena salva', 'on');
+  if (offline.ativo){ avisoStatus('Cena salva só no modo offline — some ao sair dele', 'on'); return; }   // v7.0: no offline, sem arquivo
+  const arq = salvarArquivoBackup('');   // v7.0
+  avisoStatus(arq ? 'Cena salva, e o arquivo com tudo também' : 'Cena salva — o arquivo não pôde ser criado', arq ? 'on' : 'err', 5000);
 }
 
 async function carregarCena(){
@@ -3762,6 +3797,114 @@ function renderCena(){
 
 /* ---------- eventos ---------- */
 $('#cenaSalvar').onclick = salvarCena;
+
+/* ---------- v7.0 — O ARQUIVO COM TODAS AS CONFIGURAÇÕES ----------
+   Salvar cena baixa um arquivo JSON com tudo o que esta página guarda no
+   celular (as chaves "sb_..." e o repertório, que é o mesmo do Tap Tempo
+   Trainer), copiado sem mudar nada. "Restaurar do arquivo" faz o caminho de
+   volta: confere o arquivo, pergunta, troca as configurações da página pelas
+   do arquivo e recarrega. O que outras páginas do mesmo site guardam (o site
+   é um só pra todas) fica de fora nos dois sentidos. */
+const BACKUP_FORMATO = 1, VERSAO_PAGINA = 'v7.0';
+const CHAVE_ULTIMO_BACKUP = 'sb_ultimoBackup';   // só deste celular: não vai no arquivo
+const chaveDoBackup = k => (k.startsWith('sb_') && k !== CHAVE_ULTIMO_BACKUP) || k === CHAVE_REPERTORIO;
+function chavesDaPagina(){
+  const ks = [];
+  try { for (let i = 0; i < localStorage.length; i++){ const k = localStorage.key(i); if (k != null && chaveDoBackup(k)) ks.push(k); } } catch(e){}
+  return ks.sort();
+}
+const doisDig = n => String(n).padStart(2, '0');
+const nomeDoBackup = d => 'StompBox_backup_' + d.getFullYear() + '-' + doisDig(d.getMonth() + 1) + '-' + doisDig(d.getDate()) +
+                          '_' + doisDig(d.getHours()) + '-' + doisDig(d.getMinutes()) + '.json';
+const dataCurta = d => d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+const horaCurta = d => doisDig(d.getHours()) + ':' + doisDig(d.getMinutes());
+function lerJSON(k, padrao){ try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? padrao : v; } catch(e){ return padrao; } }
+function montarBackup(agora){
+  const dados = {};
+  chavesDaPagina().forEach(k => { try { const v = localStorage.getItem(k); if (v != null) dados[k] = v; } catch(e){} });
+  const cena = lerJSON(CHAVE_CENA, null), qc = cena && new Date(cena.quando);
+  return {
+    app: 'StompBox Remote', tipo: 'backup completo', formato: BACKUP_FORMATO, versao: VERSAO_PAGINA,
+    salvoEm: agora.toISOString(), salvoEmLocal: dataCurta(agora),
+    resumo: {   // pra quem abrir o arquivo (contado do que vai nele); a página só usa os "dados"
+      timbresNoCatalogo: (Array.isArray(lerJSON('sb_cat', null)) ? lerJSON('sb_cat', null) : TIMBRES).length,
+      presetsComNome: Object.keys(lerJSON('sb_presets', {}) || {}).length,
+      meusPresets: [].concat(lerJSON(CHAVE_MEUS_PRESETS, [])).length,
+      categorias: CATEGORIAS.lista.slice(),
+      favoritos: [].concat(lerJSON('sb_favoritos', [])).length,
+      musicasNoRepertorio: [].concat(lerJSON(CHAVE_REPERTORIO, [])).length,
+      cena: (qc && !isNaN(qc)) ? 'salva em ' + dataCurta(qc) : 'nenhuma',
+      volumesMudadosPelaPagina: Object.keys(lerJSON(CHAVE_MESA, {}) || {}).length
+    },
+    dados: dados
+  };
+}
+function baixarArquivo(nome, texto, tipo){
+  const blob = new Blob([texto], { type: tipo }), url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = nome; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+function renderBackupInfo(txt, tipo){
+  const el = $('#backupInfo');
+  if (!el) return;
+  if (txt == null){
+    const u = lerJSON(CHAVE_ULTIMO_BACKUP, null), q = u && new Date(u.quando);
+    txt = (q && !isNaN(q)) ? 'Último arquivo salvo neste celular: ' + dataCurta(q) + ' — ' + u.nome : 'Nenhum arquivo salvo ainda neste celular.';
+    tipo = '';
+  }
+  el.textContent = txt;
+  el.className = tipo || '';
+}
+function salvarArquivoBackup(obs){
+  try {
+    const agora = new Date(), nome = nomeDoBackup(agora);
+    baixarArquivo(nome, JSON.stringify(montarBackup(agora), null, 1), 'application/json');
+    try { localStorage.setItem(CHAVE_ULTIMO_BACKUP, JSON.stringify({ quando: agora.toISOString(), nome: nome })); } catch(e){}
+    renderBackupInfo('✓ Arquivo salvo às ' + horaCurta(agora) + (obs || '') + ': ' + nome + ', na pasta Download', 'ok');
+    log('— arquivo de backup: ' + nome + ' —');
+    return true;
+  } catch(e){
+    renderBackupInfo('Não deu pra criar o arquivo: ' + (e.message || e), 'err');
+    return false;
+  }
+}
+function lerArquivoTexto(arquivo){
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.onerror = () => rej(r.error); r.readAsText(arquivo); });
+}
+function recarregarPagina(){ location.reload(); }
+function backupRecusado(msg){ renderBackupInfo(msg, 'err'); avisoStatus(msg, 'err', 6000); }
+async function restaurarDoArquivo(arquivo){
+  let p = null;
+  try { p = JSON.parse(await lerArquivoTexto(arquivo)); } catch(e){ p = null; }
+  if (!p || typeof p !== 'object' || p.app !== 'StompBox Remote' || p.tipo !== 'backup completo' || !p.dados || typeof p.dados !== 'object'){
+    backupRecusado(p && Array.isArray(p.repertorio)
+      ? 'Esse arquivo é o backup só do repertório — ele se restaura no "Gerenciar repertório"'
+      : 'Esse arquivo não é um backup da StompBox Remote — nada foi mudado');
+    return false;
+  }
+  if (!(+p.formato >= 1) || +p.formato > BACKUP_FORMATO){
+    backupRecusado('Esse arquivo é de uma versão mais nova da página — atualize a página e tente de novo');
+    return false;
+  }
+  const dados = {};
+  Object.keys(p.dados).forEach(k => { if (chaveDoBackup(k) && typeof p.dados[k] === 'string') dados[k] = p.dados[k]; });
+  if (!Object.keys(dados).length){ backupRecusado('O arquivo não tem configurações da página — nada foi mudado'); return false; }
+  const q = new Date(p.salvoEm), quando = isNaN(q) ? (p.salvoEmLocal || '?') : dataCurta(q);
+  const conectado = rx && !offline.ativo;
+  if (!confirm('Restaurar as configurações deste arquivo?\n\n' + arquivo.name + '\nsalvo em ' + quando + ' (StompBox Remote ' + (p.versao || '?') + ')\n\n' +
+               'Tudo desta página volta ao que está no arquivo: catálogo, presets, Meus presets, categorias, favoritos, ordem da grade, repertório e cena. ' +
+               'O que está aqui agora é substituído.\n\nA página recarrega em seguida' + (conectado ? ' (a conexão com a StompBox cai; é só conectar de novo)' : '') + '.')) return false;
+  try {
+    chavesDaPagina().forEach(k => { if (!(k in dados) && k !== CHAVE_REPERTORIO) localStorage.removeItem(k); });   // o que não existia no arquivo
+    Object.keys(dados).forEach(k => localStorage.setItem(k, dados[k]));
+  } catch(e){ backupRecusado('Não deu pra gravar no celular: ' + (e.message || e)); return false; }
+  try { sessionStorage.setItem('sb_restaurado', JSON.stringify({ nome: arquivo.name, quando: quando })); } catch(e){}
+  recarregarPagina();
+  return true;
+}
+$('#backupRestaurar').onclick = () => { const i = $('#backupArquivo'); i.value = ''; i.click(); };
+$('#backupArquivo').onchange = () => { const i = $('#backupArquivo'), f = i.files && i.files[0]; if (f) restaurarDoArquivo(f); };
 $('#cenaCarregar').onclick = carregarCena;
 $('#cenaLimpar').onclick = () => {
   if (!confirm('Esquecer a lista de volumes mudados? A cena salva continua como está.')) return;
@@ -4952,6 +5095,14 @@ ticks($('#vTicks'), 9);
 renderSortBar();
 renderSlots(); renderGrid(); renderTempo(); renderMaster();
 renderVpt(); renderPick(); renderPresets(); renderFire(); renderCena(); renderMeusPresets();
+(() => {   // v7.0 — a linha do último arquivo; voltando de um "Restaurar do arquivo", o aviso
+  let r = null;
+  try { r = JSON.parse(sessionStorage.getItem('sb_restaurado') || 'null'); sessionStorage.removeItem('sb_restaurado'); } catch(e){ r = null; }
+  if (r && r.nome){
+    renderBackupInfo('✓ Configurações restauradas do arquivo ' + r.nome + ' (salvo em ' + r.quando + ')', 'ok');
+    setTimeout(() => avisoStatus('Configurações restauradas do arquivo', 'on', 6000), 400);
+  } else renderBackupInfo();
+})();
 
 if (!navigator.bluetooth){
   setStatus('Abra no Chrome do Android, em HTTPS', 'err');
