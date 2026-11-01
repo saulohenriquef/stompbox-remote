@@ -1,6 +1,11 @@
 // StompBox Remote — cache offline.
 // Ao publicar uma versão nova, mude o número do CACHE para forçar a atualização.
 //
+// v9.2 (01/11/2026 00:58) — só o número (o Triângulo S no FR, firmware v43.0).
+// v9.1 (30/10/2026 17:33) — só o número (o aro do ONE de volta junto com o número, a ordem livre das seções e a grade com 2, 3 ou 4 colunas).
+// v9.0 (30/10/2026 09:27) — só o número (CSS numa folha só, calibração do pad e catálogo do pedal, firmware v42.0).
+// v8.1 — só o número (o ONE PEDAL com o número invertido e dois toques no cartão, firmware v41.1).
+// v8.0 — só o número (o modo ONE PEDAL, firmware v41).
 // v7.0 — só o número (o arquivo com todas as configurações e o Restaurar do arquivo).
 // v6.3 — só o número (o gabinete preso embaixo da tela e as categorias prontas).
 // v6.2 — só o número (o botão de ligar no gabinete e o splash da StompBox simulada).
@@ -42,7 +47,7 @@
 //  5) Offline, uma navegação que não bate exatamente com o que está
 //     guardado (ex.: endereço com ?parâmetro) recebe o index.html do
 //     cache, em vez da página de erro do navegador.
-const CACHE = 'stompbox-v7.0';
+const CACHE = 'stompbox-v9.2';
 const ARQUIVOS = ['./', './index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', ev => {
