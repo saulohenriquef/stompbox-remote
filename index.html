@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
  ============================================================
- STOMPBOX REMOTE — v11.1 "Mixing Station + Repertório + Cena + Sampler + Modo offline + Backup + ONE PEDAL + Calibração do pad + Looper"
+ STOMPBOX REMOTE — v11.3 "Mixing Station + Repertório + Cena + Sampler + Modo offline + Backup + ONE PEDAL + Calibração do pad + Looper"
  ============================================================
  Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
  Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
@@ -229,6 +229,61 @@
            presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
            enviado, catálogo salvo…) somem sozinhos e a barra volta ao
            estado da conexão.
+
+ v11.3 (21/11/2026 03:15) — OS NOMES DOS TIMBRES FICAM COMO SEMPRE EMBAIXO DO BPM GRANDE (casada com o firmware v46.3):
+        1) Como o pedal na v46.3 — pedido do Saulo: "não precisa mudar os
+           nomes dos timbres; pode deixar como está". No visor, a pele e o aro
+           mostram o nome de sempre, também com o BPM grande na tela; o
+           número, desenhado por cima, cobre o que estiver no canto. (Na v11.2
+           essas duas linhas trocavam pro nome curto e perdiam letras, como o
+           firmware v46.2.)
+        2) Com o firmware v46.2 o visor também mostra os nomes de sempre (a
+           v46.2 foi logo substituída pela v46.3).
+        3) Modo offline: a StompBox de mentira imita a v46.3.
+        - Testado no Chromium (Playwright), 222 conferências: as da v11.2, com
+          o que mudou de propósito (os nomes longos de sempre embaixo do
+          número). Sem erro no console.
+        - O VISOR DA PÁGINA conferido PONTO A PONTO com 9 telas do OLED do
+          firmware v46.3 na bancada do PC (e com uma da v46.1): iguais.
+        - CONFRONTO COM O FIRMWARE v46.3: os 58 comandos do roteiro da página
+          com as mesmas respostas, linha por linha, e 48 telas iguais ponto a
+          ponto (as outras 10 são as páginas da calibração).
+        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
+          ESP32.
+        - sw.js: só o número.
+
+ v11.2 (21/11/2026 02:46) — O BPM DO AT E DO LOOPER VAI GRANDE NO CANTO DO VISOR (casada com o firmware v46.2):
+        1) Como o pedal na v46.2 — pedido do Saulo: na barra o BPM ficava
+           pequeno demais; "vamos colocar ele no canto inferior direito",
+           "do mesmo tamanho de letra que era o modo AT antigo". No visor, o
+           BPM do AT e do LOOPER sai da barra (fica "AT", "LP", "LP C2") e vai
+           grande no canto inferior direito da lista: com a volta tocando e,
+           ouvindo, com o LED verde aceso — e aí ele muda a cada nota, pela
+           linha "BPM=" que o firmware v46.2 manda.
+        2) A pele e o aro, embaixo do número, ficam com o nome que cabe à
+           esquerda dele — o inteiro, o curto, ou o curto sem as últimas
+           letras —, com as mesmas contas do pedal.
+        3) A linha "LOOP=OUVE ... V1" (o verde) não apaga mais o BPM do visor
+           (o pedal manda o "BPM=" logo antes dela); a "V0" apaga.
+        4) Com o firmware v46.0 ou v46.1 (a versão lida), o visor segue como
+           a v11.1: o BPM na barra. Pedal regravado com a v46.2 sem a versão
+           lida de novo: um "BPM=" com o looper ouvindo, seguido do verde, já
+           mostra que é a v46.2 (a largada — "BPM=" e logo "LOOP=TOCA" — não
+           engana).
+        5) Modo offline: a StompBox de mentira imita a v46.2.
+        - Testado no Chromium (Playwright), 222 conferências: as da v11.1, com
+          o que mudou de propósito, e as novas — o verde aceso ouvindo (o BPM
+          aparece, muda e some), os nomes longos e o corte em letra inteira,
+          dois dígitos, o firmware v46.1 (o BPM na barra) e a v46.2 percebida
+          pelo BPM ouvindo. Sem erro no console.
+        - O VISOR DA PÁGINA conferido PONTO A PONTO com 9 telas do OLED do
+          firmware v46.2 na bancada do PC (e com uma da v46.1): iguais.
+        - CONFRONTO COM O FIRMWARE v46.2: os 58 comandos do roteiro da página
+          com as mesmas respostas, linha por linha, e 48 telas iguais ponto a
+          ponto (as outras 10 são as páginas da calibração).
+        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
+          ESP32.
+        - sw.js: só o número.
 
  v11.1 (20/11/2026 16:20) — O SINAL DE GRAVADO NO VISOR VIRA UMA BOLINHA (casada com o firmware v46.1):
         1) Como o pedal na v46.1 — pedido do Saulo: "não vamos usar a tela
@@ -2289,7 +2344,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
       </select>
     </div>
     <button class="btn" id="secoesAbrir" style="width:100%">Ordem das seções</button>
-    <p class="note">StompBox Remote v11.1 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40, ONE v41, VER? K? e Z v42, CL T6 e ZP v45)</p>
+    <p class="note">StompBox Remote v11.3 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40, ONE v41, VER? K? e Z v42, CL T6 e ZP v45)</p>
   </div>
 </details>
 
@@ -2840,6 +2895,14 @@ function pedalV45(){ try { return versaoPedal >= VERSAO_MIN_V45; } catch(e){ ret
 const VERSAO_MIN_V46 = 46;
 function pedalV46(){ try { return versaoPedal >= VERSAO_MIN_V46; } catch(e){ return false; } }
 function nomeAT(){ return pedalV46() ? 'AT' : 'AT comum'; }
+// v11.2 — o firmware v46.2: o BPM do AT e do LOOPER vai GRANDE no canto inferior direito da tela (e sai da barra);
+// ouvindo, com o verde aceso, ele aparece e muda a cada nota (a linha "BPM=" chega ouvindo). Com a v46.0 e a
+// v46.1 o visor segue com o BPM na barra. Pedal gravado com a v46.2 sem a versão lida de novo: um "BPM=" que
+// chega com o looper ouvindo e é seguido do "LOOP=OUVE ... V1" (o verde) — ou de outro "BPM=", ainda ouvindo — só
+// pode ser a v46.2 (visor.bpmAoVivo, que vale até a conexão seguinte). Seguido do "LOOP=TOCA" é só a largada,
+// que a v46.0 e a v46.1 também mandam.
+const VERSAO_MIN_V462 = 46.2;
+function pedalV462(){ try { return versaoPedal >= VERSAO_MIN_V462 - 1e-9; } catch(e){ return false; } }
 let modoLooper = false;   // o pedal está no looper: a linha do modo veio "C10 LP"
 // o botão LOOPER da página: armado = "o shift está apertado" — a próxima ida da chave pro AT manda "CL"
 const lp = { armado: false, timer: null, pedido: false };
@@ -2926,6 +2989,7 @@ async function abrirGatt(){
   retries = 0;
   bootAvisado = false; state.boot = null;   // v3.14 — o BOOT= desta conexão
   one.conhecido = false;                    // v8.0 — o "ONE=" do estado completo não é aviso
+  visor.bpmAoVivo = false; visor.bpmOuvindo = false;   // v11.2 — outra conexão, talvez outro firmware
   setStatus((dev.name || 'StompBox') + ' conectada', 'on');
   visorAviso(oledAvisoBT, 1500);   // v5.0 — o pedal mostra "BLUETOOTH CONECTADO" por 1,5 s
   $('#btnConn').textContent = 'Desconectar';
@@ -3071,7 +3135,11 @@ function handleLine(line){
   // v11.0 — "LOOP=..." (firmware v46): a volta e as camadas (na entrada do modo, no E? e a cada mudança)
   if ((m = line.match(/^LOOP=(OUVE|TOCA) C(\d) S([01]{4}) V([01])$/))){
     loop = { toca: m[1] === 'TOCA', camadas: +m[2], slots: m[3].split('').map(x => x === '1'), verde: m[4] === '1' };
-    if (!loop.toca) visorZerarBpm();                         // parou: a barra do visor perde o BPM, como no pedal
+    // v11.2 — parado e sem o verde: o visor perde o BPM, como no pedal. Com o verde aceso (V1) ele fica: o
+    // firmware v46.2 mostra o BPM que entendeu, e manda a linha "BPM=" logo antes desta.
+    if (!loop.toca && !loop.verde) visorZerarBpm();
+    if (visor.bpmOuvindo && !loop.toca && loop.verde) visor.bpmAoVivo = true;   // o BPM ouvindo era o do verde: é a v46.2
+    visor.bpmOuvindo = false;
     renderLooper(); renderSlots(); renderFire(); agendarVisor();
     return;
   }
@@ -4904,7 +4972,10 @@ function oledBarra(t, e){                             // desenharBarraStatus()
   const extra = (e.modo === '01' || e.modo === '11') ? (e.extra || '') : (e.one ? 'ONE' : '');
   // v11.0 — o looper TOCANDO (firmware v46): o BPM depois do modo e, no LOOPER com camadas, quantas ("LP 120 C2").
   // Se não couber com o ONE, ele sai (como no pedal).
-  const tocando = (e.v46 && e.modo === '10' && e.loopToca && e.bpm > 0) ? ' ' + Math.floor(e.bpm + 0.5) + (e.looper && e.loopCam > 1 ? ' C' + e.loopCam : '') : '';
+  // v11.2 (firmware v46.2) — o BPM saiu da barra (vai grande no canto da lista): na barra ficam só as camadas ("LP C2").
+  const tocando = !(e.v46 && e.modo === '10' && e.loopToca) ? ''
+    : e.v462 ? (e.looper && e.loopCam > 1 ? ' C' + e.loopCam : '')
+    : (e.bpm > 0 ? ' ' + Math.floor(e.bpm + 0.5) + (e.looper && e.loopCam > 1 ? ' C' + e.loopCam : '') : '');
   const dir = (e.bt ? 'BT ' : '') + (e.volume === 0 ? 'MUTE' : 'V' + (e.volume == null ? '--' : e.volume));
   let esq = modo + (e.resetAnormal ? '!' : '') + tocando + (extra ? ' ' + extra : '');
   if (tocando && 2 + esq.length * 6 > 128 - 4 - dir.length * 6) esq = modo + (e.resetAnormal ? '!' : '') + tocando;
@@ -4914,11 +4985,28 @@ function oledBarra(t, e){                             // desenharBarraStatus()
   t.cursor(128 - 2 - dir.length * 6, 1); t.imprimir(dir);
   t.cor = 1; t.quebra = true;
 }
+// (v11.2 — aqui ficavam oledFimTexto, oledCortarAteColuna e oledTextoAteColuna: a pele e o aro embaixo do BPM
+// grande trocavam pro nome curto e perdiam letras, como o firmware v46.2. v11.3 (firmware v46.3) — sairam: os
+// nomes ficam como sempre, e o número cobre o que estiver no canto.)
+const OLED_BPM_DIR = 127, OLED_BPM_Y = 42;                 // BPM_CANTO_DIR e BPM_CANTO_Y do firmware v46.2
 function oledTelaSB(t, e){                            // atualizarDisplay()
   t.limpar(); oledBarra(t, e); t.cor = 1;
+  // v11.2 (firmware v46.2) — O BPM GRANDE: no AT e no LOOPER, tocando ou ouvindo com o verde aceso, no canto
+  // inferior direito, na fonte 3 (a do AT antigo). A letra do último dígito acaba na coluna 127; a caixa apagada
+  // começa uma coluna antes da tinta do primeiro dígito (o "1" da fonte começa na 2ª coluna da letra) e vai do
+  // topo da linha da pele ao pé da tela. v11.3 — os nomes ficam como sempre: o que passar, a caixa cobre.
+  const bpmCanto = (e.v462 && e.modo === '10' && (e.loopToca || e.loopVerde) && e.bpm > 0) ? Math.floor(e.bpm + 0.5) : 0;
+  let cantoX = 0, cantoX0 = 0, txtCanto = '';
+  if (bpmCanto > 0){
+    txtCanto = String(bpmCanto);
+    cantoX  = OLED_BPM_DIR - (5 * 3 - 1) - (6 * 3) * (txtCanto.length - 1);
+    cantoX0 = cantoX + (txtCanto[0] === '1' ? 3 : 0) - 1;
+  }
   for (let i = 0; i < 4; i++){
     const n = e.slots[i], y = OLED_STATUS + i * OLED_LINHA;
     if (n == null) continue;                           // slot sem leitura
+    // v11.3 (firmware v46.3) — o nome de sempre, também na pele e no aro com o BPM grande na tela: o número,
+    // desenhado depois, cobre o que estiver no canto (na v11.2 essas duas linhas trocavam pro nome curto)
     t.quebra = false; t.fonte = 'slot13'; t.tam = 1;
     if (n === 0){ t.cursor(1, y + OLED_BASE); t.imprimir('S' + (i + 1)); t.fonte = null; t.quebra = true; }
     else {
@@ -4935,6 +5023,14 @@ function oledTelaSB(t, e){                            // atualizarDisplay()
     // v8.1 (firmware v41.1) — ONE PEDAL: só o número invertido, na caixinha das colunas 1 a 17
     // e das linhas y a y+11 (ONE_NUMERO_X/L/A); o resto da linha fica como sempre
     if (e.one === i + 1) t.inverter(1, y, 17, 12);
+  }
+  // v11.2 (firmware v46.2) — o BPM grande, por cima do que estiver no canto (v11.3: o fim dos nomes também)
+  if (bpmCanto > 0){
+    const topo = OLED_STATUS + 2 * OLED_LINHA;
+    t.retCheio(cantoX0, topo, 128 - cantoX0, 64 - topo, 0);
+    t.fonte = null; t.tam = 3; t.quebra = false; t.cor = 1;
+    t.cursor(cantoX, OLED_BPM_Y); t.imprimir(txtCanto);
+    t.tam = 1; t.quebra = true;
   }
 }
 function oledTelaMN(t, e){                            // mostrarBPM()
@@ -5030,7 +5126,7 @@ function oledAvisoFlash(t, grande, detalhe, titulo){   // v9.0: título opcional
    chega quando o pedal responde à página ("BPM=", "L", "RST"); a largada e
    a parada pelos disparos (LARGADA / PISAR) a página acompanha sozinha. */
 const visor = { bpm: 0, moldura: false, rodando: false, aviso: null, avisoAte: 0, avisoTimer: null, mPerguntas: 0, mPerguntaMs: 0, tPedido: 0, agendado: false,
-                atAvisoAte: 0, atAvisoTimer: null, frDono: 0 };   // v10.0 — o "AUTO"/"LOOPER" de 0,3 s e o dono do ritmo no FR (v45)
+                atAvisoAte: 0, atAvisoTimer: null, frDono: 0, bpmAoVivo: false, bpmOuvindo: false };   // v11.2 — bpmAoVivo: é a v46.2 (ver pedalV462)   // v10.0 — o "AUTO"/"LOOPER" de 0,3 s e o dono do ritmo no FR (v45)
 const AT_AVISO_MS = 300;   // o mesmo do firmware v45
 const telaVisor = new TelaOled();
 function visorEstado(){
@@ -5041,7 +5137,9 @@ function visorEstado(){
            // v10.0 — firmware v45: o slot 2 do FR, o looper, o aviso da entrada do AT e o dono do ritmo
            v45: pedalV45(), metro2: n(6), looper: modoLooper, aviso: Date.now() < visor.atAvisoAte, frDono: visor.frDono,
            // v11.0 — firmware v46: o looper tocando e os slots que estão na volta
-           v46: pedalV46(), loopToca: loopTocando(), loopCam: loop ? loop.camadas : 0, loopSlots: loop ? loop.slots.slice() : null };
+           v46: pedalV46(), loopToca: loopTocando(), loopCam: loop ? loop.camadas : 0, loopSlots: loop ? loop.slots.slice() : null,
+           // v11.2 — firmware v46.2: o BPM grande no canto (ouvindo, só com o verde aceso)
+           v462: pedalV462() || visor.bpmAoVivo, loopVerde: !!(loop && loop.verde && modoPedal === '10') };
 }
 function visorZerarBpm(){ visor.bpm = 0; visor.moldura = false; visor.rodando = false; visor.frDono = 0; }
 function visorAviso(fn, ms){
@@ -5056,6 +5154,8 @@ function visorLinha(line){
   if (line === 'TAP'){ piscarLedSim(LED_TAP_MS); return; }   // v5.1 — o tap do pé no click BT pisca o LED, como no pedal
   if ((m = line.match(/^BPM\s*[:=]?\s*(\d+)/i))){
     visor.bpm = +m[1];
+    // v11.2 — um BPM com o looper ouvindo: a linha LOOP= seguinte diz se é a v46.2 (ver pedalV462)
+    if (visor.bpm && modoPedal === '10' && loop && !loop.toca){ if (visor.bpmOuvindo) visor.bpmAoVivo = true; visor.bpmOuvindo = true; }
     if (!visor.bpm) visorZerarBpm();
     else if (Date.now() - visor.tPedido < 3000){ visor.moldura = true; visor.tPedido = 0; }   // "Tnnn": a borda do BPM externo
   }
@@ -5453,7 +5553,7 @@ function offEntregar(linhas){
    Depois, a tela do pedal pronto, ainda sem o Bluetooth, e a página conecta:
    BLUETOOTH CONECTADO e o resto como na v6.1. As contas são em float, como
    no ESP32 (Math.fround), pra barra e o LED virarem no mesmo quadro. */
-const OFF_FIRMWARE = 'v46.1';                         // a versão que a StompBox de mentira imita (aparece no splash)
+const OFF_FIRMWARE = 'v46.3';                         // a versão que a StompBox de mentira imita (aparece no splash)
 const BOAS_VINDAS_MS = 3000, BOAS_VINDAS_FPS_MS = 50;  // BOAS_VINDAS_DURACAO_MS e BOAS_VINDAS_FPS_MS do firmware
 const OFF_CONECTA_MS = 800;                           // do pedal pronto até a página conectar
 // ABERTURA do firmware, por pino: {LED_PIN, LED2_PIN, LED3_PIN} — na montagem do Saulo, {azul, vermelho, verde}
@@ -5518,6 +5618,7 @@ function offConectar(){                               // a página conecta na St
   rx = rxOffline;
   bootAvisado = false; state.boot = null;
   one.conhecido = false;                              // v8.0 — como ao conectar
+  visor.bpmAoVivo = false; visor.bpmOuvindo = false;  // v11.2 — como ao conectar
   offStatus();
   visorAviso(oledAvisoBT, 1500);                      // como ao conectar: "BLUETOOTH CONECTADO"
   log('— modo offline: conectada à StompBox simulada (só a tela) —');
