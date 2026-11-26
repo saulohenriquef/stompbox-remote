@@ -288,14 +288,24 @@ h2.fechado .seta{transform:rotate(-90deg)}
 /* v3.16 — faders só pela alça: o trilho não recebe toque, a rolagem segue livre */
 .fader-zone{touch-action:pan-y}
 .fader-zone .fader{pointer-events:none}
-/* v3.16 — Meus presets */
-.presets.meus .ed{position:absolute;right:0;top:0;width:34px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--meuEditar)}
+/* v16.0 — Presets unificados na NVS do pedal (até 20 presets, só índices) */
+.h2Btns{order:1;margin-left:auto;display:inline-flex;align-items:center;gap:12px}
+.h2Btns button{margin-left:0}
+.presets.meus .ed{position:absolute;right:0;top:0;width:32px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--meuEditar);border-radius:0 7px 0 6px}
+.presets.meus .ed:active{background:rgba(255,255,255,.08)}
 .presets.meus button{padding-right:30px}
+.presets.meus button.cur::after{right:30px;top:9px}
 #meusVazio{grid-column:1/-1;font-size:12px;color:var(--textoNota);padding:10px 4px}
+.presetsRodape{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;flex-wrap:wrap}
+#presetsInfo{font-size:11px;color:#4cd97b;flex:1;min-width:160px}
+#presetsInfo.err{color:var(--red)}
+#presetsInfo:empty{display:none}
+#resetPresetsFabrica{margin-left:auto;font-size:10.5px;color:var(--muted);border-bottom:1px solid var(--linkBorda);padding:0}
+#resetPresetsFabrica:hover{color:var(--ink)}
 .meuPreSlots{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin:10px 0}
 .meuPreSlots label{font-size:12px;color:var(--meuRotulo)}
 .meuPreSlots select{width:100%}
-#meuPreNome{width:100%;margin-top:8px;box-sizing:border-box}
+#meuPreNome{width:100%;margin-top:8px;box-sizing:border-box;text-transform:uppercase}
 /* v3.15 — o timbre 00 MUTE */
 .tim.mute .t{color:#ff8c95;font-weight:700}
 .tim.mute.cur{background:var(--red);border-color:var(--red)}
@@ -906,11 +916,12 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 <button class="sortEdit" id="editCats" style="display:none">editar categorias</button>
 <section class="grid" id="grid"></section>
 
-<h2 data-rec="meuspresets"><span>Meus presets</span><button id="novoMeuPre">novo</button></h2>
-<section class="presets meus" id="meusPresets"></section>
-
-<h2 data-rec="presets"><span>Presets</span><button id="editPre">editar nomes</button></h2>
-<section class="presets" id="presets"></section>
+<h2 data-rec="presets"><span>Presets</span><span class="h2Btns"><button id="lerPresetsPedal" title="Ler os presets gravados na NVS do pedal">ler do pedal</button><button id="novoMeuPre">+ novo</button></span></h2>
+<section class="presets meus" id="presets"></section>
+<div class="presetsRodape">
+  <span id="presetsInfo"></span>
+  <button type="button" id="resetPresetsFabrica">restaurar os 10 de fábrica</button>
+</div>
 
 <h2 data-rec="simulacao">Simulação do Pedal</h2>
 <section class="box boxSim" id="simPedal">
@@ -1174,7 +1185,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
       </select>
     </div>
     <button class="btn" id="secoesAbrir" style="width:100%">Ordem das seções</button>
-    <p class="note">StompBox Remote v15.0 GeminiCarbon · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40, ONE v41, VER? K? e Z v42, CL T6 e ZP v45, CS e CX v48, ZD e W v49, LPR v50)</p>
+    <p class="note">StompBox Remote v16.0 GeminiCarbon · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40, ONE v41, VER? K? e Z v42, CL T6 e ZP v45, CS e CX v48, ZD e W v49, LPR v50, P?/PS/PD/PX v51)</p>
   </div>
 </details>
 
@@ -1192,7 +1203,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
   <p id="backupInfo"></p>
   <button id="cenaLimpar">esquecer volumes alterados</button>
   <p class="note" style="margin-top:8px">Guarda os timbres dos 4 slots, o volume geral e só os volumes de timbre mudados pela página. Os slots só trocam no modo 00.</p>
-  <p class="note" style="margin-top:6px">Salvar cena também salva no celular, na pasta Download, um arquivo com todas as configurações da página: catálogo, presets, Meus presets, categorias, favoritos, ordem, repertório e a cena. Se os dados do navegador se perderem, ou num celular novo, toque em "Restaurar do arquivo" e escolha o arquivo mais novo.</p>
+  <p class="note" style="margin-top:6px">Salvar cena também salva no celular, na pasta Download, um arquivo com todas as configurações da página: catálogo, presets, categorias, favoritos, ordem, repertório e a cena. Se os dados do navegador se perderem, ou num celular novo, toque em "Restaurar do arquivo" e escolha o arquivo mais novo.</p>
   <button class="btn" id="gravarVolumes" style="width:100%;margin-top:10px">Gravar volumes no pedal</button>
   <button class="btn" id="apagarVolumes" style="width:100%;margin-top:6px;color:var(--red);border-color:var(--red);background:transparent">Apagar volumes gravados</button>
   <p id="volGravInfo"></p>
@@ -1265,13 +1276,14 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 
 <dialog id="meuPreDlg">
   <h3 id="meuPreTitulo">Novo preset</h3>
-  <input type="text" id="meuPreNome" maxlength="24" placeholder="Nome (ex.: Anderson)" autocomplete="off">
+  <p class="note" id="meuPreSub">Grava direto na NVS do pedal (até 20 presets · só índices dos 4 slots + nome sem acento até 10 letras pro OLED).</p>
+  <input type="text" id="meuPreNome" maxlength="10" placeholder="Nome (até 10 letras, ex.: FORRO)" autocomplete="off">
   <div class="meuPreSlots" id="meuPreSlots"></div>
   <button class="btn" id="meuPreAgora" style="width:100%">Usar os timbres dos slots de agora</button>
   <div class="dlgbar">
-    <button class="btn" id="meuPreExcluir">Excluir</button>
+    <button class="btn" id="meuPreExcluir" style="color:var(--red);border-color:var(--red);margin-right:auto">Excluir</button>
     <button class="btn" id="meuPreCancelar">Cancelar</button>
-    <button class="btn primary" id="meuPreSalvar">Salvar</button>
+    <button class="btn primary" id="meuPreSalvar">Salvar no pedal</button>
   </div>
 </dialog>
 
@@ -1296,15 +1308,6 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
   </div>
 </dialog>
 
-<dialog id="preDlg">
-  <h3>Nomes dos presets</h3>
-  <p class="note">Um nome por linha, do preset 01 ao 10. Linha vazia deixa o preset sem nome.</p>
-  <textarea id="preText" spellcheck="false" style="height:180px"></textarea>
-  <div class="dlgbar">
-    <button class="btn" id="preCancel">Cancelar</button>
-    <button class="btn primary" id="preSave">Salvar</button>
-  </div>
-</dialog>
 
 <dialog id="catDlg">
   <h3>Catálogo de timbres</h3>
@@ -1948,6 +1951,7 @@ function handleLine(line){
   // v9.0 (firmware v42) — versão, catálogo ("K…") e calibração ("Z…")
   if ((m = line.match(/^VER=(\d+(?:\.\d+)?)\s*$/))){ receberVersao(m[1]); return; }
   if (linhaDoCatalogo(line)) return;
+  if (linhaDosPresets(line)) return;
   if (linhaDaCalib(line)) return;
   // v9.0 (firmware v42) — o preset é recusado com o automático (AT) tocando
   if ((m = line.match(/^ERR\s+P(\d+)\s+AT/i))){
@@ -2152,16 +2156,20 @@ function handleLine(line){
     if (s === 5 && pendentes[1] && pendentes[1].n === n) resolverPendente(1);
     // v10.0 — no FR do firmware v45 o "2nn" volta como T6 (o slot 2 do FR), não como T2
     if (s === 6 && pendentes[2] && pendentes[2].n === n) resolverPendente(2);
-    renderSlots(); renderGrid(); renderMeusPresets();   // v3.16: o preset aceso acompanha
+    renderSlots(); renderGrid(); renderPresets();       // v16.0: o preset unificado aceso acompanha
     // v3.15 — o slot do painel de volume trocou de timbre: relê o do novo
     if (s === vpt.slot && vpt.timbre !== n) lerVolume(s);
     return;
   }
   if ((m = line.match(/^BPM\s*[:=]?\s*(\d+)/i))){ state.bpm = +m[1]; renderTempo(); return; }
   if ((m = line.match(/^P(\d+)\s*(.*)$/i))){
+    const idx = +m[1] - 1;
     state.preset = +m[1];
     const nome = m[2].trim();
-    if (nome){ PRESETS[+m[1]] = nome; savePresets(); }
+    if (nome){
+      PRESETS[+m[1]] = nome; savePresets();
+      if (presetsLista[idx] && presetsLista[idx].nome !== nome){ presetsLista[idx].nome = nome; salvarPresetsLista(); }
+    }
     renderPresets(); return;
   }
   if (/^ERR/i.test(line)){ avisoStatus(line, 'err', 4000); return; }   // v3.14 — some sozinho
@@ -2951,19 +2959,7 @@ function renderVpt(){
   pintarFader('vFader');
 }
 
-function renderPresets(){
-  const wrap = $('#presets');
-  wrap.innerHTML = '';
-  for (let n = 1; n <= 10; n++){
-    const b = document.createElement('button');
-    b.className = state.preset === n ? 'cur' : '';
-    b.innerHTML = '<span class="n mono"></span><span class="t"></span>';
-    b.querySelector('.n').textContent = pad(n, 2);
-    b.querySelector('.t').textContent = PRESETS[n] || '—';
-    b.onclick = () => { state.preset = n; renderPresets(); send('P' + pad(n, 2)); };
-    wrap.appendChild(b);
-  }
-}
+// (v16.0: renderPresets unificado fica no bloco PRESETS UNIFICADOS abaixo)
 
 function renderFire(){
   const wrap = $('#fire');
@@ -3238,8 +3234,8 @@ function conferirEsperas(line){
     if (ok){ clearTimeout(e.timer); esperas.splice(i, 1); e.res(true); }
   }
 }
-async function comandoConfirmado(cmd, teste){
-  const resposta = esperarLinha(teste, CENA_PRAZO_MS);
+async function comandoConfirmado(cmd, teste, ms){
+  const resposta = esperarLinha(teste, ms || CENA_PRAZO_MS);
   await send(cmd);
   return resposta;
 }
@@ -3346,7 +3342,7 @@ $('#cenaSalvar').onclick = salvarCena;
    volta: confere o arquivo, pergunta, troca as configurações da página pelas
    do arquivo e recarrega. O que outras páginas do mesmo site guardam (o site
    é um só pra todas) fica de fora nos dois sentidos. */
-const BACKUP_FORMATO = 1, VERSAO_PAGINA = 'v15.0';
+const BACKUP_FORMATO = 1, VERSAO_PAGINA = 'v16.0';
 const CHAVE_ULTIMO_BACKUP = 'sb_ultimoBackup';   // só deste celular: não vai no arquivo
 const chaveDoBackup = k => (k.startsWith('sb_') && k !== CHAVE_ULTIMO_BACKUP) || k === CHAVE_REPERTORIO;
 function chavesDaPagina(){
@@ -3369,8 +3365,7 @@ function montarBackup(agora){
     salvoEm: agora.toISOString(), salvoEmLocal: dataCurta(agora),
     resumo: {   // pra quem abrir o arquivo (contado do que vai nele); a página só usa os "dados"
       timbresNoCatalogo: (Array.isArray(lerJSON('sb_cat', null)) ? lerJSON('sb_cat', null) : TIMBRES).length,
-      presetsComNome: Object.keys(lerJSON('sb_presets', {}) || {}).length,
-      meusPresets: [].concat(lerJSON(CHAVE_MEUS_PRESETS, [])).length,
+      presetsUnificados: [].concat(lerJSON('sb_presetsLista', [])).length,
       categorias: CATEGORIAS.lista.slice(),
       favoritos: [].concat(lerJSON('sb_favoritos', [])).length,
       musicasNoRepertorio: [].concat(lerJSON(CHAVE_REPERTORIO, [])).length,
@@ -3434,7 +3429,7 @@ async function restaurarDoArquivo(arquivo){
   const q = new Date(p.salvoEm), quando = isNaN(q) ? (p.salvoEmLocal || '?') : dataCurta(q);
   const conectado = rx && !offline.ativo;
   if (!confirm('Restaurar as configurações deste arquivo?\n\n' + arquivo.name + '\nsalvo em ' + quando + ' (StompBox Remote ' + (p.versao || '?') + ')\n\n' +
-               'Tudo desta página volta ao que está no arquivo: catálogo, presets, Meus presets, categorias, favoritos, ordem da grade, repertório e cena. ' +
+               'Tudo desta página volta ao que está no arquivo: catálogo, presets, categorias, favoritos, ordem da grade, repertório e cena. ' +
                'O que está aqui agora é substituído.\n\nA página recarrega em seguida' + (conectado ? ' (a conexão com a StompBox cai; é só conectar de novo)' : '') + '.')) return false;
   try {
     chavesDaPagina().forEach(k => { if (!(k in dados) && k !== CHAVE_REPERTORIO) localStorage.removeItem(k); });   // o que não existia no arquivo
@@ -3493,23 +3488,7 @@ $('#cmdSend').onclick = () => { const v = $('#cmd').value.trim(); if (v){ send(v
 $('#cmd').addEventListener('keydown', e => { if (e.key === 'Enter') $('#cmdSend').click(); });
 $('#term').onchange = () => localStorage.setItem('sb_term', $('#term').value);
 
-const pdlg = $('#preDlg');
-$('#editPre').onclick = () => {
-  const linhas = [];
-  for (let n = 1; n <= 10; n++) linhas.push(PRESETS[n] || '');
-  $('#preText').value = linhas.join('\n');
-  pdlg.showModal();
-};
-$('#preCancel').onclick = () => pdlg.close();
-$('#preSave').onclick = () => {
-  const linhas = $('#preText').value.split('\n');
-  PRESETS = {};
-  for (let n = 1; n <= 10; n++){
-    const v = (linhas[n-1] || '').trim();
-    if (v) PRESETS[n] = v;
-  }
-  savePresets(); renderPresets(); pdlg.close();
-};
+// (v16.0: #preDlg substituído pela edição direta em #meuPreDlg)
 
 const dlg = $('#catDlg');
 // v4.0 — números das linhas do catálogo (só referência, fora do texto)
@@ -4204,8 +4183,22 @@ function visorLinha(line){
     const n = +m[1], v = +m[2];
     if (volPedidos[n] != null) visorAviso(t => oledAvisoVolumeTimbre(t, n - 1, v), 600);   // só quando a página mudou o volume
   }
+  else if ((m = line.match(/^PS=(\S+)(?:\s+(\d+))?$/)) && !calib.cal){
+    const v = m[1];
+    visorAviso(t => v === 'ERRO' ? oledAvisoFlash(t, 'ERRO', 'NAO GRAVOU', 'PRESETS NA FLASH')
+      : oledAvisoFlash(t, 'GRAVADO', 'P' + pad(+v, 2) + (presetsLista[+v - 1] ? ' ' + presetsLista[+v - 1].nome : ''), 'PRESETS NA FLASH'), 1500);
+  }
+  else if ((m = line.match(/^PD=(\S+)(?:\s+(\d+))?$/)) && !calib.cal){
+    const v = m[1], qtd = m[2] ? +m[2] : presetsLista.length;
+    visorAviso(t => v === 'ERRO' ? oledAvisoFlash(t, 'ERRO', 'NAO GRAVOU', 'PRESETS NA FLASH')
+      : oledAvisoFlash(t, 'EXCLUIDO', qtd + (qtd === 1 ? ' PRESET' : ' PRESETS'), 'PRESETS NA FLASH'), 1500);
+  }
+  else if ((m = line.match(/^PX=(\d+)$/)) && !calib.cal){
+    visorAviso(t => oledAvisoFlash(t, 'FABRICA', m[1] === '0' ? 'JA ESTAVA' : '10 DE FABRICA', 'PRESETS NA FLASH'), 1500);
+  }
   else if ((m = line.match(/^P(\d+)\s*(.*)$/))){
-    const nome = m[2].trim() || PRESETS[+m[1]] || '';
+    const idx = +m[1] - 1;
+    const nome = m[2].trim() || (presetsLista[idx] && presetsLista[idx].nome) || PRESETS[+m[1]] || '';
     visorAviso(t => oledAvisoPreset(t, nome), 600);
   }
 }
@@ -4340,15 +4333,27 @@ function ledSimComando(cmd){
    firmware v40 (presets, volumes da tabela, rota do click), iguais na v41. */
 const TEXTO_OFFLINE = 'Modo offline · a página faz o papel da StompBox';
 let OFF_NUM = 35, OFF_MUTE = 35;              // timbres do firmware; o 00 MUTE é a posição depois do último (v9.0: let — o catálogo do pedal muda)
-const OFF_PRESETS = [['FORRO', 1, 7, 15, 14], ['BAIAO', 2, 6, 14, 15], ['SAMBA', 2, 7, 17, 10], ['PAGODE', 1, 7, 17, 8], ['MODA', 4, 6, 12, 13],
-                     ['SERTANEJO', 1, 11, 13, 10], ['ROCK', 3, 11, 32, 10], ['POP/MPB', 21, 11, 31, 19], ['ELETRO', 5, 11, 8, 18], ['AXE', 4, 7, 9, 16]];
+const PRESETS_FABRICA_PADRAO = [
+  { nome: 'FORRO',     slots: [1, 7, 15, 14] },
+  { nome: 'BAIAO',     slots: [2, 6, 14, 15] },
+  { nome: 'SAMBA',     slots: [2, 7, 17, 10] },
+  { nome: 'PAGODE',    slots: [1, 7, 17, 8]  },
+  { nome: 'MODA',      slots: [4, 6, 12, 13] },
+  { nome: 'SERTANEJO', slots: [1, 11, 13, 10] },
+  { nome: 'ROCK',      slots: [3, 11, 32, 10] },
+  { nome: 'POP/MPB',   slots: [21, 11, 31, 19] },
+  { nome: 'ELETRO',    slots: [5, 11, 8, 18] },
+  { nome: 'AXE',       slots: [4, 7, 9, 16] }
+];
+const OFF_PRESETS = PRESETS_FABRICA_PADRAO.map(p => [p.nome, ...p.slots]);
 const OFF_VOL = [200, 256, 256, 256, 200, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 256,
                  256, 256, 256, 256, 256, 256, 256, 256, 256, 256, 250, 250, 250, 256, 256];   // VOLUME_TIMBRE
 const OFF_ROTA = ['MUDO', 'CLICK LR', 'CLICK L', 'CLICK BT'], OFF_ROTA_PROX = [3, 2, 0, 1];   // CLICK_ROT_NOME, CLICK_PROXIMO
 const OFF_SIGLA = { '00': 'SB', '01': 'MN', '10': 'AT', '11': 'FR' };
 
-let cenaFlashOffline = null;   // v13.0 — cena gravada por "CS" na StompBox simulada (vale ao religar a simulada)
-let swingFlashOffline = null;   // v14.0 — swing gravado por "WS" na StompBox simulada
+let cenaFlashOffline = null;     // v13.0 — cena gravada por "CS" na StompBox simulada (vale ao religar a simulada)
+let swingFlashOffline = null;    // v14.0 — swing gravado por "WS" na StompBox simulada
+let presetsFlashOffline = null;  // v16.0 — presets gravados por "PS"/"PD"/"PX" na StompBox simulada
 function offMontarCena(p){
   const vol = [];
   for (let i = 0; i < OFF_NUM; i++) vol.push(p.ajuste[i] || OFF_VOL[i]);
@@ -4360,9 +4365,11 @@ function offMontarCena(p){
 }
 function pedalFalsoNovo(){   // como o pedal ao ligar (se houver cena gravada por "CS", abre direto nela!)
   const swIni = swingFlashOffline != null ? swingFlashOffline : 0;
+  const preIni = (presetsFlashOffline || PRESETS_FABRICA_PADRAO).map(x => ({ nome: x.nome, slots: x.slots.slice() }));
   const base = { slots: [null, 0, 5, 12, 11], metro: 7, metro2: 13, looper: false, calibModo: false, calibPag: 0, atSalvo: 'LP',
                  modo: '00', rota: 0, tapSom: false, pad: false, padAntesCalib: false,
                  nivel: 16, antesMute: 16, swing: swIni, swingGravado: swingFlashOffline,
+                 presets: preIni,
                  ajuste: {}, gravado: {}, bpm: 0, ultimoSlot: 1, one: 0, t0: Date.now(),
                  calib: offCalibPadrao(), calibGravado: {} };
   if (cenaFlashOffline){
@@ -4424,8 +4431,9 @@ function offCalib(p, c){        // os "Z" (processarCalibracaoBLE do firmware). 
   return [];
 }
 // v9.0 — o "K?" da StompBox de mentira: o catálogo que a própria página tem (processarCatalogoBLE)
-function offCatalogo(){
-  const linhas = ['K=' + OFF_NUM + ' ' + OFF_PRESETS.length];
+function offCatalogo(p){
+  const listaPre = (p && p.presets) ? p.presets : PRESETS_FABRICA_PADRAO;
+  const linhas = ['K=' + OFF_NUM + ' ' + listaPre.length];
   for (let i = 0; i < OFF_NUM; i++){
     const nome = OLED_NOMES[i] || ('TIMBRE ' + (i + 1));
     const tipo = (catPedal && catPedal.tipo && catPedal.tipo[i]) || (OLED_SMART[i] ? 'S' : (nome.includes('+') ? 'M' : '-'));
@@ -4433,11 +4441,21 @@ function offCatalogo(){
     linhas.push('KC' + pad(i + 1, 2) + ' ' + (OFF_VOL[i] || 256) + ' ' + tipo + ' ' + (OLED_CURTOS[i] || nome));
   }
   Object.keys(OLED_SMART).forEach(k => linhas.push('KS' + pad(+k + 1, 2) + ' ' + OLED_SMART[k].join(' ')));
-  OFF_PRESETS.forEach((pr, i) => {
-    linhas.push('KP' + pad(i + 1, 2) + ' ' + pr[0]);
-    linhas.push('KQ' + pad(i + 1, 2) + ' ' + pr.slice(1, 5).map(n => pad(n > OFF_NUM ? 0 : n, 2)).join(' '));
+  listaPre.forEach((pr, i) => {
+    linhas.push('KP' + pad(i + 1, 2) + ' ' + pr.nome);
+    linhas.push('KQ' + pad(i + 1, 2) + ' ' + pr.slots.map(n => pad((n <= 0 || n > OFF_NUM) ? 0 : n, 2)).join(' '));
   });
   linhas.push('K FIM');
+  return linhas;
+}
+function offDumpPresets(p){
+  const listaPre = (p && p.presets) ? p.presets : PRESETS_FABRICA_PADRAO;
+  const linhas = ['P=' + listaPre.length];
+  listaPre.forEach((pr, i) => {
+    linhas.push('PP' + pad(i + 1, 2) + ' ' + pr.nome);
+    linhas.push('PQ' + pad(i + 1, 2) + ' ' + pr.slots.map(n => pad((n <= 0 || n > OFF_NUM) ? 0 : n, 2)).join(' '));
+  });
+  linhas.push('P FIM');
   return linhas;
 }
 const offNumero = i => i === OFF_MUTE ? 0 : i + 1;
@@ -4478,7 +4496,7 @@ function pedalFalsoResponde(p, bruto){
   if (c === 'PING') return ['PONG ' + (Date.now() - p.t0)];
   if (c === 'VER?') return ['VER=' + OFF_FIRMWARE.slice(1)];   // v9.0 — a versão que a mentira imita
   if (c === 'AUD?') return ['AUD=0', 'AUDL W=0 F=0 M=0', 'AUDN N=1 L=1 A=23', 'AUD9 I=v5.x-sim', 'AUDK N=0 R=0 D=0', 'AUDK2 B=0 G=0', 'AUDB R=0 P=0 C=0'];
-  if (c === 'K?') return offCatalogo();                         // v9.0
+  if (c === 'K?') return offCatalogo(p);                        // v9.0 / v16.0
   if (c0 === 'Z') return offCalib(p, c);                        // v9.0 — antes do filtro de dígitos, como no firmware v42
   const offLinhaSwing = () => 'SWING=' + (p.swing || 0) + ' ' + (p.swingGravado == null ? ((p.swing || 0) === 0 ? 'C' : 'M') : ((p.swing || 0) === p.swingGravado ? 'G' : 'M'));
   if (c === 'E?') return [offLinhaModo(p), offLinhaT(1, p.slots[1]), offLinhaT(2, p.slots[2]), offLinhaT(3, p.slots[3]),
@@ -4498,11 +4516,41 @@ function pedalFalsoResponde(p, bruto){
     p.bpm = +m[1];
     return ['BPM=' + p.bpm];
   }
-  if (c0 === 'P'){                                      // preset: o nome e os quatro slots
-    if (!(m = c.match(/^P\s*(\d+)/)) || +m[1] < 1 || +m[1] > OFF_PRESETS.length) return [];
-    const pr = OFF_PRESETS[+m[1] - 1];
-    for (let s = 1; s <= 4; s++) p.slots[s] = pr[s] - 1;
-    return ['P' + pad(+m[1], 2) + ' ' + pr[0], offLinhaT(1, p.slots[1]), offLinhaT(2, p.slots[2]), offLinhaT(3, p.slots[3]), offLinhaT(4, p.slots[4])];
+  if (c0 === 'P'){                                      // v16.0 (firmware v51): P?, PX, PDnn, PSnn s1s2s3s4 NOME e P01..P20
+    if (c === 'P?') return offDumpPresets(p);
+    if (c === 'PX'){
+      const tinha = presetsFlashOffline != null ? 1 : 0;
+      presetsFlashOffline = null;
+      p.presets = PRESETS_FABRICA_PADRAO.map(x => ({ nome: x.nome, slots: x.slots.slice() }));
+      return ['PX=' + tinha];
+    }
+    if ((m = c.match(/^PD\s*(\d{1,2})$/))){
+      const idx = +m[1] - 1;
+      if (idx < 0 || idx >= p.presets.length) return ['PD=ERRO'];
+      p.presets.splice(idx, 1);
+      presetsFlashOffline = p.presets.map(x => ({ nome: x.nome, slots: x.slots.slice() }));
+      return ['PD=' + pad(idx + 1, 2) + ' ' + p.presets.length];
+    }
+    if ((m = c.match(/^PS(\d{1,2})[\s=:]*(\d{8})[\s:]+(.+)$/))){
+      const pos = +m[1], d = m[2], nome = m[3].trim().slice(0, 10);
+      if (pos < 1 || pos > 20 || !nome) return ['PS=ERRO'];
+      const sl = [0, 1, 2, 3].map(k => +d.slice(k * 2, k * 2 + 2));
+      if (sl.some(n => n < 0 || n > OFF_NUM)) return ['PS=ERRO'];
+      let idx = -1;
+      if (pos <= p.presets.length) idx = pos - 1;
+      else if (p.presets.length < 20){ idx = p.presets.length; p.presets.push({ nome: nome, slots: sl }); }
+      if (idx < 0) return ['PS=ERRO'];
+      p.presets[idx] = { nome: nome, slots: sl };
+      presetsFlashOffline = p.presets.map(x => ({ nome: x.nome, slots: x.slots.slice() }));
+      return ['PS=' + pad(idx + 1, 2) + ' ' + p.presets.length];
+    }
+    if (!(m = c.match(/^P\s*(\d+)$/)) || +m[1] < 1 || +m[1] > p.presets.length) return [];
+    const pr = p.presets[+m[1] - 1];
+    for (let s = 1; s <= 4; s++){
+      const num = pr.slots[s - 1];
+      p.slots[s] = (num <= 0 || num > OFF_NUM) ? OFF_MUTE : (num - 1);
+    }
+    return ['P' + pad(+m[1], 2) + ' ' + pr.nome, offLinhaT(1, p.slots[1]), offLinhaT(2, p.slots[2]), offLinhaT(3, p.slots[3]), offLinhaT(4, p.slots[4])];
   }
   if (c0 === 'M'){                                      // volume geral
     if (c1 === '?') return [offVolGeral(p)];
@@ -4629,7 +4677,7 @@ function offEntregar(linhas){
    Depois, a tela do pedal pronto, ainda sem o Bluetooth, e a página conecta:
    BLUETOOTH CONECTADO e o resto como na v6.1. As contas são em float, como
    no ESP32 (Math.fround), pra barra e o LED virarem no mesmo quadro. */
-const OFF_FIRMWARE = 'v50.0';                         // a versão que a StompBox de mentira imita (aparece no splash)
+const OFF_FIRMWARE = 'v51.0';                         // a versão que a StompBox de mentira imita (aparece no splash)
 const BOAS_VINDAS_MS = 3000, BOAS_VINDAS_FPS_MS = 50;  // BOAS_VINDAS_DURACAO_MS e BOAS_VINDAS_FPS_MS do firmware
 const OFF_CONECTA_MS = 800;                           // do pedal pronto até a página conectar
 // ABERTURA do firmware, por pino: {LED_PIN, LED2_PIN, LED3_PIN} — na montagem do Saulo, {azul, vermelho, verde}
@@ -4700,6 +4748,8 @@ function offConectar(){                               // a página conecta na St
   visorAviso(oledAvisoBT, 1500);                      // como ao conectar: "BLUETOOTH CONECTADO"
   log('— modo offline: conectada à StompBox simulada (só a tela) —');
   renderOffline();
+  presetsLista = offline.pedal.presets.map(x => ({ nome: x.nome, slots: x.slots.slice() }));
+  renderPresets();
   send('E?');                                         // como ao conectar: o estado completo e o volume
   offline.timer = setTimeout(() => { if (offline.ativo) send('M?'); }, 600);
   zerarCalibConexao(); usarVersaoConhecida(OFF_FIRMWARE.replace(/^v/, ''), 'lida');   // v10.1 — como ao conectar: sem "VER?" (a mentira sabe a própria versão)
@@ -4748,7 +4798,8 @@ function ligarOffline(){
   // o que a página mostrava antes, pra devolver ao sair
   offline.guardado = { slots: JSON.parse(JSON.stringify(state.slots)), bpm: state.bpm, preset: state.preset, master: state.master,
                        masterDb: state.masterDb, boot: state.boot, modoPedal, modoExtra, ultimoNivelGeral,
-                       one: { conhecido: one.conhecido, ativo: one.ativo, slot: one.slot } };   // v8.0
+                       presetsLista: JSON.parse(JSON.stringify(presetsLista)),
+                       one: { conhecido: one.conhecido, ativo: one.ativo, slot: one.slot } };   // v8.0 / v16.0
   offline.pedal = pedalFalsoNovo();
   offline.ativo = true; offline.fase = 'splash'; offline.t0 = performance.now();
   log('— modo offline: a StompBox simulada está ligando —');
@@ -4773,12 +4824,14 @@ function desligarOffline(paraConectar){
   if (g){
     state.slots = g.slots; state.bpm = g.bpm; state.preset = g.preset; state.master = g.master; state.masterDb = g.masterDb;
     state.boot = g.boot; modoPedal = g.modoPedal; modoExtra = g.modoExtra; ultimoNivelGeral = g.ultimoNivelGeral;
+    if (g.presetsLista) presetsLista = g.presetsLista;
     if (g.one) Object.assign(one, g.one);              // v8.0
   }
+  preRecebendo = null; clearTimeout(preTimer); preTimer = null; infoPresets('', false);
   visorZerarBpm(); visor.aviso = null;
   loadCena(); renderCena();                           // a cena de antes (no offline ela não foi gravada)
   renderOffline();
-  renderModo(); renderSlots(); renderGrid(); renderMaster(); renderTempo(); renderPresets(); renderMeusPresets(); recolherNoMN();
+  renderModo(); renderSlots(); renderGrid(); renderMaster(); renderTempo(); renderPresets(); recolherNoMN();
   agendarVisor();
   renderCatalogoPedal(); renderCalib();   // v9.0
   if (!paraConectar){ setStatus('Desconectado'); log('— modo offline desligado —'); }
@@ -4813,7 +4866,7 @@ function conteudoDoBalao(h){
    recolhem sozinhos; saindo do MN, voltam como estavam. Fica POR CIMA do
    estado salvo, sem mexer nele: tocar no título abre e fecha só enquanto
    durar o MN. */
-const RECOLHE_NO_MN = ['favoritos', 'timbres', 'meuspresets'];
+const RECOLHE_NO_MN = ['favoritos', 'timbres', 'presets'];
 let recolhidosMN = null;   // Map balão -> fechado, só enquanto o pedal está no MN
 function recolherNoMN(){
   const noMN = modoPedal === '01';
@@ -4853,7 +4906,7 @@ document.querySelectorAll('h2[data-rec]').forEach(h => {
    não entra: fica sempre em cima. A ordem fica no aparelho
    (sb_ordemSecoes, que vai no arquivo de backup). */
 const CHAVE_ORDEM_SECOES = 'sb_ordemSecoes';
-const NOMES_SECOES = { favoritos: 'Favoritos', timbres: 'Timbres', meuspresets: 'Meus presets', presets: 'Presets',
+const NOMES_SECOES = { favoritos: 'Favoritos', timbres: 'Timbres', presets: 'Presets',
   simulacao: 'Simulação do Pedal', modo: 'Modo da StompBox', volumegeral: 'Volume geral', andamento: 'Andamento',
   disparo: 'Disparo', volumetimbre: 'Volume por timbre', console: 'Console e ajustes', cena: 'Cena', calibracao: 'Calibração do pad' };
 function chavesDasSecoesNoDOM(){
@@ -5029,57 +5082,139 @@ if (window.ResizeObserver){   // girou a tela, abriu a seção, trocou as coluna
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(agendarAjusteNomes);
 aplicarColunas();
 
-/* ---------- v3.16 — MEUS PRESETS ----------
-   Presets montados NA PÁGINA: nome + o timbre de cada um dos 4 slots. Tocar
-   manda os slots pro pedal, um por vez, esperando a confirmação (o mesmo
-   comandoConfirmado da cena). Slot que já está no timbre certo não é
-   reenviado: reenviar voltaria um smart pro passo 1. Nada muda no firmware. */
-const CHAVE_MEUS_PRESETS = 'sb_meusPresets';
-let meusPresets = [];          // [{ nome, slots:{1:n,2:n,3:n,4:n} }]
-let meuPreEditando = -1;       // índice em edição; -1 = novo
+/* ---------- v16.0 — PRESETS UNIFICADOS NA NVS DO PEDAL (firmware v51) ----------
+   Uma única seção "Presets": começa com os 10 de fábrica (01 FORRO .. 10 AXE),
+   todos editáveis e excluíveis, com espaço para até 20 presets (P01..P20).
+   - Na NVS do pedal ficam SÓ o nome curto sem acento (até 10 letras pro OLED) e
+     os 4 números de índice (00 = MUTE, 01..35 = timbre), num único blob de 332 B.
+   - Ao conectar ("E?"), o pedal NÃO despeja os presets: zero tráfego extra!
+   - A página sincroniza sob demanda quando você toca em "ler do pedal" ("P?")
+     ou em "Ler versão e catálogo do pedal" ("K?"), e grava direto na NVS quando
+     você salva ("PS"), exclui ("PD") ou restaura os 10 de fábrica ("PX"). */
+const CHAVE_PRESETS_LISTA = 'sb_presetsLista';
+const CHAVE_MEUS_PRESETS_LEGADO = 'sb_meusPresets';
+const MAX_PRESETS_PEDAL = 20;
+const VERSAO_MIN_V51 = 51;
+let presetsLista = [];         // [{ nome: 'FORRO', slots: [1, 7, 15, 14] }]
+let meuPreEditando = -1;       // índice 0-based em edição; -1 = novo
 let aplicandoMeuPre = false;
-function loadMeusPresets(){
-  let lista = [];
-  try { lista = JSON.parse(localStorage.getItem(CHAVE_MEUS_PRESETS) || '[]') || []; } catch(e){ lista = []; }
-  meusPresets = lista.filter(p => p && typeof p.nome === 'string' && p.slots).map(p => {
-    const slots = {};
-    [1,2,3,4].forEach(s => { const n = +p.slots[s]; slots[s] = (Number.isInteger(n) && n >= 0 && n <= 99) ? n : 1; });
-    return { nome: p.nome.slice(0, 24), slots: slots };
-  });
-}
-function salvarMeusPresets(){ try { localStorage.setItem(CHAVE_MEUS_PRESETS, JSON.stringify(meusPresets)); } catch(e){} }
-function igualAosSlots(p){ return [1,2,3,4].every(s => state.slots[s] && state.slots[s].n === p.slots[s]); }
+let salvandoPreNvs = false;
+let preRecebendo = null;       // { np, itens: [] } durante leitura "P?"
+let preTimer = null;
 
-function renderMeusPresets(){
-  const wrap = $('#meusPresets');
+function pedalV51(){ return offline.ativo || versaoPedal == null || versaoPedal >= VERSAO_MIN_V51; }
+function limparNomePreset(raw){
+  return String(raw || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 10);
+}
+function sanearItemPreset(p){
+  if (!p || typeof p !== 'object') return null;
+  const nome = limparNomePreset(p.nome);
+  if (!nome) return null;
+  let arr = null;
+  if (Array.isArray(p.slots)) arr = p.slots;
+  else if (p.slots && typeof p.slots === 'object') arr = [p.slots[1], p.slots[2], p.slots[3], p.slots[4]];
+  if (!arr || arr.length < 4) return null;
+  const lim = Math.max(TIMBRES.length, OFF_NUM, 35);
+  const slots = [0, 1, 2, 3].map(k => {
+    const n = +arr[k];
+    return (Number.isInteger(n) && n >= 0 && n <= lim) ? n : 1;
+  });
+  return { nome, slots };
+}
+function loadPresetsLista(){
+  let salva = null;
+  try { salva = JSON.parse(localStorage.getItem(CHAVE_PRESETS_LISTA) || 'null'); } catch(e){ salva = null; }
+  if (Array.isArray(salva)){
+    presetsLista = salva.map(sanearItemPreset).filter(Boolean).slice(0, MAX_PRESETS_PEDAL);
+  } else {
+    // 1º uso na v16.0: parte dos 10 de fábrica (ou do último K? lido) e aproveita eventuais Meus presets antigos até 20
+    const base = PRESETS_FABRICA_PADRAO.map(x => ({ nome: x.nome, slots: x.slots.slice() }));
+    let leg = [];
+    try { leg = JSON.parse(localStorage.getItem(CHAVE_MEUS_PRESETS_LEGADO) || '[]') || []; } catch(e){ leg = []; }
+    leg.map(sanearItemPreset).filter(Boolean).forEach(p => {
+      if (base.length < MAX_PRESETS_PEDAL) base.push(p);
+    });
+    presetsLista = base;
+    salvarPresetsLista();
+  }
+  sincronizarEspelhoPresets();
+}
+function salvarPresetsLista(){
+  sincronizarEspelhoPresets();
+  if (offline.ativo) return;   // no modo offline não sobrescreve o cache do pedal real
+  try { localStorage.setItem(CHAVE_PRESETS_LISTA, JSON.stringify(presetsLista)); } catch(e){}
+}
+function sincronizarEspelhoPresets(){
+  PRESETS = {};
+  presetsLista.forEach((p, i) => { PRESETS[i + 1] = p.nome; });
+  OFF_PRESETS.length = 0;
+  presetsLista.forEach(p => OFF_PRESETS.push([p.nome, ...p.slots]));
+}
+function infoPresets(txt, erro){
+  const el = $('#presetsInfo');
+  if (!el) return;
+  el.textContent = txt || '';
+  el.classList.toggle('err', !!erro);
+}
+function igualAosSlots(p){
+  const temSlots = [1, 2, 3, 4].every(s => state.slots[s] && state.slots[s].n != null);
+  if (!temSlots) return false;
+  return [1, 2, 3, 4].every(s => state.slots[s].n === p.slots[s - 1]);
+}
+function renderPresets(){
+  const wrap = $('#presets');
+  if (!wrap) return;
   wrap.innerHTML = '';
-  if (!meusPresets.length){
+  const btnNovo = $('#novoMeuPre'), btnLer = $('#lerPresetsPedal'), btnReset = $('#resetPresetsFabrica');
+  if (btnNovo) btnNovo.disabled = presetsLista.length >= MAX_PRESETS_PEDAL || !!preRecebendo || salvandoPreNvs;
+  if (btnLer)  btnLer.disabled  = !rx || !!preRecebendo || salvandoPreNvs;
+  if (btnReset) btnReset.disabled = !rx || !!preRecebendo || salvandoPreNvs;
+
+  if (!presetsLista.length){
     const v = document.createElement('div');
-    v.id = 'meusVazio'; v.textContent = 'Nenhum preset seu ainda — toque em "novo".';
+    v.id = 'meusVazio';
+    v.textContent = 'Nenhum preset na lista — toque em "+ novo", "ler do pedal" ou "restaurar os 10 de fábrica".';
     wrap.appendChild(v);
     return;
   }
-  meusPresets.forEach((p, i) => {
+  presetsLista.forEach((p, i) => {
     const b = document.createElement('button');
-    b.className = igualAosSlots(p) ? 'cur' : '';
-    b.innerHTML = '<span class="n mono"></span><span class="t"></span><span class="ed" aria-label="Editar">✎</span>';
-    b.querySelector('.n').textContent = [1,2,3,4].map(s => pad(p.slots[s], 2)).join('·');
+    const ativo = igualAosSlots(p);
+    b.className = ativo ? 'cur' : '';
+    b.innerHTML = '<span class="n mono"></span><span class="t"></span><span class="ed" role="button" tabindex="0" aria-label="Editar preset" title="Editar ou excluir">✎</span>';
+    b.querySelector('.n').textContent = pad(i + 1, 2) + ' · ' + p.slots.map(n => pad(n, 2)).join('·');
     b.querySelector('.t').textContent = p.nome;
-    b.onclick = e => { if (e.target.closest('.ed')) abrirMeuPreset(i); else aplicarMeuPreset(i); };
+    b.onclick = e => {
+      if (e.target.closest('.ed')) abrirMeuPreset(i);
+      else acionarPreset(i);
+    };
     wrap.appendChild(b);
   });
 }
 
-async function aplicarMeuPreset(i){
-  const p = meusPresets[i];
+async function acionarPreset(i){
+  const p = presetsLista[i];
   if (!p) return;
   if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
-  if (aplicandoMeuPre || carregandoCena) return;
+  if (aplicandoMeuPre || carregandoCena || salvandoPreNvs) return;
+  // Com firmware v51+ (ou versão ainda não lida), manda P01..P20 direto num comando só!
+  if (pedalV51()){
+    state.preset = i + 1;
+    send('P' + pad(i + 1, 2));
+    return;
+  }
+  // Fallback para firmwares antigos (< v51): aplica os 4 slots um a um
   aplicandoMeuPre = true;
   const falhas = [];
-  for (const s of [1,2,3,4]){
-    const n = p.slots[s];
-    if (state.slots[s] && state.slots[s].n === n) continue;   // já está: não reenvia
+  for (const s of [1, 2, 3, 4]){
+    const n = p.slots[s - 1];
+    if (state.slots[s] && state.slots[s].n === n) continue;
     avisoStatus(p.nome + ': ' + (SLOT_NAMES[s] || 'Slot ' + s) + '…', 'busy', 3000);
     const ok = await comandoConfirmado(String(s) + pad(n, 2), l => {
       const m = l.match(/^T(\d)\s*=\s*(\d+)/i); return !!m && +m[1] === s && +m[2] === n;
@@ -5087,9 +5222,72 @@ async function aplicarMeuPreset(i){
     if (!ok) falhas.push(SLOT_NAMES[s] || 'Slot ' + s);
   }
   aplicandoMeuPre = false;
-  renderMeusPresets();
+  renderPresets();
   if (falhas.length) avisoStatus(p.nome + ': não trocaram ' + falhas.join(', ') + ' (slots só trocam no modo 00)', 'err', 7000);
   else avisoStatus(p.nome + ' aplicado', 'on');
+}
+
+// Leitura sob demanda dos presets da NVS do pedal ("P?") — só quando o usuário pede!
+function pedirPresetsDoPedal(){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (versaoPedal != null && versaoPedal > 0 && versaoPedal < VERSAO_MIN_V51 && !offline.ativo){
+    avisoStatus('Ler presets da NVS precisa do firmware v51 (ou use "Ler versão e catálogo")', 'err', 5000);
+    return;
+  }
+  preRecebendo = null;
+  infoPresets('Lendo presets do pedal…', false);
+  send('P?');
+  clearTimeout(preTimer);
+  preTimer = setTimeout(() => {
+    preTimer = null;
+    preRecebendo = null;
+    infoPresets('✕ O pedal não respondeu ao P? ' + horaAgora() + ' — precisa do firmware v51', true);
+    avisoStatus('Sem resposta ao P? — precisa do firmware v51', 'err', 5000);
+    renderPresets();
+  }, 4500);
+  renderPresets();
+}
+function linhaDosPresets(line){
+  let m;
+  if ((m = line.match(/^P=(\d+)$/))){
+    preRecebendo = { np: +m[1], itens: [] };
+    renderPresets();
+    return true;
+  }
+  if (/^P(P|Q)\d|^P FIM$/.test(line)){
+    const pr = preRecebendo;
+    if (!pr) return true;
+    if ((m = line.match(/^PP(\d+) (.*)$/))){
+      const idx = +m[1] - 1;
+      (pr.itens[idx] = pr.itens[idx] || {}).nome = limparNomePreset(m[2]) || ('PRESET ' + pad(idx + 1, 2));
+      return true;
+    }
+    if ((m = line.match(/^PQ(\d+) (\d+) (\d+) (\d+) (\d+)$/))){
+      const idx = +m[1] - 1;
+      (pr.itens[idx] = pr.itens[idx] || {}).slots = [+m[2], +m[3], +m[4], +m[5]];
+      return true;
+    }
+    if (line === 'P FIM'){
+      clearTimeout(preTimer); preTimer = null;
+      preRecebendo = null;
+      const ok = pr.itens.length === pr.np && pr.itens.every(x => x && x.nome && Array.isArray(x.slots));
+      if (!ok){
+        infoPresets('✕ A lista de presets chegou incompleta — toque em "ler do pedal" de novo', true);
+        avisoStatus('Presets incompletos — tente ler de novo', 'err', 5000);
+        renderPresets();
+        return true;
+      }
+      presetsLista = pr.itens.map(sanearItemPreset).filter(Boolean).slice(0, MAX_PRESETS_PEDAL);
+      salvarPresetsLista();
+      renderPresets();
+      infoPresets('✓ ' + presetsLista.length + (presetsLista.length === 1 ? ' preset lido' : ' presets lidos') + ' do pedal ' + horaAgora(), false);
+      avisoStatus('Presets sincronizados do pedal (' + presetsLista.length + ')', 'on', 3500);
+      return true;
+    }
+    return true;
+  }
+  if (/^(PS|PD|PX)=/.test(line)) return true;   // tratadas pelas promessas de comandoConfirmado + visorLinha
+  return false;
 }
 
 function opcoesDeTimbre(sel, atual){
@@ -5101,24 +5299,30 @@ function opcoesDeTimbre(sel, atual){
   sel.value = String(atual);
 }
 function abrirMeuPreset(i){
+  if (i < 0 && presetsLista.length >= MAX_PRESETS_PEDAL){
+    avisoStatus('Limite de ' + MAX_PRESETS_PEDAL + ' presets atingido — edite ou exclua um existente', 'err', 4500);
+    return;
+  }
   meuPreEditando = i;
-  const p = i >= 0 ? meusPresets[i] : null;
-  $('#meuPreTitulo').textContent = p ? 'Editar preset' : 'Novo preset';
+  const p = i >= 0 ? presetsLista[i] : null;
+  const numExib = i >= 0 ? pad(i + 1, 2) : pad(presetsLista.length + 1, 2);
+  $('#meuPreTitulo').textContent = p ? ('Editar preset ' + numExib) : ('Novo preset (' + numExib + '/' + MAX_PRESETS_PEDAL + ')');
   $('#meuPreNome').value = p ? p.nome : '';
   $('#meuPreExcluir').style.display = p ? '' : 'none';
   const wrap = $('#meuPreSlots');
   wrap.innerHTML = '';
-  [1,2,3,4].forEach(s => {
+  [1, 2, 3, 4].forEach(s => {
     const lab = document.createElement('label');
     lab.textContent = SLOT_NAMES[s] || 'Slot ' + s;
     const sel = document.createElement('select');
     sel.dataset.slot = s;
-    const atual = p ? p.slots[s] : ((state.slots[s] && state.slots[s].n != null) ? state.slots[s].n : 1);
+    const atual = p ? p.slots[s - 1] : ((state.slots[s] && state.slots[s].n != null) ? state.slots[s].n : 1);
     opcoesDeTimbre(sel, atual);
     wrap.appendChild(lab); wrap.appendChild(sel);
   });
   $('#meuPreDlg').showModal();
 }
+$('#lerPresetsPedal').onclick = pedirPresetsDoPedal;
 $('#novoMeuPre').onclick = () => abrirMeuPreset(-1);
 $('#meuPreAgora').onclick = () => {
   $('#meuPreSlots').querySelectorAll('select').forEach(sel => {
@@ -5127,22 +5331,113 @@ $('#meuPreAgora').onclick = () => {
   });
 };
 $('#meuPreCancelar').onclick = () => $('#meuPreDlg').close();
-$('#meuPreExcluir').onclick = () => {
-  if (meuPreEditando < 0) return;
-  if (!confirm('Excluir o preset "' + meusPresets[meuPreEditando].nome + '"?')) return;
-  meusPresets.splice(meuPreEditando, 1);
-  salvarMeusPresets(); renderMeusPresets();
+
+$('#meuPreExcluir').onclick = async () => {
+  if (meuPreEditando < 0 || salvandoPreNvs) return;
+  const alvo = presetsLista[meuPreEditando];
+  if (!alvo) return;
+  if (!rx){
+    alert('Conecte a StompBox (ou ligue a StompBox simulada) para excluir presets na flash do pedal.');
+    return;
+  }
+  if (!pedalV51()){
+    avisoStatus('Excluir presets na NVS precisa do firmware v51', 'err', 5000);
+    return;
+  }
+  const pos = meuPreEditando + 1;
+  if (!confirm('Excluir o preset ' + pad(pos, 2) + ' "' + alvo.nome + '" da flash do pedal?\n\nOs presets abaixo sobem uma numeração, e o som corta por um instante — faça entre músicas.')) return;
+  salvandoPreNvs = true; renderPresets();
+  let resp = '';
+  const ok = await comandoConfirmado('PD' + pad(pos, 2), l => {
+    if (/^PD=/.test(l)){ resp = l; return true; }
+    return false;
+  }, 2500);
+  salvandoPreNvs = false;
+  if (!ok || /^PD=ERRO/.test(resp)){
+    infoPresets('✕ O pedal não confirmou a exclusão ' + horaAgora() + ' — confira a conexão (firmware v51) ou toque em "ler do pedal"', true);
+    avisoStatus('Erro ao excluir preset no pedal', 'err', 5000);
+    renderPresets();
+    return;
+  }
+  presetsLista.splice(meuPreEditando, 1);
+  salvarPresetsLista();
+  renderPresets();
   $('#meuPreDlg').close();
+  infoPresets('✓ Preset ' + pad(pos, 2) + ' "' + alvo.nome + '" excluído da flash ' + horaAgora(), false);
+  avisoStatus('Preset excluído da flash do pedal', 'on', 3500);
 };
-$('#meuPreSalvar').onclick = () => {
-  const nome = $('#meuPreNome').value.trim();
-  if (!nome){ alert('Dê um nome ao preset.'); $('#meuPreNome').focus(); return; }
-  const slots = {};
-  $('#meuPreSlots').querySelectorAll('select').forEach(sel => { slots[+sel.dataset.slot] = +sel.value; });
-  const p = { nome: nome.slice(0, 24), slots: slots };
-  if (meuPreEditando >= 0) meusPresets[meuPreEditando] = p; else meusPresets.push(p);
-  salvarMeusPresets(); renderMeusPresets();
+
+$('#meuPreSalvar').onclick = async () => {
+  if (salvandoPreNvs) return;
+  const nome = limparNomePreset($('#meuPreNome').value);
+  if (!nome){ alert('Dê um nome ao preset (até 10 letras/números).'); $('#meuPreNome').focus(); return; }
+  if (!rx){
+    alert('Conecte a StompBox (ou ligue a StompBox simulada) para gravar o preset direto na NVS do pedal.');
+    return;
+  }
+  if (!pedalV51()){
+    avisoStatus('Gravar presets na NVS precisa do firmware v51', 'err', 5000);
+    return;
+  }
+  const slots = [1, 1, 1, 1];
+  $('#meuPreSlots').querySelectorAll('select').forEach(sel => { slots[+sel.dataset.slot - 1] = +sel.value; });
+  const posPedido = meuPreEditando >= 0 ? (meuPreEditando + 1) : (presetsLista.length + 1);
+  if (posPedido > MAX_PRESETS_PEDAL){
+    avisoStatus('Máximo de ' + MAX_PRESETS_PEDAL + ' presets atingido', 'err', 4500);
+    return;
+  }
+  const cmd = 'PS' + pad(posPedido, 2) + ' ' + slots.map(n => pad(n, 2)).join('') + ' ' + nome;
+  salvandoPreNvs = true; renderPresets();
+  let resp = '';
+  const ok = await comandoConfirmado(cmd, l => {
+    if (/^PS=/.test(l)){ resp = l; return true; }
+    return false;
+  }, 2500);
+  salvandoPreNvs = false;
+  const m = resp.match(/^PS=(\d+)\s+(\d+)$/);
+  if (!ok || !m){
+    infoPresets('✕ O pedal não confirmou a gravação ' + horaAgora() + ' — precisa do firmware v51', true);
+    avisoStatus('O pedal não confirmou o preset — precisa do firmware v51', 'err', 5000);
+    renderPresets();
+    return;
+  }
+  const idxReal = +m[1] - 1;
+  const item = { nome, slots };
+  if (meuPreEditando >= 0 && idxReal === meuPreEditando) presetsLista[idxReal] = item;
+  else if (idxReal >= 0 && idxReal < presetsLista.length) presetsLista[idxReal] = item;
+  else presetsLista.push(item);
+  salvarPresetsLista();
+  renderPresets();
   $('#meuPreDlg').close();
+  infoPresets('✓ Preset ' + pad(idxReal + 1, 2) + ' "' + nome + '" gravado na NVS do pedal ' + horaAgora(), false);
+  avisoStatus('Preset ' + pad(idxReal + 1, 2) + ' ' + nome + ' gravado no pedal', 'on', 3500);
+};
+
+$('#resetPresetsFabrica').onclick = async () => {
+  if (salvandoPreNvs || preRecebendo) return;
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (!pedalV51()){ avisoStatus('Restaurar presets na NVS precisa do firmware v51', 'err', 5000); return; }
+  if (!confirm('Restaurar os 10 presets de fábrica na flash do pedal?\n\nApaga as edições e presets criados na NVS e volta na hora aos 10 originais (01 FORRO a 10 AXE).\n\nO som corta por um instante — faça entre músicas.')) return;
+  salvandoPreNvs = true; renderPresets();
+  let resp = '';
+  const ok = await comandoConfirmado('PX', l => {
+    if (/^PX=/.test(l)){ resp = l; return true; }
+    return false;
+  }, 2500);
+  salvandoPreNvs = false;
+  if (!ok){
+    infoPresets('✕ O pedal não respondeu ao PX ' + horaAgora() + ' — precisa do firmware v51', true);
+    avisoStatus('Sem resposta ao PX — precisa do firmware v51', 'err', 5000);
+    renderPresets();
+    return;
+  }
+  presetsLista = PRESETS_FABRICA_PADRAO.map(x => ({ nome: x.nome, slots: x.slots.slice() }));
+  salvarPresetsLista();
+  renderPresets();
+  const jaEstava = /^PX=0/.test(resp);
+  infoPresets(jaEstava ? '✓ Os 10 presets já estavam nos valores de fábrica ' + horaAgora()
+                       : '✓ Restaurados os 10 presets de fábrica na flash ' + horaAgora(), false);
+  avisoStatus(jaEstava ? 'Os 10 presets já eram os de fábrica' : '10 presets de fábrica restaurados no pedal', 'on', 4000);
 };
 
 /* ---------- v3.16 — VER CENA SALVA ----------
@@ -5308,19 +5603,19 @@ function fecharCatalogo(){
   const anterior = (catPedal ? catPedal.curtos : OLED_CURTOS_EMBUTIDO).slice();
   catPedal = c;
   if (!offline.ativo){ try { localStorage.setItem(CHAVE_CAT_PEDAL, JSON.stringify(c)); } catch(e){} }   // no offline, só na memória
-  aplicarCatalogoPedal(c);
+  aplicarCatalogoPedal(c, true);
   log('← catálogo do pedal: ' + c.n + ' timbres, ' + c.np + ' presets (firmware ' + c.ver + ')', 'rx');
   // mudou a ORDEM (timbre inserido no meio)? Favoritos, cena e Meus presets guardam NÚMEROS.
   let i = 0; const lim = Math.min(anterior.length, c.curtos.length);
   while (i < lim && anterior[i] === c.curtos[i]) i++;
   if (i < lim){
     catAvisoOrdem = 'Atenção: o catálogo do pedal mudou a partir do ' + pad(i + 1, 2) + ' (era ' + anterior[i] + ', agora ' + c.curtos[i] +
-                    '). Favoritos, cena, Meus presets e o catálogo da página guardam números: confira.';
+                    '). Favoritos, cena, Presets e o catálogo da página guardam números: confira.';
     avisoStatus('O catálogo do pedal mudou de ordem — veja na Cena', 'err', 8000);
   } else catAvisoOrdem = '';
   renderCatalogoPedal();
 }
-function aplicarCatalogoPedal(c){
+function aplicarCatalogoPedal(c, veioDeLeituraAoVivo){
   // as tabelas do visor e do modo offline (os arrays e o objeto são os mesmos; só o conteúdo muda)
   OLED_NOMES.length = 0; OLED_NOMES.push(...c.nomes);
   OLED_CURTOS.length = 0; OLED_CURTOS.push(...c.curtos);
@@ -5328,10 +5623,14 @@ function aplicarCatalogoPedal(c){
   Object.keys(c.smart || {}).forEach(k => { OLED_SMART[k] = c.smart[k].slice(); });
   OFF_VOL.length = 0; OFF_VOL.push(...c.vol);
   OFF_NUM = OFF_MUTE = c.n;
-  OFF_PRESETS.length = 0;
-  c.presets.forEach(p => OFF_PRESETS.push([p.nome].concat(p.slots.map(n => n === 0 ? c.n + 1 : n))));   // 00 = o MUTE
-  // presets: os nomes que o pedal mostra
-  c.presets.forEach((p, i) => { PRESETS[i + 1] = p.nome; });
+  // v16.0: quando o usuário clica em "Ler versão e catálogo do pedal" (K?), os presets atuais do pedal vêm junto!
+  // No boot da página (veioDeLeituraAoVivo = false), mantém sb_presetsLista (que pode ter sido editada/lida via P? depois).
+  if (veioDeLeituraAoVivo && Array.isArray(c.presets)){
+    presetsLista = c.presets.map(p => sanearItemPreset({ nome: p.nome, slots: p.slots })).filter(Boolean).slice(0, MAX_PRESETS_PEDAL);
+    salvarPresetsLista();
+  } else {
+    sincronizarEspelhoPresets();
+  }
   savePresets(); renderPresets();
   // catálogo da página: cresce até o tamanho do pedal; os nomes que já existem ficam
   if (TIMBRES.length < c.n){
@@ -5690,17 +5989,16 @@ $('#calibApagar').onclick = () => {
 };
 
 /* ---------- boot ---------- */
-loadCat(); loadSort(); loadFavoritos(); loadPresets(); carregarRepertorio(); ordenarRepertorio();
+loadCat(); loadSort(); loadFavoritos(); loadPresets(); loadPresetsLista(); carregarRepertorio(); ordenarRepertorio();
 carregarCatalogoPedal();   // v9.0 — o último catálogo lido do pedal (antes de desenhar)
 montarCalib();             // v9.0 — os campos da calibração do pad
 loadCena();   // v3.15
-loadMeusPresets();   // v3.16
 $('#term').value = localStorage.getItem('sb_term') || '';
 ticks($('#mTicks'), MAX_M);
 ticks($('#vTicks'), 9);
 renderSortBar();
 renderSlots(); renderGrid(); renderTempo(); renderSwing(); renderMaster();
-renderVpt(); renderPick(); renderPresets(); renderFire(); renderCena(); renderMeusPresets();
+renderVpt(); renderPick(); renderPresets(); renderFire(); renderCena();
 renderCatalogoPedal(); renderCalib();   // v9.0
 (() => {   // v7.0 — a linha do último arquivo; voltando de um "Restaurar do arquivo", o aviso
   let r = null;
