@@ -1,1244 +1,4 @@
 <!doctype html>
-<!--
- ============================================================
- STOMPBOX REMOTE — v11.3 "Mixing Station + Repertório + Cena + Sampler + Modo offline + Backup + ONE PEDAL + Calibração do pad + Looper"
- ============================================================
- Página de controle BLE da StompBox pelo navegador (Web Bluetooth,
- Nordic UART). Roda no Chrome do Android via GitHub Pages; instalável
- na tela inicial e funcional offline pelo service worker.
-
- PROTOCOLO: StompBox v29.0 (documento "Comandos Bluetooth"), mais o que
- a página usa das versões seguintes: "BOOT=" (v32), "E?" (v33), e o MUTE
- de slot "s00", o MUTE geral "M0" e o volume absoluto "Vnn=vvv"/"Vnn?"
- (v34), o sampler "Ann" (v36), o modo "Cnn" (v37), o "VS" (v38), o "VX" (v38.1) e
- o + e − nos modos de metrônomo com o estado no "C" (v39); da v40, a troca de timbre feita no
- botão do pedal chega como a mesma linha "T"; da v41, o ONE PEDAL ("O0" desliga, "O1"–"O4" liga
- naquele slot, "O?" pergunta; resposta "ONE=n", também no estado completo e quando os botões do
- pedal escolhem o slot); da v42, a versão ("VER?" responde "VER=42.0"), o catálogo ("K?") e a
- calibração do pad ("Z…"); da v45, o looper ("CL" entra, e o modo responde "C10 LP"), o segundo
- slot do FR (a linha "T6"; o "2nn" e o "2+" passam a valer no FR) e o modo calibração pela
- página ("ZM1" entra, "ZM0" sai, "ZP" anda nas páginas e responde "ZP=n"). Firmware anterior à
- v34 ignora o M0 e o Vnn; o "s00", nele, ainda é o antigo "volta um timbre" — a página mostra o
- que o pedal responder.
-
- ------------------------------------------------------------
- CHANGELOG
- ------------------------------------------------------------
- v1.0 — Primeira versão. Conexão BLE (NUS), leitura de estado pela
-        característica TX, cartões dos slots, grade de 31 timbres,
-        BPM com tap tempo, presets, disparo 9999/8888, console com
-        envio manual, wake lock e seletor de fim de linha.
-
- v2.0 — Protocolo atualizado: disparo por D1–D4 no lugar do
-        9999/8888, volume geral M+/M-/M1–M16/M?. Catálogo de timbres
-        passou a ser editável dentro da página e guardado no
-        localStorage — acrescentar timbres não exige republicar.
-        Grade se estende sozinha se o pedal reportar timbre além
-        da lista.
-
- v3.0 — Alinhada ao documento de comandos da v29.0:
-        - NOVO: volume por timbre (V+/V-/V++/V--/V?). Fluxo de duas
-          etapas: escolhe o slot, a página pergunta o volume ao pedal
-          (V?) e só então libera o fader.
-        - NOVO: faders horizontais estilo mesa para o volume geral e
-          para o volume por timbre, no lugar da régua de blocos.
-        - IMPORTANTE: como os comandos V agem no ÚLTIMO SLOT USADO e
-          não aceitam valor absoluto, a página (a) reafirma o slot
-          reenviando o timbre atual dele antes de qualquer V, e
-          (b) traduz o alvo do fader numa sequência de V++/V+ (±32/±8),
-          confirmando com V? no fim. Passo do fader = 8, por isso.
-        - CORREÇÃO: parser das respostas TX reais —
-          "VOL GERAL 12/16 -4dB" e "VOL 06 CARRIL=230".
-        - CORREÇÃO: slot 5 é o timbre do metrônomo (somente leitura;
-          nos modos 01 e 11 quem o altera é o comando do slot 1).
-        - CORREÇÃO: faixa de BPM do tap passou a 30–300.
-        - Botão de largada remota do automático (8888) no disparo.
-
- v3.1 — Presets passaram a mostrar número E nome. Como o pedal só
-        informa o nome ao carregar um preset (resposta "P03 SAMBA")
-        e não há comando que liste os dez, os nomes vêm de dois
-        lados: uma tela de edição (igual à do catálogo, guardada no
-        localStorage) e o aprendizado automático — todo "Pnn NOME"
-        que chega pela TX grava o nome daquele preset.
-
- v3.2 — CORREÇÃO do fader de volume por timbre, que não chegava ao
-        máximo. Duas causas: (a) o input tinha step=8 a partir de 0,
-        então o último ponto alcançável era 248, nunca 255; (b) os
-        comandos V andam de 8 em 8 A PARTIR DO VALOR ATUAL, então os
-        valores possíveis dependem do resto da divisão — de 230 só se
-        chega a 238, 246, 254. Agora o fader anda de 1 em 1 e a página
-        traduz a posição solta para o alvo alcançável mais próximo.
-        No topo, manda um passo a mais de propósito, contando com o
-        limite do firmware, pra fechar em 255. No fundo NÃO faz isso:
-        se o firmware der a volta em vez de limitar, um passo a mais
-        abaixo de 0 viraria volume máximo — erro silencioso no topo,
-        estouro no fundo.
-
- v3.3 — Interface redesenhada como console de mesa: paleta escura
-        azulada, faixa colorida por canal nos slots, trilho dos
-        faders com escala de cor e marcas de nível, presets com
-        marca de RECALL. (Redesenho feito pelo Saulo.)
-        - CORREÇÃO: o preenchimento colorido do trilho (--level) só
-          era repintado no evento 'input', que o navegador não dispara
-          quando o valor é mudado por código. Resultado: ao conectar,
-          o M? movia o cursor do fader mas a barra de nível continuava
-          onde estava, e a leitura do V? deixava a barra em zero com o
-          cursor em 230. Agora renderMaster() e renderVpt() repintam.
-
- v3.4 — CORREÇÃO do teto do volume por timbre: era 255 (chute meu, como
-        se fosse um byte 0-255). O real é 256 — não um limite de byte,
-        e sim a marca de 100% na escala de ponto fixo do firmware
-        (VOLUME_TIMBRE: "0-256, 256 = 100%, volume original"; mesma
-        base usada no volume geral, 256 × 10^(-dB/20)). O firmware trava
-        nesse teto por design ("nunca passe de 256... só pra reduzir,
-        não pra aumentar"), o que já bate com a lógica de passo extra no
-        topo que a página usa desde a v3.2 — só o número estava errado.
-
- v3.5 — REORGANIZAÇÃO e repertório: andamento ganhou campo numérico com
-        seleção automática, botão Enviar e repertório completo baseado no
-        Tap Tempo Trainer. O repertório usa a mesma chave localStorage do
-        Tap Tempo, com busca, cores por faixa de BPM, inclusão, edição,
-        exclusão, CSV e backup JSON. Selecionar uma música envia Txxx
-        diretamente à StompBox.
-        (O changelog original desta versão dizia que os presets tinham
-        sido movidos para logo abaixo dos timbres — não foi o caso; a
-        seção continuou no lugar antigo. Corrigido na v3.6.)
-
- v3.6 — CORREÇÃO de posição: Presets agora fica de fato logo abaixo dos
-        Timbres, antes do Volume geral — o que a v3.5 já devia ter feito.
-
- v3.7 — REORGANIZAÇÃO: Volume por timbre foi para depois do Disparo, no
-        fim da página. Os 4 cartões de slot (Pedal 1, Pedal 2, Pele, Aro)
-        passaram a caber numa linha só, em vez de 2x2, e agora ficam FIXOS
-        no topo (junto com a barra de conexão) — visíveis o tempo todo,
-        mesmo rolando a página pra escolher timbre, preset ou disparar.
-        O cartão do metrônomo (slot 5, só leitura) saiu da linha fixa e
-        virou uma faixa própria logo abaixo, sem participar da seleção.
-
- v3.8 — Grade de timbres ganhou a cor do slot ativo: a borda de cada
-        botão pega um tom da cor do slot (azul/verde/roxo/laranja, as
-        mesmas 4 já usadas nos cartões), e o timbre que já está armado
-        naquele slot fica com preenchimento escurecido na mesma cor —
-        dá pra ver de longe qual slot está selecionado e o que já está
-        nele, sem ler o texto. A faixa colorida do cartão de slot saiu
-        da lateral esquerda e foi para embaixo. Usa color-mix() do CSS
-        (suportado no Chrome do Android há vários anos).
-
- v3.9 — Cores dos slots trocadas por tons fortes e bem separados entre
-        si: azul, verde, vermelho e amarelo (era azul/ciano/roxo/laranja).
-        O roxo saiu — estava parecido demais com o azul de relance. Como
-        as cores são uma variável CSS só (--slot1..--slot4), a troca vale
-        pra tudo que usa a cor do slot: a faixa do cartão, a borda e o
-        preenchimento da grade de timbres.
-
- v3.10 — Balões de timbre mais fortes: borda de 1px foi para 2px (nos
-        dois estados), e a mistura de cor no color-mix() subiu — borda
-        de 35% pra 55% de cor, preenchimento do selecionado de 30% pra
-        48%. Estava escuro demais e a cor viva da v3.9 quase não
-        aparecia, como se tivesse jogado preto por cima.
-
- v3.11 — Balão do timbre selecionado passou a preencher com a cor CHEIA
-        do slot (sem mistura com preto). O texto NÃO virou branco: testei
-        contraste (WCAG) e branco sobre essas cores é ruim — 1,4:1 no
-        amarelo, 2:1 no verde (o mínimo recomendado é 4,5:1). Preto quase
-        puro (#12161b, o mesmo tom escuro já usado no resto da página) dá
-        de 4,9 a 14,9:1 nas quatro cores — esse é o texto usado agora.
-
- v3.12 — O MESMO tratamento da v3.11 foi pro cartão de slot ali em cima
-        (Pedal 1/2, Pele, Aro): antes, selecionado ele só ficava com um
-        gradiente azul genérico, igual pra qualquer slot. Agora preenche
-        com a cor CHEIA do próprio slot (mesmo mapa de cor da faixa
-        embaixo do cartão), texto escuro pelo mesmo motivo de contraste,
-        e o pontinho de status deixou de ser verde fixo — virou um ponto
-        escuro discreto, já que o preenchimento inteiro basta pra mostrar
-        qual está selecionado.
-
- v3.13 — Três coisas:
-        1) ORDENAR A GRADE: botões Índice / A-Z / Minha ordem acima dos
-           timbres. A ordem é só de EXIBIÇÃO — o número enviado ao pedal
-           nunca muda, não importa a posição na tela. "Minha ordem" abre
-           um editor com setas ▲▼ por item (guardado à parte, sobrevive
-           a troca de catálogo: item removido some da ordem, item novo
-           entra no fim).
-        2) FAVORITOS: barra de até 6 timbres fixos, numa linha só, logo
-           acima da grade de Timbres. "editar favoritos" abre uma grade
-           com todo o catálogo pra marcar/desmarcar (trava em 6). Posição
-           vazia mostra "+" e já abre o editor ao tocar. Favorito
-           manda o mesmo comando que a grade normal e acompanha a cor do
-           slot ativo do mesmo jeito.
-        3) COR DO SLOT nos outros lugares onde os nomes aparecem: os 4
-           botões do seletor de "Volume por timbre" e os botões D1-D4 do
-           Disparo ganharam a mesma cor de cada slot (borda tingida, e no
-           seletor de volume preenchimento cheio + texto escuro quando
-           selecionado — mesmo padrão de contraste da v3.11/v3.12).
-
- v3.14 — Revisão contra o firmware v33 — correções e acréscimos:
-        1) RECONEXÃO: o ouvinte das mensagens do pedal era preso UMA vez,
-           no primeiro objeto da característica TX. O Chrome cria objetos
-           novos a cada conexão: depois de uma queda (ou de desconectar e
-           conectar sem recarregar), os comandos saíam, mas nada voltava.
-           Agora o ouvinte é preso a cada conexão, ANTES de assinar as
-           notificações (prender de novo no mesmo objeto não duplica). A
-           reconexão ganhou trava: uma queda durante uma tentativa não abre
-           um segundo laço, e dois pedidos de conexão juntos viram um só.
-        2) TROCA DE TIMBRE SÓ VALE COM A CONFIRMAÇÃO DO PEDAL. A página
-           pintava o cartão na hora, antes da resposta — e o pedal nem
-           sempre aplica: nos modos 01/11 o "1nn" vai pro METRÔNOMO e os
-           slots 2-4 são ignorados; no 10, com o automático rodando, tudo
-           é ignorado. Agora o pedido fica PENDENTE (cartão esmaecido com
-           "aguardando o pedal…", balão tracejado na grade) até chegar
-           "T<slot>=". Sem resposta em 0,8 s, volta ao que era e avisa. Se
-           o "1nn" voltar como "T5=" (metrônomo), a página diz isso.
-        3) TAP: média da frase INTEIRA (era dos últimos 5 toques) e UM
-           Tnnn só, quando a frase fecha — 1,5 tempo de silêncio, entre
-           250 ms e 2 s, a mesma regra dos pedais (2 s enquanto a frase
-           tem menos de 3 toques). Antes, cada toque a partir do segundo
-           mandava um Tnnn: nos modos 01/10/11 cada um parava e rearmava o
-           metrônomo do pedal, e no 00 cada um voltava "ERR Tnnn modo 00".
-           O BPM aparece ao vivo enquanto se bate; frase com menos de 3
-           toques não envia nada (e o andamento de antes volta à tela).
-        4) O botão do 8888 virou "Largada / reset do metrônomo", com nota
-           embaixo: o 8888 só larga (ou reseta, com ele tocando) nos modos
-           01 e 11 — no 00 e no 10 ele dispara o Pedal 2. O nome antigo,
-           "Largada do automático", sugeria o Auto StompBox (modo 10), onde
-           ele faz justamente outra coisa.
-        5) "E?" AO CONECTAR (firmware v33): o pacote de estado que o pedal
-           manda no instante da conexão pode se perder (o celular ainda
-           não assinou as notificações), e os cartões ficavam "sem
-           leitura". Agora a página pede o estado depois de assinar.
-           Firmware anterior à v33 ignora o comando.
-        6) "BOOT=" (firmware v32): se o último reset do pedal não foi um
-           liga normal (POWERON), a barra avisa "Último reset do pedal:
-           BROWNOUT" (ou PANIC, WDT…) e o console registra. O texto fala do
-           ÚLTIMO reset, e não de um agora: numa simples queda do Bluetooth
-           o pedal responde o mesmo motivo de antes, a cada conexão. Logo
-           depois de gravar pelo USB também aparece um motivo: é o reset da
-           própria gravação.
-        7) VOLUME POR TIMBRE NO PISO DA v32: o firmware passou a travar em
-           1 — antes, chegar a 0 devolvia o timbre ao volume CHEIO. O
-           fader agora vai de 1 a 256 e a página nunca comanda um 0.
-           - Com firmware v32+ (reconhecido pelo BOOT= recebido), o fundo
-             ganha o mesmo passo extra que o topo sempre teve: o pedal
-             trava em 1 e o fader encosta no piso.
-           - Sem BOOT= (firmware anterior, ou pacote perdido), o fundo
-             continua conservador como na v3.2, e os botões −8/−32 não
-             descem abaixo de 1 — nesses firmwares, o 0 é volume cheio.
-           - Desde a v32, o volume dos smart (BLOCOS, TRI S) funciona.
-        8) Miudezas: o id "repertorioTopo" aparecia duas vezes (o do
-           Gerenciar virou "gerenciarTopo"); e a barra de status ficava
-           presa num "ERR" vermelho. Agora os avisos de passagem (erro, BPM
-           enviado, catálogo salvo…) somem sozinhos e a barra volta ao
-           estado da conexão.
-
- v11.3 (21/11/2026 03:15) — OS NOMES DOS TIMBRES FICAM COMO SEMPRE EMBAIXO DO BPM GRANDE (casada com o firmware v46.3):
-        1) Como o pedal na v46.3 — pedido do Saulo: "não precisa mudar os
-           nomes dos timbres; pode deixar como está". No visor, a pele e o aro
-           mostram o nome de sempre, também com o BPM grande na tela; o
-           número, desenhado por cima, cobre o que estiver no canto. (Na v11.2
-           essas duas linhas trocavam pro nome curto e perdiam letras, como o
-           firmware v46.2.)
-        2) Com o firmware v46.2 o visor também mostra os nomes de sempre (a
-           v46.2 foi logo substituída pela v46.3).
-        3) Modo offline: a StompBox de mentira imita a v46.3.
-        - Testado no Chromium (Playwright), 222 conferências: as da v11.2, com
-          o que mudou de propósito (os nomes longos de sempre embaixo do
-          número). Sem erro no console.
-        - O VISOR DA PÁGINA conferido PONTO A PONTO com 9 telas do OLED do
-          firmware v46.3 na bancada do PC (e com uma da v46.1): iguais.
-        - CONFRONTO COM O FIRMWARE v46.3: os 58 comandos do roteiro da página
-          com as mesmas respostas, linha por linha, e 48 telas iguais ponto a
-          ponto (as outras 10 são as páginas da calibração).
-        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
-          ESP32.
-        - sw.js: só o número.
-
- v11.2 (21/11/2026 02:46) — O BPM DO AT E DO LOOPER VAI GRANDE NO CANTO DO VISOR (casada com o firmware v46.2):
-        1) Como o pedal na v46.2 — pedido do Saulo: na barra o BPM ficava
-           pequeno demais; "vamos colocar ele no canto inferior direito",
-           "do mesmo tamanho de letra que era o modo AT antigo". No visor, o
-           BPM do AT e do LOOPER sai da barra (fica "AT", "LP", "LP C2") e vai
-           grande no canto inferior direito da lista: com a volta tocando e,
-           ouvindo, com o LED verde aceso — e aí ele muda a cada nota, pela
-           linha "BPM=" que o firmware v46.2 manda.
-        2) A pele e o aro, embaixo do número, ficam com o nome que cabe à
-           esquerda dele — o inteiro, o curto, ou o curto sem as últimas
-           letras —, com as mesmas contas do pedal.
-        3) A linha "LOOP=OUVE ... V1" (o verde) não apaga mais o BPM do visor
-           (o pedal manda o "BPM=" logo antes dela); a "V0" apaga.
-        4) Com o firmware v46.0 ou v46.1 (a versão lida), o visor segue como
-           a v11.1: o BPM na barra. Pedal regravado com a v46.2 sem a versão
-           lida de novo: um "BPM=" com o looper ouvindo, seguido do verde, já
-           mostra que é a v46.2 (a largada — "BPM=" e logo "LOOP=TOCA" — não
-           engana).
-        5) Modo offline: a StompBox de mentira imita a v46.2.
-        - Testado no Chromium (Playwright), 222 conferências: as da v11.1, com
-          o que mudou de propósito, e as novas — o verde aceso ouvindo (o BPM
-          aparece, muda e some), os nomes longos e o corte em letra inteira,
-          dois dígitos, o firmware v46.1 (o BPM na barra) e a v46.2 percebida
-          pelo BPM ouvindo. Sem erro no console.
-        - O VISOR DA PÁGINA conferido PONTO A PONTO com 9 telas do OLED do
-          firmware v46.2 na bancada do PC (e com uma da v46.1): iguais.
-        - CONFRONTO COM O FIRMWARE v46.2: os 58 comandos do roteiro da página
-          com as mesmas respostas, linha por linha, e 48 telas iguais ponto a
-          ponto (as outras 10 são as páginas da calibração).
-        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
-          ESP32.
-        - sw.js: só o número.
-
- v11.1 (20/11/2026 16:20) — O SINAL DE GRAVADO NO VISOR VIRA UMA BOLINHA (casada com o firmware v46.1):
-        1) Como o pedal na v46.1 — pedido do Saulo: "não vamos usar a tela
-           invertida; onde aparece o índice, coloque um círculo, tipo aquele
-           que sinaliza gravação". Com a volta tocando, o slot que está nela
-           mostra no visor uma bolinha cheia (o REC) no lugar do número do
-           timbre, e não mais a linha inteira invertida. O nome fica onde
-           estava; os slots livres seguem com o número. Com o ONE nesse slot,
-           a caixinha invertida do ONE mostra a bolinha apagada.
-        2) A bolinha é o fillCircle da Adafruit GFX, refeito aqui com o mesmo
-           algoritmo (sai ponto a ponto igual ao OLED do pedal).
-        3) Modo offline: a StompBox de mentira imita a v46.1.
-        - Testado no Chromium (Playwright), 209 conferências: as da v11.0 e uma
-          nova — o ONE num slot gravado. Sem erro no console.
-        - O VISOR DA PÁGINA com o looper tocando ("AT 100", "LP 100", "LP 100
-          C2" e "LP 100 C2 ONE") conferido PONTO A PONTO com as telas do OLED
-          do firmware v46.1 na bancada do PC: iguais.
-        - CONFRONTO COM O FIRMWARE v46.1: os 58 comandos do roteiro da página
-          com as mesmas respostas, linha por linha, e 48 telas iguais ponto a
-          ponto (as outras 10 são as páginas da calibração).
-        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
-          ESP32.
-        - sw.js: só o número.
-
- v11.0 (20/11/2026 11:39) — O AT VIRA O LOOPER DE UMA CAMADA E O LOOPER GANHA CAMADAS (casada com o firmware v46.0):
-        1) A POSIÇÃO AT TEM DOIS LOOPERS: o AT (uma camada) e o LOOPER (com
-           camadas) — pedido do Saulo. Nos dois você toca a levada no pedal,
-           o LED verde acende quando ele entende, e o hold no último toque
-           solta a volta. O SHIFT troca entre os dois e o pedal guarda a
-           escolha, como na v10.2; os textos dizem "AT" (e não mais "AT
-           comum") com o firmware v46, e o modo aparece "AT · Looper de uma
-           camada".
-        2) A VOLTA E AS CAMADAS NA PÁGINA, pela linha nova "LOOP=..." do
-           pedal: embaixo do SHIFT, o que está acontecendo (ouvindo; o verde;
-           tocando, com quantas camadas e quais slots estão na volta) e o
-           botão GRAVAR CAMADA (manda "CG"), aceso só no LOOPER, com a volta
-           tocando e o verde da camada nova aceso. Sem camada pra gravar, o
-           pedal responde "ERR CG" e a página explica.
-        3) O SLOT QUE ESTÁ NA VOLTA PARA, O LIVRE TOCA: com a volta tocando,
-           o ▶ do slot que está nela vira ■ (nos cartões e no balão Disparo);
-           os outros seguem ▶ e tocam por cima. Com o ONE, o do pedal 1 vale
-           pelo slot que ele toca.
-        4) O VISOR DA PÁGINA IMITA A TELA NOVA DO PEDAL: tocando, a lista dos
-           quatro slots com os da volta em faixa invertida, e na barra o modo,
-           o BPM e, no LOOPER com camadas, quantas ("LP 120 C2"). O andamento
-           vem da linha "BPM=" que o pedal passou a mandar na largada.
-        5) O "Tnnn" no AT (agora looper) volta "ERR Tnnn no AT": a página
-           avisa que o andamento sai do que você toca (T+ e T− valem com a
-           volta tocando).
-        6) Com o firmware v45.5 ou mais velho (sem a linha LOOP) a página faz
-           como a v10.2.
-        7) Modo offline: a StompBox de mentira imita a v46.0 — a linha LOOP na
-           entrada do AT/LOOPER e no estado completo, o "ERR Tnnn no AT" e o
-           "ERR CG" (ela não toca a volta: o hold não existe pela página).
-        - Testado no Chromium (Playwright), 208 conferências: as da v10.2, com
-          o que mudou de propósito (a mentira imita a v46: o AT é looper, o
-          "Tnnn" no AT recusado, a linha LOOP), e as novas: o quadro da volta
-          (ouvindo, o verde, tocando, as camadas, cheio), o GRAVAR CAMADA (só
-          no LOOPER, com a volta tocando e o verde aceso), o ■ nos cartões e
-          no balão Disparo (com o ONE também), a saída do AT e o firmware
-          v45.5 (como a v10.2) — também na conexão de verdade, pelo Web
-          Bluetooth de mentira. Sem erro no console.
-        - O VISOR DA PÁGINA com o looper tocando ("AT 100", "LP 100" e "LP 100
-          C2") conferido PONTO A PONTO com as telas do OLED do firmware v46.0
-          na bancada do PC: iguais.
-        - CONFRONTO COM O FIRMWARE: os 58 comandos que a página manda no
-          roteiro dela foram dados ao firmware v46.0 na bancada: as RESPOSTAS
-          saíram iguais às da StompBox simulada, linha por linha, e 48 telas
-          iguais ao OLED do firmware, ponto a ponto (as outras 10 são as
-          páginas da calibração).
-        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
-          ESP32.
-        - sw.js: só o número.
-
- v10.2 (16/11/2026 00:21) — O AT LEMBRA: O BOTÃO SHIFT E A ESCOLHA GUARDADA NO PEDAL (casada com o firmware v45.5):
-        1) O PEDAL GUARDA QUAL DOS DOIS VALE NA POSIÇÃO AT (o LOOPER ou o AT
-           comum) — pedido do Saulo: "quero que o shift fique salvo". O
-           firmware v45.5 manda a escolha na linha "ATSALVO=LP" / "ATSALVO=AT"
-           (no estado completo e a cada troca), e a página a usa: a chave daqui
-           no AT volta pro guardado ("CL" se for o looper, "C10" se for o AT
-           comum).
-        2) O BOTÃO AUTO VIROU O BOTÃO SHIFT, como o do pedal: com a chave no
-           AT, tocar nele troca na hora (LOOPER ⇄ AT comum); fora do AT, ele
-           arma (a luz pisca âmbar), e a próxima ida da chave pro AT troca. O
-           pedal guarda a troca — vale também pra alavanca, e depois de
-           desligar. Armado e esquecido, desarma em 20 s; armado e a chave
-           indo pra outro modo, desarma sem trocar nada. O texto do lado diz o
-           guardado e o que o toque vai fazer.
-        3) Com o firmware v45.4 (sem a linha ATSALVO) a página faz como a
-           v10.1. Os comandos são os mesmos de sempre.
-        4) Modo offline: a StompBox de mentira imita a v45.5 — guarda a
-           escolha com o "CL" e o "C10" e manda a linha, no mesmo lugar que o
-           firmware.
-        - Testado no Chromium (Playwright), 169 conferências: as da v10.1, com
-          o que mudou de propósito, e as novas da memória — o estado trazendo
-          a escolha; a chave no AT mandando o guardado; o SHIFT no AT trocando
-          na hora (e o pedal guardando); a chave saindo e voltando pro AT
-          comum guardado; o SHIFT armado fora do AT trocando nas duas
-          direções; armar e ir pra outro modo sem mexer na escolha — também na
-          conexão de verdade, pelo Web Bluetooth de mentira (e reconectando,
-          a escolha chegando de novo). Sem erro no console.
-        - CONFRONTO COM O FIRMWARE: os 58 comandos que a página manda no
-          roteiro dela foram dados ao firmware v45.5 na bancada do PC: as
-          RESPOSTAS saíram iguais às da StompBox simulada, linha por linha (as
-          8 linhas "ATSALVO" no mesmo lugar), e 48 telas iguais ao OLED do
-          firmware, ponto a ponto (as outras 10 são as páginas da calibração).
-        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
-          ESP32.
-        - sw.js: só o número.
-
- v10.1 (15/11/2026 23:43) — A CONEXÃO MAIS LEVE, VERSÃO E CATÁLOGO NUM BOTÃO SÓ, E O LOOPER PRIMEIRO NO AT (casada com o firmware v45.4):
-        1) AO CONECTAR, SÓ O ESTADO E O VOLUME ("E?" e "M?"). Saíram da
-           conexão o "VER?", o "K?" e o "Z?" (pedido do Saulo: "ficou muita
-           coisa pra ser informada ao se conectar"). Na v10.0 ainda havia um
-           defeito que aumentava a rajada: cada "VER=" que chegava pedia o
-           catálogo de novo — por isso o "K?" saía duas vezes.
-        2) VERSÃO E CATÁLOGO NUM BOTÃO SÓ: o "Ler o catálogo do pedal" virou
-           "Ler versão e catálogo do pedal" — pergunta a versão ("VER?") e,
-           com a resposta, pede o catálogo ("K?"), uma vez só. Toque nele
-           depois de gravar outro firmware. Ao conectar vale a versão da
-           última leitura (guardada no celular); e a linha "T6" do estado —
-           que só o firmware v45 manda — já liga o que é da v45 (o looper, o
-           FR com dois slots, a calibração pela página) mesmo num celular
-           que nunca leu a versão. O texto do balão diz de onde veio a versão.
-        3) A CALIBRAÇÃO ("Z?") SÓ PELO BOTÃO DELA ("Ler"). Os "Z?" depois de
-           gravar ou de voltar aos valores do código (respostas a botões da
-           própria calibração) continuam.
-        4) O LOOPER PRIMEIRO, como a alavanca do firmware v45.4: a chave daqui
-           no AT manda "CL" (o looper). O botão LOOPER virou o botão AUTO, que
-           faz o papel do shift — que agora dá o AT comum: tocado, fica
-           ARMADO (a luz pisca âmbar); a próxima ida da chave pro AT manda
-           "C10" (o AT comum). Com o AT comum ligado o AUTO fica aceso, e
-           tocar nele volta pro looper ("CL"). Armado e esquecido, desarma em
-           20 s; armado e a chave indo pra outro modo, desarma. Firmware sem
-           looper (antes da v45): a chave no AT manda o "C10" de sempre.
-           OS COMANDOS SÃO OS MESMOS ("CL" = looper, "C10" = AT comum): com o
-           firmware v45.0 a v45.3 a página faz igual; só a alavanca do pedal
-           é que ainda é ao contrário.
-        5) Modo offline: a StompBox de mentira imita a v45.4 (no splash e no
-           VER?), e o offline também não pergunta mais a versão.
-        - Testado no Chromium (Playwright), 158 conferências: as 133 da v10.0
-          (as que mudaram de propósito — o AUTO, a chave no AT, a v45.4, o
-          rodapé — com o que se espera agora) e 25 novas, numa CONEXÃO DE
-          VERDADE com um Web Bluetooth de mentira (a StompBox simulada da
-          página respondendo): a conexão manda só "E?" e "M?"; sem versão
-          guardada, a linha T6 liga o looper e o AUTO; a chave no AT manda
-          "CL"; o botão manda "VER?" e depois "K?" uma vez cada (mesmo com o
-          "VER=" chegando repetido), o catálogo chega inteiro e a versão fica
-          guardada; o "Z?" só sai pelo botão da calibração; e reconectando
-          vale a versão guardada desde o começo, com só "E?" e "M?" de novo.
-          Sem erro no console.
-        - CONFRONTO COM O FIRMWARE: os 57 comandos que a página manda no
-          roteiro dela foram dados ao firmware v45.4 na bancada do PC: as
-          RESPOSTAS saíram iguais às da StompBox simulada, linha por linha, e
-          47 telas iguais ao OLED do firmware, ponto a ponto (as outras 10
-          são as páginas da calibração, que o visor troca por um aviso).
-        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
-          ESP32.
-        - sw.js: só o número.
-
- v10.0 (14/11/2026 17:12) — LOOPER, FR COM DOIS SLOTS, A TELA DO AT E O MODO CALIBRAÇÃO PELA PÁGINA (casada com o firmware v45.1):
-        1) LOOPER. No balão "Modo da StompBox" entrou o botão LOOPER, que faz
-           o papel do shift do pedal: tocado, fica ARMADO (a luz pisca âmbar e
-           o texto pede a chave); a próxima vez que a chave daqui for pro AT —
-           mesmo que já esteja lá — a página manda "CL" em vez de "C10", e o
-           pedal responde "C10 LP". Aí a barra de status e a linha do modo
-           dizem "LP · Looper" e a luz fica verde. Tocar no botão de novo
-           volta pro AT comum ("C10"); mexer na chave pra qualquer modo também
-           sai. Armado e esquecido, desarma sozinho em 20 s; armado e a chave
-           indo pra outro modo, desarma. O looper ligado no pedal (shift +
-           alavanca) aparece aqui do mesmo jeito.
-           Daqui dá pra ENTRAR, TOCAR (os ▶ mandam D1 a D4, que o pedal anota)
-           e PARAR. LARGAR a volta é o hold num botão do pedal: não existe
-           pelo Bluetooth. O "Tnnn" no looper volta "ERR Tnnn no LP".
-        2) FR COM DOIS SLOTS. Com o firmware v45 o FR mostra DOIS cartões
-           valendo: "FR 1" (pedal 1, o T5 de sempre) e "FR 2" (pedal 2, a linha
-           nova "T6"), cada um com o timbre — e o ritmo — dele. O 3 e o 4
-           continuam cinza. O cartão tocado é o que a grade e o + e − mexem
-           ("1nn"/"2nn", "1+"/"2+"), e a grade marca com o número o timbre do
-           outro slot. Os dois disparos levam o MESMO rótulo, "TAP/Start": taps
-           num slot medem o andamento e o disparo do OUTRO larga o ritmo; com
-           o ritmo tocando, o slot dos taps para e o outro toca o timbre dele.
-           A página não é avisada de qual slot está com o ritmo (decisão do
-           Saulo: complicação à toa). Fora do FR, a linha embaixo dos cartões
-           mostra os dois timbres do FR. O TAP SOM/MUDO segue no botão TAP
-           daqui (no pedal, foi pro botão 3).
-        3) SIMULAÇÃO DO PEDAL (o visor), com a v45: o AT parado mostra a lista
-           dos quatro slots, e na entrada do modo o "AUTO" (ou "LOOPER") por
-           0,3 s; a barra diz "LP" no looper; o FR tem o BPM em cima e as duas
-           metades embaixo (o timbre sem o número e o ritmo dele), com o ritmo
-           do dono invertido quando foi a página que largou (armado por
-           "Tnnn" — os taps do pé só o pedal sabe); e com o pedal no modo
-           calibração o visor avisa "CALIBRA · PAGINA n DE 3" em vez de
-           inventar as telas de medida, que são de números que só ele tem.
-        4) CALIBRAÇÃO DO PAD. Com a v45, "Mostrar as batidas" (o "ZM1") põe o
-           pedal no MODO CALIBRAÇÃO e arma o pad; tocar de novo ("ZM0") sai e
-           devolve o pad como estava. Aparece a linha "Pedal no modo
-           calibração · página n de 3: PICOS / EVENTOS / ENVELOPE" com o botão
-           "Próxima página ▸" (o "ZP"); a troca feita no botão 1 do pedal
-           também chega aqui ("ZP=n"). No MN e no FR o pedal só manda as
-           batidas, e a página explica. Na calibração o pedal não troca de
-           modo: a chave daqui volta pro que ele responder.
-        5) Modo offline: a StompBox de mentira imita a v45 (v45.1 no splash e
-           no VER?) — o "CL" e o "C10 LP", o "T6", o "2nn" no FR, o "ZM1",
-           o "ZM0" e o "ZP", e o modo que não troca durante a calibração.
-        - COM FIRMWARE ANTERIOR À v45 NADA MUDA: o FR com um cartão só
-          ("Metrônomo", PISAR e LARGADA), o AT com a tela do AUTO, e o botão
-          LOOPER apagado ("Precisa do firmware v45").
-        - Testado no Chromium (Playwright), 133 conferências com a StompBox
-          simulada: o looper (armar, "CL", o "LP" na barra e no visor, o AUTO e
-          o LOOPER de 0,3 s, sair pelo botão e pela chave, armar e desistir,
-          desarmar sozinho em 20 s, o "C10 LP" vindo do pedal), o FR (os dois
-          cartões, "TAP/Start" cabendo no botão a 360 e a 390 px, a grade e o
-          + e − em cada slot, o "202" voltando como T6 sem mexer no T2, a
-          largada armada por Tnnn com o dono no visor, o TAP), a tela do AT,
-          a calibração (entrar, as três páginas, o pedido de modo sem troca,
-          sair, o FR e o MN só com as batidas, o "ZP=n" vindo do pedal), a
-          simulada desligada zerando o looper e a calibração, as larguras de
-          360, 390 e 430 px nos dois temas, e a página se comportando como a
-          v9.2 com firmware v43. Sem erro no console.
-          Comparada com a v9.2 (as duas com a simulada): no SB, no MN e no AT
-          os cartões, os disparos, a grade, o balão do disparo, as chaves, o
-          ONE e a barra saem com o MESMO DOM (55 trechos); o CSS só ganhou
-          regras (nenhuma retirada).
-        - CONFRONTO COM O FIRMWARE: os 59 comandos que a página manda num
-          roteiro inteiro (a conexão, o looper, o FR, a calibração no SB, no
-          FR, no MN e no looper) foram dados ao firmware v45.1 na bancada do
-          PC. As RESPOSTAS dele saíram iguais, linha por linha, às da StompBox
-          simulada — a que as 133 conferências usam. E as TELAS: a bancada
-          passou a desenhar o OLED com as regras da Adafruit GFX, e o visor
-          daqui saiu igual ao OLED do firmware, PONTO A PONTO, em 49 dos 59
-          passos (a lista, o BPM do AT, as duas metades do FR a cada troca de
-          timbre, o dono invertido, o MN) — e também 120 ms depois de cada
-          comando, que é onde aparecem o LOOPER e o AUTO de 0,3 s. Os outros
-          10 passos são as páginas da calibração, que o visor troca por um
-          aviso (item 3). Foi esse confronto que achou, no firmware v45.0, a
-          largada armada por "Tnnn" no FR sem o dono marcado no OLED — o
-          que virou a v45.1.
-        - A PÁGINA ANTIGA (v9.2) COM O FIRMWARE v45: recebeu as linhas novas
-          ("T6=", "C10 LP", "ZP=n", "ERR Tnnn no LP") sem erro e sem mexer no
-          que mostra; o looper ligado no pedal aparece nela como AT.
-        - NÃO FOI TESTADO com o pedal de verdade: aqui não há Bluetooth nem
-          ESP32.
-        - sw.js: só o número.
-
- v9.2 (01/11/2026 00:58) — O TRIÂNGULO S NO FR (casada com o firmware v43.0):
-        1) Simulação do Pedal: no FR com o Triângulo S (35), o visor mostra
-           "FORRO" embaixo do timbre, como o OLED do firmware v43 — o TRI S
-           passou a armar o triângulo de forró. Com pedal mais velho (ou
-           desconectado), continua "RETO", que é o que o OLED dele mostra.
-        2) Modo offline: a StompBox de mentira imita a v43 (v43.0 no splash e
-           no VER?).
-        - O tap pelo ritmo do firmware v43 (no FR com TAP SOM, as pisadas são
-          o próprio ritmo) acontece todo no pedal: a página não precisou de
-          nada pra ele.
-        - sw.js: só o número.
-
- v9.1 (30/10/2026 17:33) — O ARO DO ONE DE VOLTA, A ORDEM DAS SEÇÕES E A GRADE COM 2, 3 OU 4 COLUNAS (só estética; firmware v42.0 sem mudança):
-        1) ONE PEDAL: o cartão do slot escolhido volta a ter o aro da v8.0
-           (o contorno claro de 2 px), agora JUNTO com o número invertido da
-           v8.1. É a lembrança da moldura do firmware v41.0, que saiu do
-           pedal pra economizar flash. Só no cartão: o visor continua igual
-           ao OLED (só o número invertido), porque ele é a cópia do que o
-           pedal mostra.
-        2) ORDEM LIVRE DAS SEÇÕES: em "Console e ajustes", o botão "Ordem
-           das seções" abre a lista das 13 seções (de Favoritos à Calibração
-           do pad, e o próprio Console). Arraste pela alça (≡) ou use as
-           setas; "Ordem original" volta à de sempre, e nada muda até
-           "Salvar". O topo (barra, cartões, Disparo dos slots e o – / +)
-           fica sempre em cima. A seção anda inteira, título e conteúdo,
-           aberta ou recolhida, e continua funcionando igual. A ordem fica
-           no aparelho (sb_ordemSecoes) e vai no arquivo de backup.
-        3) GRADE DE TIMBRES COM 2, 3 OU 4 COLUNAS: "Colunas 2 3 4" embaixo
-           da ordenação. Sem escolha, fica como antes (2 no celular; 3 ou 4
-           em tela mais larga). O NOME ENCHE O BLOCO: cada nome cresce até
-           encostar na largura ou na altura do bloco. Nome curto para na
-           altura; nome comprido, na largura. Com 2 colunas a letra fica
-           grande; com 4, menor. O bloco tem altura fixa pra cada número de
-           colunas, então as linhas da grade continuam alinhadas. A escolha
-           fica no aparelho (sb_colunas) e vai no backup. Os Favoritos e as
-           janelas de edição não mudam.
-        - Testado no Chromium (Playwright), 86 conferências: o aro e o número
-          juntos (e nenhum dos dois com o ONE desligado); 2, 3 e 4 colunas
-          sem nenhum nome estourando, cada nome enchendo a largura ou a
-          altura do bloco, os blocos da mesma altura e a letra maior com
-          menos colunas, também por categoria, no sampler, trocando com a
-          seção recolhida, girando a tela e sem escolha (2, 3 ou 4 conforme
-          a largura, como antes); a ordem das seções pelas setas e
-          arrastando (a lista rola sozinha na borda), Cancelar, Salvar,
-          recolher a seção que mudou de lugar, recarregar, "Ordem original",
-          o backup levando as duas escolhas, e o modo offline com a Simulação
-          no topo e o visor aceso. As 34 conferências da v9.0 continuam
-          passando, e com a grade recolhida o topo e as outras seções saem
-          iguais à v9.0 pixel a pixel, nos dois temas. Sem erro no console.
-        - sw.js: só o número.
-
- POSSÍVEIS SUGESTÕES (30/10/2026 09:22) — NÃO SÃO PENDÊNCIAS:
-        Ideias da revisão geral (página v8.1 + firmware v41.1) que ficaram
-        de fora da v9.0. Nada aqui está prometido: fica anotado pra não se
-        perder. As do firmware estão no changelog dele (v42.0).
-        1) innerHTML COM DADO DO BLUETOOTH: em renderVpt() o nome que chega
-           em "VOL nn NOME=vvv" entra direto em innerHTML; um aparelho falso
-           chamado "StompBox", escolhido na lista, conseguiria injetar HTML
-           na página. Montar o negrito com textContent resolve.
-        2) NÚMEROS QUE ENVELHECEM: favoritos, cena, Meus presets, as
-           categorias prontas e o próprio catálogo da página guardam o NÚMERO
-           do timbre. Quando o firmware insere um timbre no meio, eles passam
-           a apontar pra outro som — a v9.0 só avisa. Guardar pelo nome curto
-           (a chave estável que a NVS dos volumes já usa) e converter pelo
-           catálogo do pedal resolveria de vez.
-        3) TABELAS EMBUTIDAS: com todos os pedais na v42 ou mais nova, a
-           lista embutida (CAT_PADRAO, OLED_NOMES, OLED_CURTOS, OFF_VOL,
-           OFF_PRESETS) pode encolher pra servir só ao primeiro uso.
-        4) LADO DA PÁGINA DAS IDEIAS DO FIRMWARE: se ele ganhar a trava/PIN
-           do Bluetooth (1), o setlist no pedal (11) ou o swing ao vivo (16),
-           a página precisa mandar o PIN, gravar o repertório no pedal e ter
-           um controle de swing.
-
- v9.0 (30/10/2026 09:22) — CSS ÚNICO, CALIBRAÇÃO DO PAD E CATÁLOGO DO PEDAL (casada com o firmware v42.0):
-        1) UMA FOLHA DE ESTILO SÓ. Os temas claro e escuro eram duas folhas
-           inteiras (972 linhas) iguais tirando as cores; agora é uma (590),
-           com as 86 cores que mudam de tema em variáveis — o :root traz as
-           do claro e o html.escuro as do escuro. O motivo da v4.3 continua
-           respeitado: nenhuma regra ganhou prefixo, só o valor das
-           variáveis troca com o tema. Conferido no Chromium antes das
-           seções novas: a v8.1 e a v9.0 davam a mesma captura de tela, byte
-           a byte, nos dois temas, e o mesmo estilo computado em todos os 808
-           elementos, em quatro estados (início, modo offline, sampler, slot
-           3 com os diálogos abertos).
-        2) CALIBRAÇÃO DO PAD, seção nova no fim: limiar, mais fraca, mais
-           forte e volume mínimo da pele e do aro, e o fraco/forte do
-           triângulo. Cada número vai pro pedal ao sair do campo ("Zcc=valor")
-           e volta com o estado: do código, gravado no pedal, ou mudado e não
-           gravado (borda amarela). "Mostrar as batidas" liga o monitor: cada
-           batida aceita chega como "ZH PL 1834" e aparece numa régua de 0 a
-           4095, com a faixa da dinâmica, o limiar e o fraco/forte do
-           triângulo. "Gravar calibração no pedal" ("ZS") e "Voltar aos
-           valores do código" ("ZX") confirmam embaixo, com a hora, e o visor
-           mostra CALIBRACAO NA FLASH.
-        3) FIRMWARE E CATÁLOGO DO PEDAL, no balão da Cena: ao conectar, a
-           página manda "VER?"; o firmware v42 responde "VER=42.0". Quando a
-           versão muda, ela pede o catálogo ("K?", uns 2 s) e guarda no
-           aparelho (sb_catPedal, que entra no arquivo de backup). O visor e
-           o modo offline desenham com ele, os presets ganham os nomes do
-           pedal e a grade cresce até o tamanho do catálogo — timbre novo
-           entra com o nome do pedal; os nomes que você editou continuam. Se
-           o pedal inserir um timbre NO MEIO, a página avisa a partir de qual
-           número mudou (favoritos, cena e Meus presets guardam números).
-           Firmware antigo não responde ao VER?: depois de 2,5 s a página
-           segue com a lista embutida, como antes.
-        4) PROTEÇÃO: "Z" com número só sai pra firmware v42 ou mais novo —
-           inclusive o digitado no console. No antigo, o filtro de dígitos lê
-           "ZTR=2300" como "230" (pedal 2, timbre 30) e "ZAX=3000" como "300"
-           (slot 3 em MUTE).
-        5) PRESET COM O AT TOCANDO: o firmware v42 recusa ("ERR P03 AT
-           TOCANDO"); a página desmarca o preset e explica na barra.
-        6) MODO OFFLINE: a StompBox de mentira responde VER=42.0, o catálogo
-           e os "Z" (guarda os números; sem pad, nenhuma batida chega), e o
-           splash dela mostra v42.0. No offline o catálogo não é pedido nem
-           guardado: ela usa o que a página já tem.
-        - Testado no Chromium (Playwright): 34 conferências, sem erro no
-          console — offline com VER, Z, ZS, ZX e o monitor; firmware antigo
-          calado (calibração desligada e "Z" barrado); um pedal "v43" com um
-          timbre inserido no 27 (catálogo aplicado, guardado e o aviso de
-          ordem); o ERR do preset; e o catálogo voltando depois de recarregar.
-        - sw.js: só o número.
-
- v8.1 — ONE PEDAL: O NÚMERO INVERTIDO E DOIS TOQUES NO CARTÃO (firmware v41.1):
-        1) No visor, o slot que o pedal 1 toca agora é marcado só pelo número
-           invertido ("01" escuro numa caixinha acesa; no MUTE, o "S1"), como
-           no firmware v41.1. A moldura saiu, e as 4 linhas ficam onde sempre
-           estiveram. O aviso ONE PEDAL LIGADO / DESLIGADO dura 0,5 s.
-        2) No cartão do slot escolhido o número também fica invertido, no
-           lugar da moldura.
-        3) Com o ONE ligado, no SB e no AT, dois toques num cartão escolhem
-           aquele slot pro pedal 1 (o mesmo que tocar no número dele no balão
-           do modo). Um toque só continua escolhendo o slot da grade.
-        - A v8.0 fica guardada como estava. sw.js: só o número.
-
- v8.0 — O MODO ONE PEDAL (firmware v41.0):
-        1) No balão "Modo da StompBox", embaixo das chaves, o botão ONE PEDAL
-           (liga e desliga, sem chave) e os quatro slots. Com ele ligado, os
-           botões 1 a 4 do pedal escolhem o slot que o pedal 1 toca, em vez de
-           trocar o timbre. Ligar pela página começa no slot 1, como os três
-           toques no shift; tocar num dos quatro escolhe o slot. Embaixo, uma
-           linha diz o que o pedal 1 está tocando. Vale no SB e no AT; no MN e
-           no FR fica guardado e volta a valer quando o modo volta.
-        2) A escolha feita nos botões do pedal chega à página sozinha
-           (firmware v41): o balão, o cartão e o visor acompanham.
-        3) "ONE" na barra de status, depois do SB ou do AT, como no pedal. O
-           cartão do slot escolhido ganha uma moldura, a mesma do visor.
-        4) Disparo: o ▶ do pedal 1 toca o slot escolhido. O balão do Disparo
-           mostra o timbre dele ("Pedal 1 → Pele"), e o LED do desenho segue
-           esse slot (em MUTE não acende).
-        5) Simulação do Pedal: o visor desenha a moldura em volta da linha
-           escolhida (na 4ª linha ela sobe 1 px, como no pedal), o "ONE" na
-           barra e, no AT, o timbre do slot escolhido. Ligar e desligar mostra
-           o aviso ONE PEDAL LIGADO / DESLIGADO por 1,5 s. Tudo conferido pixel
-           a pixel com o firmware v41 no simulador.
-        6) Modo offline: a StompBox de mentira imita a v41 (v41.0 no splash,
-           "ONE=0" no estado, os comandos O0–O4 e O?).
-        7) Firmware sem o ONE (v40 ou antes): o pedido fica sem resposta e a
-           página avisa que precisa do firmware v41. Com o AT tocando (ou na
-           calibração) o pedal não troca, e a página avisa também.
-        - sw.js: só o número.
-
- v7.0 — O ARQUIVO COM TODAS AS CONFIGURAÇÕES (firmware v40.0):
-        1) Salvar cena agora também salva no celular um arquivo com tudo o
-           que a página guarda: o catálogo, os nomes dos presets, os Meus
-           presets, as categorias, os favoritos, a ordem da grade, o
-           repertório (o mesmo do Tap Tempo Trainer), a cena, os volumes
-           mudados pela página, o tema, o terminador do console e os balões
-           recolhidos. O arquivo vai pra pasta Download, com a data e a hora
-           no nome (StompBox_backup_2026-10-23_12-37.json): cada vez que
-           salva, um arquivo novo. Embaixo dos botões da cena fica escrito o
-           último arquivo salvo neste celular.
-        2) Sem o pedal conectado a cena não muda (como antes), mas o arquivo
-           sai mesmo assim, com a cena que já estava guardada. No modo
-           offline não sai arquivo: lá nada é gravado no celular.
-        3) Botão novo, "Restaurar do arquivo": escolhe um desses arquivos e,
-           depois de confirmar, todas as configurações da página voltam às
-           do arquivo e a página recarrega. Serve pra quando os dados do
-           navegador se perdem, ou pra levar tudo pra outro celular. Só
-           entram as configurações da StompBox Remote: o que outras páginas
-           do mesmo site guardam no celular não é tocado. Arquivo errado (de
-           outro programa, estragado, ou o backup só do repertório) é recusado
-           com um aviso, sem mudar nada.
-        - sw.js: só o número.
-
- v6.3 — O GABINETE PRESO EMBAIXO DA TELA E AS CATEGORIAS PRONTAS (firmware v40.0):
-        1) Com a StompBox simulada ligada, o gabinete (só ele) fica preso
-           embaixo da tela, numa faixa fixa: dá pra rolar até a grade, os
-           presets ou o modo e ver o visor e o LED reagindo. Ele ocupa 24% da
-           altura da tela, inteiro e centrado, e a página ganha uma folga
-           embaixo do tamanho da faixa, pra nada ficar escondido atrás dela.
-           O botão de ligar vai junto; desligando, o gabinete volta pro balão
-           "Simulação do Pedal". Tocar no visor continua ampliando, e o visor
-           continua sendo desenhado mesmo com o balão recolhido.
-        2) Categorias prontas: os 35 timbres do firmware v40 por tipo de
-           instrumento, em 10 categorias — Bumbos e surdo, Cajón, Caixas,
-           Pratos, Triângulo, Pandeirola e chocalhos, Blocos e cowbell,
-           Carrilhões, Violão e Efeitos (os mix de cajón vão no Cajón; os
-           smart, no Triângulo e nos Blocos). Valem enquanto o aparelho não
-           tiver categorias salvas. No editor de categorias, o botão "Usar as
-           categorias prontas" põe estas no lugar das de agora, e dá pra
-           mexer antes de salvar. Vão pelo número do timbre, então acertam
-           mesmo com nomes trocados no catálogo. Pra ver: "Categoria", em cima
-           da grade.
-        - sw.js: só o número.
-
- v6.2 — O BOTÃO DE LIGAR NO GABINETE E O SPLASH DA STOMPBOX (firmware v40.0):
-        1) O modo offline liga e desliga num botão de verdade, no desenho: o
-           botão redondo de metal no rebaixo de baixo, no meio do gabinete
-           (onde ficava o furo). Desligado, o anel fica escuro; ligado, o
-           anel e o símbolo acendem em roxo, a cor do modo offline. Ligar
-           pergunta antes, como na v6.1; desligar é só tocar de novo. O botão
-           "Ligar o modo offline" embaixo do desenho saiu.
-        2) Ao ligar, a StompBox simulada faz o boot do firmware: o splash
-           com "StompBox", a versão (v40.0), o PAD OFF e a barra enchendo em
-           3 s, um quadro a cada 50 ms, e o LED passeando pelas cores na
-           ordem do pedal (a "abertura colorida" da v19.0): azul, vermelho,
-           verde, magenta, amarelo, ciano, branco, e apaga. Depois vem a tela
-           do pedal pronto, ainda sem o BT na barra, e 0,8 s depois a página
-           conecta: BLUETOOTH CONECTADO e o resto como na v6.1.
-        3) A barra de status acompanha: "Ligando a StompBox simulada…",
-           "StompBox simulada ligada · conectando…" e "Modo offline · a
-           página faz o papel da StompBox". Tocar no botão no meio do boot
-           desliga na hora, como tirar o pedal da tomada.
-        4) As contas da barra e do LED são feitas em float, como no ESP32,
-           pra virarem no mesmo quadro que no pedal. Conferido contra o
-           firmware v40 no simulador: os 62 quadros do splash iguais pixel a
-           pixel, o LED nas mesmas cores e nos mesmos quadros, e a tela do
-           pedal pronto igual à do fim do setup().
-        - sw.js: só o número.
-
- v6.1 — MODO OFFLINE SIMPLES: SÓ A TELA (firmware v40.0):
-        1) Refeito do jeito pedido: sem rodar o firmware e sem arquivo além da
-           página. O stompbox.wasm da v6.0 saiu (pode apagar do site). Na v6.0
-           o modo offline não ligava no celular ("failed to fetch": a página
-           não conseguia baixar o arquivo do firmware).
-        2) Ligado o modo offline, a própria página faz o papel da StompBox:
-           guarda os slots, o modo, o volume geral, os volumes dos timbres e o
-           andamento, e responde a cada comando com as MESMAS linhas que o
-           pedal v40 responde. Os cartões, a grade, o balão do modo, o volume
-           e o visor simulado mostram tudo como se ela estivesse conectada:
-           ao ligar, o BLUETOOTH CONECTADO; depois, cada troca de timbre,
-           preset, modo, submodo, volume, andamento e a gravação dos volumes,
-           com as telas de aviso do pedal. O LED pisca azul nos disparos.
-           A StompBox de mentira começa como o pedal ligado: 01 CAJON B,
-           06 CARRILHAO, 13 BLOCO H, 12 BLOCO L, metrônomo no 08 COWBELL, SB,
-           volume 16. Os presets são os dez do firmware.
-        3) Como na v6.0: o botão no balão "Simulação do Pedal" (com
-           confirmação); a barra com "Modo offline", a bolinha roxa e o selo
-           OFFLINE no lugar do BT; o selo MODO OFFLINE no desenho; a cena
-           protegida (o que se salva ou muda nela no offline não é gravado no
-           celular); desligar pelo mesmo botão ou conectando a StompBox de
-           verdade; e, ao sair, a página volta ao que mostrava antes.
-        4) Por ser só a tela, fica de fora o que acontece dentro do pedal: o
-           som, o passo do smart (a tela mostra o 1º) e os pulsos do
-           metrônomo tocando (a LARGADA e o PISAR mudam a tela como com o
-           pedal).
-        - sw.js: o stompbox.wasm saiu da lista.
-
- v6.0 — MODO OFFLINE COM O FIRMWARE EM WEBASSEMBLY — SUBSTITUÍDO NA v6.1:
-        rodava o firmware v40 inteiro dentro da página (stompbox.wasm). No
-        celular não ligou ("failed to fetch") e era mais do que o pedido —
-        a ideia era só a tela. Ficou registrado aqui; a v6.1 refez do jeito
-        simples.
-
- v5.1 — VISOR QUE AMPLIA, LED AZUL NOS DISPAROS E ÍCONE NOVO (firmware v40.0):
-        1) O visor grande embaixo do desenho saiu: o balão mostra só o
-           gabinete. Tocar na tela do desenho amplia o módulo inteiro — a
-           moldura, os quatro parafusos e a tela — para o dobro (largura e
-           altura x2), crescendo pra baixo pra não cobrir o LED; tocar de
-           novo volta. Ampliado, a tela é repintada com o dobro de pontos e
-           o vão entre os pixels, como o OLED visto de perto. Pelo teclado:
-           Enter ou espaço; o Esc volta.
-        2) O LED RGB em cima do visor pisca AZUL quando a página dispara um
-           timbre — o ▶ dos slots no SB e no AT, e o sampler —, como no
-           pedal. O pedal deixa aceso enquanto o som toca; a página não sabe
-           quanto dura cada som e acende por 0,25 s. Slot em MUTE não acende
-           (o pedal não toca). No MN e no FR o PISAR é tap e a LARGADA
-           começa o metrônomo: acende só o tap com som (FR com TAP SOM). O
-           tap do pé no click BT (a linha "TAP") pisca 80 ms, como no pedal.
-        3) FIRMWARE v40: a troca de timbre no BOTÃO do pedal chega aqui
-           ("T1=05 CARRILL", só do slot que mudou, 0,4 s depois do último
-           aperto). A página já entendia essa linha: os slots, a grade e o
-           visor simulado acompanham sem mudança nesta versão.
-        4) FIRMWARE v40: o "M?" que a página manda ao conectar não mostra
-           mais a tela de VOLUME no pedal, e o visor daqui acompanha — a
-           resposta a um "M?" não muda a tela; M+, M−, Mnn, M0 e o botão do
-           pedal seguem mostrando VOLUME por 0,6 s. (Com firmware anterior à
-           v40, o pedal ainda mostra a tela no M? e o visor daqui não.)
-        5) ÍCONE NOVO: o gabinete da StompBox (o do Painel, versão 1, com os
-           dois botões de fliperama), visto de onde se toca, em perspectiva,
-           sob um canhão de luz âmbar; o visor do ícone mostra a tela do SB
-           com as fontes do firmware. Arquivos novos no site: icon-192.png,
-           icon-512.png e icon-maskable-512.png (o "maskable" é o que o
-           Android recorta em círculo ou squircle na tela inicial). O
-           icon.svg foi redesenhado e o manifest.json lista os quatro; o
-           fundo da tela de abertura acompanha o escuro do ícone. O ícone
-           antigo (o pedal laranja da v1.0) ficou guardado fora do site.
-
- v5.0 — SIMULAÇÃO DO PEDAL (firmware v39.1 sem mudança):
-        1) BALÃO NOVO "Simulação do Pedal": o desenho da StompBox como ela
-           está hoje, copiado da foto — o gabinete com os painéis, o disco do
-           centro com o LED RGB em cima do visor, o botão do timbre do slot
-           1, as duas chaves de modo, o botão do pad, o vão do meio e as
-           travas. Os botões que ainda faltam no gabinete ficam pra depois.
-        2) O VISOR SIMULADO: o OLED desenhado pixel a pixel com as MESMAS
-           fontes e contas do firmware (a 5x7 da Adafruit GFX e a StompSlot13
-           das linhas de timbre): a barra de status (modo, rota do click ou
-           TAP, BT e volume), as telas do SB, MN, FR e AT, e os avisos que a
-           página provoca — BLUETOOTH CONECTADO, preset, volume geral, volume
-           por timbre e volumes na flash —, cada um pelo tempo que o pedal
-           mostra. Fundo anil e pixels brancos, como na foto.
-        3) Embaixo do desenho, o mesmo visor AMPLIADO, pra ler no celular
-           (no desenho ele fica no tamanho de verdade, pequeno).
-        4) O que só acontece dentro do pedal o visor daqui não mostra: taps
-           no pé (o BPM vem do que o pedal responde à página; a LARGADA e o
-           PISAR da página ele acompanha), o passo do smart (mostra o 1º), a
-           contagem do MUTE ("S2", sem o "#n") e o "PAD" da barra.
-        5) Conferido pixel a pixel contra o firmware v39.1 rodando no
-           simulador.
-
- v4.7 — MN SEM TIMBRES À VISTA, DISPAROS COM NOME E TAP COM ÍCONE
-        (firmware v39.1 sem mudança):
-        1) DISPAROS NOS MODOS DE METRÔNOMO (MN e FR), embaixo dos slots e no
-           balão do Disparo: o do slot 1 virou PISAR — o mesmo que pisar no
-           pedal 1: tap e, com o metrônomo tocando, para — e o do slot 2
-           virou LARGADA (o mesmo do 8888: começa no BPM). Na v4.6 o MN
-           tinha ficado sem eles, e no FR o do slot 1 só tocava o timbre do
-           metrônomo. Os do 3 e do 4 seguem cinza: o pedal não usa esses
-           slots ali.
-        2) NO MN, "Favoritos", "Timbres" e "Meus presets" se recolhem
-           sozinhos (não há timbre no MN). Saindo do MN, voltam como
-           estavam. Tocar no título abre mesmo assim, só enquanto durar o MN.
-        3) NO FR, o − e o + do balão do modo deram lugar ao TAP (repetiam
-           os de cima). Os de cima seguem no timbre do metrônomo.
-        4) O TAP mostra o estado com o ícone, e ficou mais estreito:
-           alto-falante = TAP SOM, alto-falante cortado = TAP MUDO.
-
- v4.6 — CADA MODO SÓ COM OS SLOTS QUE O PEDAL USA + STATUS NO CONSOLE
-        (casada com o firmware v39.1):
-        1) BUG DO FR: escolher um timbre no FR mostrava "Modo metrônomo: o
-           timbre … foi pro metrônomo" na barra, a bolinha ficava cinza
-           (parecia desconectado) e o timbre não aparecia selecionado. Agora
-           o slot 1 no FR É o metrônomo: mostra o timbre dele (o T5) e a
-           grade marca esse timbre. O aviso saiu.
-        2) SLOT QUE NÃO VALE NO MODO FICA TODO CINZA — o quadrado, o ▶ e o
-           balão do Disparo: no FR, os slots 2, 3 e 4 (nos modos de
-           metrônomo o pedal só lê o pedal 1); no MN, os quatro (o click é
-           fixo). O Sampler continua valendo: o pedal toca ele em qualquer
-           modo.
-        3) O + E O −: no FR andam no timbre do metrônomo, como no SB (é o
-           botão 1 do pedal); no MN mandam o submodo, a rota do click. Vale
-           pros de cima e pros do balão do modo.
-        4) BOTÃO TAP, só no FR, à esquerda do + de cima: alterna TAP SOM /
-           TAP MUDO (é o botão 2 do pedal) e mostra o estado; verde = SOM.
-        5) O SUBMODO TEM COMANDO PRÓPRIO: "S+" / "S-" (firmware v39.1), pra
-           não misturar com os de timbre. Sem resposta do pedal, a página
-           avisa que precisa do v39.1.
-        6) No FR, o ▶ do slot 1 toca o timbre do metrônomo uma vez (pelo
-           sampler). Antes ele mandava "D1", que no FR é pisada no pedal 1 —
-           e, com o metrônomo rodando, pisada PARA tudo.
-        7) STATUS NO CONSOLE: o "Console e ajustes" repete, inteiro, o status
-           do canto de cima (lá ele corta com "…"). E aviso comum não deixa
-           mais a bolinha cinza: ela mostra a conexão (vermelha num erro,
-           amarela esperando).
-
- v4.5 — BALÃO DO MODO MAIS ENXUTO E CHAVE DE AVIÃO (firmware v39.0 sem mudança):
-        1) O + e − do balão do modo viraram dois botões PEQUENOS à direita
-           das chaves, na mesma linha (o botão grande da v4.4 saiu). O
-           estado (CLICK BT, TAP SOM…) passou pra linha do nome do modo.
-        2) A chave de 2 posições virou uma chave de alavanca de painel de
-           avião, VERTICAL como no gabinete (a de 3 é horizontal e a de 2
-           vertical, pra serem diferentes): alavanca pra cima = MN, pra
-           baixo = FR. Tocar no nome também escolhe.
-        3) A posição da chave de 3 que era "MN·FR" agora mostra só o que a
-           chave de 2 está escolhendo: MN ou FR.
-        4) O selo "MIX" do canto saiu só desse balão (ficava embaixo do +).
-
- v4.4 — + E − NOS MODOS DE METRÔNOMO, CONFIRMAÇÃO DA FLASH E CATEGORIAS
-        (casada com o firmware v39.0):
-        1) + E − NOS MODOS DE METRÔNOMO: com o pedal no MN, o + e o −
-           andam pela rota do click (MUDO → BT → LR → L, e o − ao contrário),
-           como o botão 1 do pedal; no FR, alternam TAP SOM / TAP MUDO (no
-           pedal é o botão 2). O rótulo entre eles mostra o estado que o
-           pedal manda ("MN · CLICK BT", "FR · TAP SOM"). Com firmware
-           anterior à v39, no MN o + e o − não faziam nada (e o comando
-           ficava pendurado no pedal) e no FR trocavam o timbre do
-           metrônomo. O timbre do metrônomo no FR segue na grade.
-        2) ATALHO NO BALÃO DO MODO: um + e − embaixo das chaves, cópia do
-           + e − de cima, com o mesmo rótulo — troca o modo e já escolhe a
-           rota do click ou o TAP ali mesmo.
-        3) No MN, tocar num timbre da grade avisa que o click é fixo (não há
-           timbre pra escolher), em vez de mandar e esperar à toa.
-        4) CONFIRMAÇÃO DA FLASH: embaixo dos botões "Gravar" e "Apagar
-           volumes", uma linha fica mostrando o último resultado, com a
-           hora ("✓ Gravado no pedal às 23:57 — 3 alterações"). Antes era só
-           um aviso de 4 s na barra do topo, que no celular saía cortado.
-           O pedal (v39.0) também mostra no OLED.
-        5) ABA "CATEGORIA" na ordem da grade, junto de Índice, A–Z e Minha
-           ordem. Em "editar categorias": crie as categorias (renomeie,
-           mude a ordem com ▲▼, apague com ✕) e escolha a categoria de
-           cada timbre. Na grade, cada categoria vira um título, na ordem
-           que você deixou, com os timbres dela em ordem alfabética; os sem
-           categoria vão no fim, em "Sem categoria". A categoria fica
-           ligada ao NOME do timbre: inserir timbres no catálogo não
-           embaralha (renomear um timbre tira ele da categoria).
-
- v4.3 — CORREÇÃO DA SELEÇÃO DOS SLOTS NO MODO ESCURO + CORES SÓBRIAS
-        (firmware v38.1 sem mudança):
-        1) BUG DA v4.2: no modo escuro, o slot selecionado perdia a cor (o
-           cartão ficava preto), e também sumiam as barrinhas coloridas no
-           topo de cada slot, o traço colorido dos botões do Disparo, o
-           retorno colorido ao tocar neles e o verde das chaves ligadas.
-           Causa: o modo escuro da v4.2 era um bloco de regras "html.escuro …"
-           por cima do tema claro; o prefixo deixava essas regras MAIS FORTES
-           que as regras de cor de cada slot (as de :nth-child), que então
-           perdiam. A v4.1 não tinha o problema.
-        2) A CORREÇÃO: cada modo agora é uma FOLHA DE ESTILO INTEIRA — o modo
-           claro é o CSS de antes da v4.1, o escuro é o CSS da v4.1 — e o
-           botão ◐ liga uma e desliga a outra. Dentro de cada folha a ordem e
-           a força das regras são as originais, então nada mais briga.
-        3) CORES SÓBRIAS NO MODO ESCURO: as cores dos slots e do sampler
-           ficaram bem menos vivas (azul, verde, vermelho, amarelo e laranja
-           apagados) — continuam marcando o slot selecionado, as barrinhas,
-           os disparos e a grade. O modo claro segue com as cores de antes.
-        4) A cor do BT, do MUTE, dos faders e das chaves não mudou.
-
- v4.2 — MODO CLARO E MODO ESCURO (firmware v38.1 sem mudança):
-        1) As cores de antes da v4.1 voltaram como MODO CLARO, e o tema
-           preto da v4.1 virou o MODO ESCURO. Um botão ◐ no topo, ao lado
-           dos selos da barra de status, alterna os dois. A escolha fica
-           guardada no aparelho; a primeira vez abre no escuro.
-        2) O modo escuro é o mesmo da v4.1, regra por regra: cores vivas
-           (slots, sampler, MUTE, BT, faders, chaves, repertório) iguais nos
-           dois modos.
-        3) O tema é aplicado antes de a página aparecer (sem piscar o outro
-           tema na abertura), e a cor da barra do navegador acompanha.
-        4) Todo o resto igual à v4.1, inclusive o "Apagar volumes gravados".
-
- v4.1 — FUNDO PRETO (OLED) E APAGAR VOLUMES GRAVADOS (casada com o
-        firmware v38.1):
-        1) TEMA PRETO, mais sóbrio, no estilo do Tap Tempo Trainer: fundo
-           totalmente preto (#000) — no OLED, pixel preto fica apagado e
-           não gasta bateria, o que conta numa página que fica muito tempo
-           com a tela acesa. Balões, botões e campos viraram tons neutros
-           quase pretos (sem o azulado de antes), com bordas cinza discretas;
-           os degradês do fundo saíram; textos em cinza neutro. A barra de
-           status perdeu o fundo claro dos selos (só contorno).
-        2) AS CORES VIVAS FICARAM COMO ESTAVAM: as dos slots, o laranja do
-           sampler, o vermelho do MUTE, o azul do BT e dos faders, o verde
-           das chaves, as cores do repertório por BPM.
-        3) APAGAR VOLUMES GRAVADOS: no balão da Cena, embaixo do "Gravar
-           volumes no pedal", o botão "Apagar volumes gravados" manda "VX"
-           (firmware v38.1). O pedal apaga da flash todos os volumes
-           gravados e VOLTA OS VOLUMES AO DA TABELA DO FIRMWARE NA HORA.
-           Pede confirmação (também corta o som por um instante). A barra
-           mostra quantos existiam; sem resposta em 2 s, avisa que precisa
-           do firmware v38.1. O painel de volume relê o timbre aberto.
-           A cena (salvar/carregar) não muda.
-
- v4.0 — CATEGORIAS, NÚMEROS NO CATÁLOGO E TAPS DO PEDAL NO ANDAMENTO
-        (firmware v38.0 sem mudança):
-        1) CATEGORIAS NA ORDEM PERSONALIZADA. No "editar minha ordem", o
-           botão "+ Categoria" cria um título (ex.: "Bumbos", "Efeitos")
-           acima do timbre marcado — toque no nome de um timbre pra
-           marcar; sem nada marcado, a categoria entra no topo. O nome da
-           categoria se edita ali mesmo, ela sobe e desce com as setas como
-           os timbres, e o ✕ apaga. Na grade, com a ordem personalizada, cada
-           categoria vira um título de largura inteira antes do seu grupo.
-           Categoria sem nome é descartada ao salvar. "Restaurar ordem do
-           índice" tira as categorias.
-        2) NÚMEROS NO CATÁLOGO. No "editar catálogo", cada linha tem à
-           esquerda o número do timbre (01, 02…), mais apagado e fora do
-           texto: não dá pra editar, só ajuda a achar o lugar. Como é o
-           número da LINHA, inserir um nome no meio renumera tudo abaixo —
-           a lista continua seguindo a ordem do pedal. A caixa não quebra
-           linha (um nome por linha, sempre).
-        3) TAPS DO PEDAL NO ANDAMENTO. No metrônomo com o click pelo
-           Bluetooth, o pedal manda "TAP" a cada pisada (o Tap Tempo
-           Trainer já usava; esta página ignorava). Agora a página mede a
-           frase e mostra o BPM calculado no balão Andamento, a cada tap a
-           partir do 2º, com "do pedal" embaixo do número. Frase nova depois
-           de 2 s ou de 1,5 tempo sem tap, como no pedal. Quando o pedal
-           larga o metrônomo, a grade "L" traz o andamento exato e ele
-           substitui a estimativa. SÓ MOSTRA: nada é mandado de volta pro
-           pedal (quem decide o andamento é o pedal). A estimativa pelos
-           taps oscila um pouco, porque o Bluetooth atrasa cada mensagem de
-           um jeito; o valor da grade é o exato.
-
- v3.21 — GRAVAR OS VOLUMES NO PEDAL (casada com o firmware v38.0):
-        1) No balão da Cena, um botão novo: "Gravar volumes no pedal". Ele
-           manda "VS" e o pedal grava na flash (NVS) os volumes de timbre
-           que estão diferentes da tabela do firmware — só o que mudou
-           desde a última gravação. Eles passam a valer sozinhos ao ligar o
-           pedal, sem celular.
-        2) Antes de mandar, a página pede confirmação: gravar na flash
-           corta o som do pedal por um instante — use entre músicas.
-        3) O pedal responde "VS=n" (n = quantos volumes foram gravados ou
-           apagados agora; 0 = já estava tudo gravado) e a barra mostra.
-           "VS=ERRO" ou sem resposta em 2 s: a barra avisa (sem resposta =
-           firmware anterior à v38).
-        4) Pra tirar um volume gravado: volte o timbre ao valor da tabela e
-           grave de novo — a entrada dele é apagada.
-        5) O "Salvar cena" / "Carregar cena" continua EXATAMENTE como
-           estava: a cena fica no celular; a gravação é no pedal.
-
- v3.20.2 — FR E MN TROCADOS DE LUGAR (casada com o firmware v37.1):
-        1) Os nomes estavam invertidos, na página e no firmware. Agora:
-             01 = MN — Metrônomo     11 = FR — Free Run
-           Os comandos e os pinos não mudaram (C01 continua sendo só o pino
-           7, C11 os dois); só o nome que aparece trocou.
-        2) A chave de 2 fica [ MN ◯ FR ] e a posição da de 3 virou "MN·FR".
-        3) A página mostra o nome pelo NÚMERO que o pedal manda, então com
-           um firmware v37.0 ela já mostra o nome certo; a barra do OLED só
-           acerta com a v37.1.
-
- v3.20.1 — CHAVES DO MODO CORRIGIDAS (firmware v37.0 sem mudança):
-        1) A v3.19.1 desenhou as chaves erradas. No pedal:
-             - a de 3 POSIÇÕES: no meio, SB (modo normal); do lado da chave
-               de 2, FR ou MN; do outro lado, AT.
-             - a de 2 POSIÇÕES: escolhe entre FR e MN.
-           O balão agora é assim: [ AT | SB | FR·MN ] [ FR ◯ MN ], com a
-           posição FR·MN virada pra chave de 2.
-        2) O FIRMWARE JÁ ESTAVA CERTO pra essa ligação: AT = só o pino 11
-           (chave 2) no GND, FR = só o pino 7 (chave 1), MN = os dois — que
-           é o caso fechado pelo diodo. Os comandos seguem C00/C01/C10/C11.
-        3) A chave de 2 só vale com a de 3 em FR·MN; nas outras posições,
-           mexer nela só muda a posição dela (não manda nada), e ela guarda
-           a posição — como no pedal.
-
- v3.20 — DISPARO TAMBÉM NO QUADRADO DO SAMPLER (firmware v37.0 sem mudança):
-        1) O quinto lugar da fileira de disparos (embaixo do Sampler), que
-           era só espaço, virou um ▶ com o laranja do sampler: toca de novo
-           o ÚLTIMO SAMPLE DISPARADO — pela grade ou pelos favoritos no modo
-           sampler, ou pelo ▶ Tocar da janela de volume.
-        2) Fica apagado até o primeiro sample da sessão (não é guardado ao
-           fechar a página).
-        3) É o mesmo comando "Ann" de qualquer toque no sampler: um comando
-           por toque, sem latência a mais no Bluetooth.
-
- v3.19.1 — AS CHAVES DO MODO COMO AS DO PEDAL (firmware v37.0 sem mudança):
-        1) O pedal tem uma chave de 3 POSIÇÕES e uma de 2, não duas de 2.
-           O balão "Modo da StompBox" agora tem as duas assim:
-             - 3 posições: FR (Free Run) | SB (StompBox, no meio) | AT·MN
-             - 2 posições: RITMOS ou METRÔ — decide entre AT (ritmos) e
-               MN (metrônomo) quando a de 3 está em AT·MN.
-           A posição AT·MN fica virada pro lado da chave de 2, que é quem
-           decide entre metrônomo e ritmos (pedido do Saulo: mais
-           intuitivo). A ordem das posições não precisa ser a do pedal.
-        2) Mover a chave de 2 com a de 3 em FR ou SB só muda a posição dela
-           (não manda nada), como no pedal: ela só vale em AT·MN.
-        3) Os comandos são os mesmos da v3.19 (C00, C01, C10, C11) e as
-           chaves seguem mostrando o que o PEDAL diz; a de 2 guarda a última
-           posição quando o modo é SB ou FR.
-
- v3.19 — MODO PELO CELULAR, BARRA DE STATUS E DISPAROS NOS SLOTS
-        (casada com o firmware v37.0):
-        1) BARRA DE STATUS no topo, junto do "conectado/desconectado": o
-           modo da StompBox (SB, FR, AT, MN — as siglas do OLED), o volume
-           geral (V16 ou MUTE) e "BT" quando conectado. No lugar do símbolo
-           do Bluetooth vai "BT", igual à barra do OLED.
-        2) BOTÕES DE DISPARO NOS SLOTS: um botão pequeno embaixo de cada
-           slot (1/4 da altura do cartão), fixo no topo junto com eles,
-           com a cor do slot. Manda D1..D4. Embaixo do Sampler fica só o
-           espaço, pra não desalinhar.
-        3) BALÃO DO DISPARO: cada botão mostra o NOME DO TIMBRE que vai
-           tocar e, menor e mais apagado, o nome do slot. Acompanha as
-           trocas de timbre.
-        4) BALÃO "MODO DA STOMPBOX": duas chaves estilo iPhone, como as do
-           pedal — chave 2 à esquerda, chave 1 à direita, então a leitura
-           da esquerda pra direita é o número do modo (00 SB, 01 FR, 10 AT,
-           11 MN). Tocar numa chave manda "Cnn" (firmware v37); a chave
-           mostra o pedido apagada até o pedal confirmar ("C01 FR"). Sem
-           confirmação em 1,2 s, volta e avisa que precisa do firmware v37.
-           As chaves daqui mostram O QUE O PEDAL DIZ, inclusive quando a
-           troca vem de uma chave física — que continua valendo e pode
-           ficar fora de sincronia com o que aparece aqui (aceito).
-        5) Catálogo padrão com os 4 timbres novos da v37 (Laser Gun, Gun
-           Reload, Chicote, Nextel) antes dos mix. Quem já tem catálogo
-           salvo no aparelho atualiza em "editar catálogo".
-        6) A partir desta versão, os arquivos saem com o nome do projeto e
-           a versão (…_index.html e …_sw.js), pra guardar o histórico; no
-           site eles continuam se chamando index.html e sw.js.
-
- v3.18 — SEGURAR UM TIMBRE ABRE O FADER DELE (firmware v36.0 sem mudança):
-        1) Segurar um balão de timbre por meio segundo (na grade ou nos
-           favoritos) abre uma janela com o fader de volume DAQUELE timbre,
-           um "✕" pra fechar e um botão "▶ Tocar" pra ouvir enquanto
-           ajusta. Vale com qualquer slot selecionado e no modo sampler.
-        2) Usa os comandos que já existem: "Vnn?" lê o volume ao abrir,
-           "Vnn=vvv" grava ao soltar a alça (firmware v34), e o "▶ Tocar"
-           é o "Ann" do sampler (firmware v36) — toca pelo pool do pedal 2
-           sem trocar slot nenhum. O volume mudado entra na lista da cena,
-           como no painel "Volume por timbre". Smart (BLOCOS, TRI S): é o
-           volume do smart como um todo, e o ▶ alterna os passos.
-        3) O fader da janela é "só pela alça", como os outros (v3.16).
-        4) FORA DO SAMPLER: o toque rápido continua escolhendo o timbre do
-           slot. Um toque que virou "segurar" NÃO troca o timbre — só abre
-           a janela.
-        5) NO SAMPLER: o toque rápido dispara como antes, SEM ATRASO — a
-           página não espera pra decidir se é toque ou segurar. Segurando,
-           a janela abre e o timbre pode disparar também ao soltar; isso
-           não é evitado (decisão do Saulo).
-        6) Arrastar o dedo (rolar a página) cancela o segurar. O menu de
-           toque longo do navegador fica desligado nos balões.
-        7) O 00 MUTE não abre a janela: não é som.
-
- v3.17.1 — Só a página (firmware v36.0 sem mudança):
-        1) O 00 MUTE VOLTOU À GRADE NO MODO SAMPLER, SÓ DE ENFEITE. Na v3.17
-           ele sumia no sampler, e todos os balões andavam uma casa: a
-           grade deixava de bater com a posição de sempre. Agora ele fica no
-           lugar dele, apagado e desligado (não toca nada, não responde ao
-           toque) — o MUTE não é um som. Fora do sampler, nada mudou.
-
- v3.17 — SAMPLER (casada com o firmware v36.0):
-        1) UM QUINTO QUADRADO, LARANJA, depois do Aro: "Sampler". Tocar nele
-           liga o modo sampler (tocar de novo, ou num slot, desliga). Com ele
-           ligado, os nomes da grade e dos favoritos ficam LARANJA e tocar
-           num nome DISPARA aquele timbre na hora, em vez de escolher o
-           timbre de um slot.
-        2) O disparo é o comando "Ann" do firmware v36 ("A05" toca o 05):
-           direto no pool de vozes do pedal 2, emprestado — não troca o
-           timbre de slot nenhum, não redesenha o OLED, vale em qualquer
-           modo. O balão pisca laranja no toque, e o pedal confirma
-           ("A05 BE 808"). Sem confirmação em 0,9 s, a barra avisa que o
-           sampler precisa do firmware v36 (firmware antigo ignora o "A").
-        3) No modo sampler: o 00 MUTE some da grade (não é som — v3.17.1:
-           voltou, só de enfeite, pra não desalinhar a grade), as marcas
-           de "timbre do slot" e de outros slots somem (a grade vira só um
-           teclado de sons), e o anterior/próximo dos slots fica desligado.
-        4) SEGURANÇA: o modo sampler SEMPRE começa desligado ao abrir a
-           página — não fica guardado. Um toque sem querer num nome não
-           dispara som no PA a menos que você tenha ligado o sampler.
-        5) LATÊNCIA: toque na tela + Bluetooth somam uns 20 a 60 ms, e
-           variam de toque pra toque. Bom pra ouvir um timbre e disparar um
-           efeito solto; não pra tocar no tempo como um pad.
-
- v3.16 — Só a página (firmware v34 sem mudança):
-        1) MEUS PRESETS, um balão acima dos Presets. Presets montados na
-           própria página: um nome (ex.: "Anderson") e o timbre de cada um
-           dos 4 slots, escolhido numa lista (o 00 MUTE incluído) ou
-           copiado dos slots de agora. Tocar no preset manda os slots pro
-           pedal, um por vez, esperando a confirmação de cada um — o mesmo
-           caminho da cena. Slot que já está no timbre certo não é
-           reenviado (reenviar voltaria um smart pro passo 1). O lápis no
-           canto abre a edição, com Excluir. O preset igual aos slots de
-           agora fica aceso. Nada muda no firmware: são os mesmos "snn".
-        2) FADERS SÓ PELA ALÇA, como no Mixing Station. Tocar no trilho não
-           move mais o volume: ao rolar a página, um toque sem querer no
-           fader mudava o volume. Agora o fader só anda se o dedo PEGAR a
-           alça onde ela está e arrastar; o movimento é relativo ao ponto
-           onde pegou. Arrasto que vira rolagem (dedo subindo ou descendo)
-           é cancelado e o valor volta ao de antes, sem mandar nada. As
-           setas do teclado continuam funcionando.
-        3) VER CENA SALVA: um botão no balão da Cena abre uma janela com
-           tudo o que foi salvo — slots, volume geral e os volumes de
-           timbre, cada um com a posição dele na tabela VOLUME_TIMBRE do
-           firmware —, pronto pra copiar.
-        4) BALÕES RECOLHÍVEIS: tocar no título de um balão recolhe e abre,
-           como o "Console e ajustes". A seta ao lado do título mostra o
-           estado, e a escolha fica guardada no aparelho. Os botões dentro
-           do título (editar, novo) continuam sendo só botões.
-
- v3.15 — MUTE, cena e volume absoluto (casada com o firmware v34):
-        1) TIMBRE 00 MUTE, o primeiro balão da grade, fixo em qualquer
-           ordenação. Manda "s00": o pedal para de tocar aquele slot (é a
-           saída de segurança pra um pedal em curto). O cartão do slot
-           mostra "00 MUTE" em vermelho. No OLED o slot fica vazio. Nos
-           modos 01/11 o slot 1 é o metrônomo, que não aceita MUTE: a
-           troca expira com o aviso de sempre.
-        2) BOTÃO MUTE NO VOLUME GERAL. Manda "M0"; fica vermelho,
-           pressionado, enquanto o pedal responder "VOL GERAL 0/16 MUTE".
-           Tocar de novo volta ao nível de antes. O estado vem SEMPRE da
-           resposta do pedal — se o mudo for desfeito pelo botão físico do
-           pedal, o botão da página apaga sozinho. Sem resposta (firmware
-           anterior à v34), avisa.
-        3) VOLUME POR TIMBRE COM COMANDO ABSOLUTO. O painel pergunta com
-           "Vnn?" e define com "Vnn=vvv" — pelo NÚMERO do timbre, sem
-           depender do "último slot". Qualquer valor de 1 a 256 (acabou a
-           escada de 8 em 8), e os botões −8/−32/+8/+32 viraram contas
-           feitas aqui. Trocar o timbre do slot com o painel aberto relê o
-           volume do timbre novo. Slot em MUTE: painel desligado.
-           - A REAFIRMAÇÃO DO SLOT ACABOU (e a opção dela no Console): era
-             o efeito colateral anotado como PENDÊNCIA na v3.14 — resolvida.
-           - Sem resposta ao "Vnn?" em 1,5 s: o painel diz que precisa do
-             firmware v34.
-        4) CENA (o último balão). Guarda os timbres dos 4 slots, o nível
-           do volume geral e SÓ os volumes de timbre que a página mudou —
-           cada "Vnn=vvv" confirmado pelo pedal entra nessa lista, que fica
-           guardada no aparelho e aparece no balão.
-           - CARREGAR: primeiro os volumes, depois o volume geral, por fim
-             os slots — um comando por vez, cada um esperando a resposta
-             do pedal (0,9 s de prazo). No fim, a barra diz o que não
-             confirmou. Slots só trocam no modo 00.
-           - Com o MUTE geral ligado, a cena NÃO mexe no volume geral: o
-             som não volta sem você pedir.
-           - Carregar uma cena faz da lista de volumes alterados a da
-             cena. "Esquecer volumes alterados" zera a lista (a cena salva
-             continua como está até o próximo "Salvar").
-           - O MUTE geral nunca entra na cena.
-
- ------------------------------------------------------------
- PENDÊNCIAS
- ------------------------------------------------------------
- - Nenhuma. A da v3.14 (reafirmar o slot sem efeito colateral) foi
-   resolvida na v3.15 com o volume absoluto do firmware v34.
-
- NOTA: ao publicar, subir também o sw.js com o número do cache
- trocado, senão o app instalado continua servindo a versão antiga.
- ============================================================
--->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
@@ -1759,6 +519,44 @@ textarea{width:100%;height:230px;font-family:ui-monospace,Menlo,Consolas,monospa
 .tempo-unit{font-size:10px;color:var(--textoUnidade);letter-spacing:.08em;margin-left:-48px;pointer-events:none}
 #bpmSend{height:44px;min-width:76px}
 .tempo-rep{width:44px!important;padding:0!important;color:#9bcfff!important;border-color:#347bb2!important;background:#1b3b55!important;font-size:20px!important}
+/* v15.0 — Swing compacto, fino e minimalista (bem diferente dos faders de volume!) + botão PAD ON/OFF */
+.swingBloco{margin-top:9px;padding-top:8px;border-top:1px solid var(--line)}
+.swingTopo{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-bottom:5px}
+.swingEsq{display:flex;align-items:baseline;gap:6px;min-width:0}
+.swingTit{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dim)}
+#swVal{font-size:14px;font-weight:700;color:var(--textoForte)}
+#swVal.adianta{color:#ffc266}
+#swRot{font-size:10px;color:var(--muted);font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swingDir{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--ctrlFundo2)}
+.swingDir button{height:23px;padding:0 8px;font-size:10px;font-weight:700;border:0;border-radius:0;background:transparent;color:var(--dim);letter-spacing:.02em}
+.swingDir button+button{border-left:1px solid var(--line)}
+.swingDir button.cur[data-sw-dir="-1"]{color:#ffdca8;background:rgba(255,179,71,.2)}
+.swingDir button.cur[data-sw-dir="1"]{color:var(--textoForte);background:rgba(77,163,255,.2)}
+.swingLinha{display:flex;align-items:center;gap:6px}
+.swPasso{width:26px;height:24px;padding:0;border-radius:5px;border:1px solid var(--line);background:var(--ctrlFundo2);color:var(--ctrlTexto);font-size:14px;line-height:1;flex:none}
+.swSlimZone{position:relative;flex:1;min-width:80px;max-width:260px;margin:0 auto;height:24px;display:flex;align-items:center;touch-action:pan-y}
+.swSlimZone::before{content:"";position:absolute;left:7px;right:7px;top:50%;height:3px;margin-top:-1.5px;border-radius:2px;background:var(--line2);pointer-events:none}
+.swSlimZone::after{content:"";position:absolute;left:7px;top:50%;height:3px;margin-top:-1.5px;border-radius:2px;width:calc((100% - 14px) * var(--sw-p,0));background:var(--sw-cor,#5aa9e6);opacity:.85;pointer-events:none}
+.swRange{-webkit-appearance:none;appearance:none;width:100%;height:24px;margin:0;background:transparent;pointer-events:none;position:relative;z-index:1}
+.swRange:disabled{opacity:.35}
+.swRange::-webkit-slider-runnable-track{height:3px;background:transparent;border:0}
+.swRange::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;margin-top:-5.5px;border-radius:50%;background:var(--ink);border:2px solid var(--sw-cor,#5aa9e6);box-shadow:0 1px 3px rgba(0,0,0,.5)}
+.swRange::-moz-range-track{height:3px;background:transparent;border:0}
+.swRange::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--ink);border:2px solid var(--sw-cor,#5aa9e6);box-shadow:0 1px 3px rgba(0,0,0,.5)}
+.swingRodape{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;flex-wrap:wrap}
+.swingAtalhos{display:flex;gap:4px;align-items:center}
+.swingAtalhos button{height:22px;padding:0 6px;font-size:10px;border-radius:4px;border:1px solid var(--line);background:var(--ctrlFundo2);color:var(--dim)}
+.swingAtalhos button.cur{border-color:#4da3ff;color:var(--textoForte);background:rgba(77,163,255,.16)}
+.swingAcoes{display:flex;align-items:center;gap:5px;margin-left:auto}
+.swingAcoes .btn{height:24px;padding:0 9px;font-size:10px;border-radius:5px}
+#swEstado{font-size:10px;color:var(--escala)}
+#swEstado.mudado{color:#ffd23f}
+#swEstado.gravado{color:#4cd97b}
+#swingInfo{font-size:10.5px;margin:4px 0 0;color:#4cd97b}
+#swingInfo.err{color:var(--red)}
+#swingInfo:empty{display:none}
+.padBloco{padding-bottom:10px;margin-bottom:9px;border-bottom:1px solid var(--line)}
+#padBtnInfo{font-size:11px;color:var(--dim);line-height:1.35;flex:1}
 
 /* ---------- repertório (baseado no Tap Tempo Trainer) ---------- */
 #repertorioFundo,#gerenciarFundo{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.72);align-items:center;justify-content:center;padding:14px}
@@ -1938,8 +736,8 @@ button.tapSub[hidden]{display:none}
 /* v4.6 — o status repetido no Console e ajustes, inteiro */
 .statusEco{display:flex;align-items:flex-start;gap:8px;margin:0 0 10px;font-size:13px;line-height:1.35;color:var(--ink)}
 .statusEco .dot{margin-top:4px}
-#volGravInfo{margin-top:6px;font-size:12px;color:var(--ink)}
-#volGravInfo.err{color:var(--red)}
+#volGravInfo,#cenaPedalInfo{margin-top:6px;font-size:12px;color:var(--ink)}
+#volGravInfo.err,#cenaPedalInfo.err{color:var(--red)}
 /* v7.0 — o arquivo com todas as configurações */
 #backupInfo{margin:6px 0 0;font-size:12px;color:var(--dim);overflow-wrap:anywhere}
 #backupInfo.ok{color:var(--ink)}
@@ -2273,7 +1071,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
   <p class="note" style="margin-top:8px">Mexer numa chave do pedal troca o modo de novo — as chaves físicas podem ficar diferentes do que aparece aqui. Precisa do firmware v37.</p>
   <p class="note" style="margin-top:6px">ONE PEDAL: ligado, os botões 1 a 4 do pedal escolhem o slot que o pedal 1 toca, em vez de trocar o timbre (no visor e no cartão, o número fica invertido). Aqui na página, dois toques num cartão também escolhem. No pedal, três toques rápidos no shift ligam e desligam. Vale no SB e no AT. Precisa do firmware v41.</p>
   <p class="note" style="margin-top:6px">LOOPER, AT COMUM E O SHIFT (firmware v45.5): o pedal GUARDA qual dos dois vale na posição AT — a chave no AT volta pro guardado. O botão SHIFT faz o papel do shift do pedal: com a chave no AT, tocar nele troca na hora (LOOPER ⇄ AT comum); fora do AT, ele arma, e a próxima ida da chave pro AT troca. A troca fica guardada no pedal (vale também pra alavanca, e depois de desligar). No looper você toca a levada nos botões do pedal; quando o LED verde acender (ele entendeu a repetição), segure o último toque e a máquina assume a volta. Qualquer botão de slot para. Daqui da página dá pra entrar, tocar (os ▶) e parar, mas não pra largar: isso é o hold no pedal. Com o firmware v45.4 (sem a memória) a chave no AT liga o looper e o SHIFT armado dá o AT comum; com o v45.0 a v45.3 a página faz igual, só a alavanca do pedal é que ainda é ao contrário. Os comandos são os de sempre ("CL" é o looper, "C10" o AT comum).</p>
-  <p class="note" style="margin-top:6px">AT E LOOPER (firmware v46): a posição AT tem dois loopers — o AT, de uma camada, e o LOOPER, com camadas; o SHIFT troca entre os dois e o pedal guarda a escolha. Nos dois você toca a levada no pedal; quando o LED verde acender, segure o último toque e a máquina assume a volta. Com a volta tocando, o slot que está nela PARA tudo (aqui o ▶ dele vira ■) e os outros tocam por cima, como o pad. No LOOPER, o que você toca por cima vira uma CAMADA: quando o verde acender de novo, segure o último toque, ou o shift por meio segundo, ou toque em GRAVAR CAMADA — até 3 camadas por cima da volta. O T+ e o T− mudam o andamento de tudo junto; o "Tnnn" não vale no looper. Com o firmware v45.5 ou mais velho, vale o texto de cima.</p>
+  <p class="note" style="margin-top:6px">AT E LOOPER (firmware v46; MUTE como tempo + hold na v49): a posição AT tem dois loopers — o AT, de uma camada, e o LOOPER, com camadas; o SHIFT troca entre os dois e o pedal guarda a escolha. Nos dois você toca a levada no pedal; quando o LED verde acender, segure o último toque e a máquina assume a volta. Com o firmware v50, se a levada tocada no AT ou no LOOPER for um dos ritmos do FR (<b>Vaneira, Samba, Forró ou Moda</b>, em qualquer timbre), o pedal reconhece sozinho e aplica os <b>acentos e o Swing</b> automaticamente. E desde a v49, um pedal em <b>00 MUTE</b> conta tempo em silêncio (vira um Tap Tempo ao vivo na tela sem mudar de modo) e serve de pedal de <b>hold</b> pra quem está tocando o PAD (tanto pra largar uma frase tocada só no PAD quanto pra lançar uma grade silenciosa e gravar camadas de PAD por cima). Com a volta tocando, o slot que está nela PARA tudo (aqui o ▶ dele vira ■) e os outros tocam por cima, como o pad. No LOOPER, o que você toca por cima vira uma CAMADA: quando o verde acender de novo, segure o último toque (ou um pedal MUTE livre), ou o shift por meio segundo, ou toque em GRAVAR CAMADA — até 3 camadas por cima da volta. O T+ e o T− mudam o andamento de tudo junto; o "Tnnn" não vale no looper.</p>
 </section>
 
 <h2 data-rec="volumegeral">Volume geral</h2>
@@ -2303,6 +1101,38 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
     <button data-bpm="+" aria-label="Mais 1 BPM">+</button>
     <button id="tap">Tap</button>
     <button id="repertorioBtn" class="tempo-rep" title="Repertório" aria-label="Abrir repertório">☰</button>
+  </div>
+  <div class="swingBloco" id="swingBox">
+    <div class="swingTopo">
+      <div class="swingEsq">
+        <span class="swingTit">Swing</span>
+        <b class="mono" id="swVal">0%</b>
+        <i id="swRot">reto</i>
+      </div>
+      <div class="swingDir" role="radiogroup" aria-label="Direção do swing: adiantar ou atrasar">
+        <button type="button" data-sw-dir="-1" role="radio" aria-checked="false">◀ Adiantar</button>
+        <button type="button" data-sw-dir="1" role="radio" aria-checked="true" class="cur">Atrasar ▶</button>
+      </div>
+    </div>
+    <div class="swingLinha">
+      <button type="button" class="swPasso" data-sw="-" aria-label="Menos 1% de intensidade">–</button>
+      <div class="swSlimZone" id="swZone"><input type="range" class="swRange" id="swFader" min="0" max="50" step="1" value="0" aria-label="Intensidade do swing em porcentagem"></div>
+      <button type="button" class="swPasso" data-sw="+" aria-label="Mais 1% de intensidade">+</button>
+    </div>
+    <div class="swingRodape">
+      <div class="swingAtalhos">
+        <button type="button" data-sw-pre="0">0%</button>
+        <button type="button" data-sw-pre="5">5%</button>
+        <button type="button" data-sw-pre="20">20%</button>
+        <button type="button" data-sw-pre="33">33%</button>
+      </div>
+      <span id="swEstado">do código</span>
+      <div class="swingAcoes">
+        <button type="button" class="btn primary" id="gravarSwing">Gravar</button>
+        <button type="button" class="btn" id="apagarSwing" style="color:var(--red);border-color:var(--red);background:transparent">Zerar</button>
+      </div>
+    </div>
+    <p id="swingInfo"></p>
   </div>
 </section>
 
@@ -2344,7 +1174,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
       </select>
     </div>
     <button class="btn" id="secoesAbrir" style="width:100%">Ordem das seções</button>
-    <p class="note">StompBox Remote v11.3 · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40, ONE v41, VER? K? e Z v42, CL T6 e ZP v45)</p>
+    <p class="note">StompBox Remote v15.0 GeminiCarbon · Mixing Station UI v2 · protocolo v29.0 (+ BOOT= v32, E? v33, MUTE e Vnn v34, Ann v36, S± v39.1, T do botão v40, ONE v41, VER? K? e Z v42, CL T6 e ZP v45, CS e CX v48, ZD e W v49, LPR v50)</p>
   </div>
 </details>
 
@@ -2367,6 +1197,14 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
   <button class="btn" id="apagarVolumes" style="width:100%;margin-top:6px;color:var(--red);border-color:var(--red);background:transparent">Apagar volumes gravados</button>
   <p id="volGravInfo"></p>
   <p class="note" style="margin-top:6px">Grava na flash do pedal os volumes de timbre diferentes da tabela do firmware — eles valem ao ligar, sem celular. "Apagar" tira todos da flash e volta os volumes aos da tabela na hora. Os dois cortam o som do pedal por um instante: use entre músicas. Gravar precisa do firmware v38; apagar, da v38.1.</p>
+  <!-- v13.0 — CENA DE INICIALIZAÇÃO NO FIRMWARE DO PEDAL ("CS" e "CX", firmware v48) -->
+  <div class="catPedal">
+    <div class="catPedalTit">Cena na inicialização do pedal</div>
+    <button class="btn primary" id="gravarCenaPedal" style="width:100%;margin-top:7px">Gravar cena no pedal</button>
+    <button class="btn" id="apagarCenaPedal" style="width:100%;margin-top:6px;color:var(--red);border-color:var(--red);background:transparent">Apagar cena do pedal</button>
+    <p id="cenaPedalInfo"></p>
+    <p class="note" style="margin-top:6px">Grava na flash (NVS) exatamente o estado completo de palco da StompBox — os 6 slots (4 principais + os 2 do FR), modo atual (SB, MN, AT, LP ou FR), escolha SHIFT do AT, ONE PEDAL, PAD ON/OFF, submodos (rota do click e TAP SOM), volume geral (inclusive MUTE), todos os 35 volumes de timbre ao vivo, o Swing e o BPM armado — para que ao ligar ela já abra direto nesse estado, sem celular. "Apagar" tira a cena da flash sem desmontar o som de agora (no próximo boot volta ao padrão das chaves). Os dois cortam o som por um instante: use entre músicas. Precisa do firmware v48.</p>
+  </div>
   <!-- v9.0 — FIRMWARE E CATÁLOGO DO PEDAL ("VER?" e "K?", firmware v42) -->
   <div class="catPedal">
     <div class="catPedalTit">Firmware e catálogo do pedal</div>
@@ -2380,6 +1218,12 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
 <!-- v9.0 — CALIBRAÇÃO DO PAD (comandos "Z", firmware v42) -->
 <h2 data-rec="calibracao">Calibração do pad</h2>
 <section class="box calib" id="calibBox">
+  <div class="padBloco">
+    <div class="oneLinha">
+      <button type="button" class="oneBtn" id="padBtn" aria-pressed="false" disabled><span class="oneLuz" aria-hidden="true"></span>PAD</button>
+      <div id="padBtnInfo">Conecte a StompBox (firmware v49+) para ativar ou desativar o pad por aqui</div>
+    </div>
+  </div>
   <p class="cenaTxt" id="calibStatus">—</p>
   <div class="calibZonas">
     <div class="calibZona" id="calibPele"><div class="calibTit">Pele</div></div>
@@ -2403,7 +1247,7 @@ try { aplicarTema((localStorage.getItem("sb_tema") || "escuro") === "escuro"); }
   <button class="btn primary" id="calibGravar" style="width:100%;margin-top:9px">Gravar calibração no pedal</button>
   <button class="btn" id="calibApagar" style="width:100%;margin-top:6px;color:var(--red);border-color:var(--red);background:transparent">Voltar aos valores do código</button>
   <p id="calibInfo"></p>
-  <p class="note" style="margin-top:8px">Cada número muda no pedal assim que você sai do campo — bata no pad e confira. Mudar não grava: desligou, volta. "Gravar" põe na flash só o que é diferente do código, e vale ao ligar. "Voltar aos valores do código" apaga a calibração gravada e volta aos números do firmware na hora. Gravar e apagar cortam o som por um instante: use entre músicas. Pra ver as batidas, o pad precisa estar armado (botão 3 segurado ao ligar, ou o modo calibração, botão 2). O limiar deve ficar abaixo da "mais fraca", senão o começo da régua de volume nunca soa. Precisa do firmware v42.</p>
+  <p class="note" style="margin-top:8px">Cada número muda no pedal assim que você sai do campo — bata no pad e confira. Mudar não grava: desligou, volta. "Gravar" põe na flash só o que é diferente do código, e vale ao ligar. "Voltar aos valores do código" apaga a calibração gravada e volta aos números do firmware na hora. Gravar e apagar cortam o som por um instante: use entre músicas. Com o firmware v49, o botão <b>PAD</b> aqui em cima ativa e desativa o pad na hora sem reiniciar (em firmwares anteriores, ligue segurando o botão 3 ou entre no modo calibração). O limiar deve ficar abaixo da "mais fraca", senão o começo da régua de volume nunca soa. Precisa do firmware v42.</p>
 </section>
 
 <div id="fimDasSecoes" hidden></div>   <!-- v9.1 — as seções reordenadas ficam antes daqui -->
@@ -3007,6 +1851,7 @@ async function abrirGatt(){
 function onDrop(){
   rx = tx = null; releaseWake();
   zerarCalibConexao();   // v9.0
+  zerarSwingConexao();   // v14.0
   zerarLooperConexao();  // v10.0
   agendarVisor();   // v5.0 — sem o "BT" na barra
   $('#btnConn').textContent = 'Conectar';
@@ -3041,6 +1886,7 @@ function disconnect(){
   try { if (dev && dev.gatt.connected) dev.gatt.disconnect(); } catch(e){}
   rx = tx = null; releaseWake();
   zerarCalibConexao();   // v9.0
+  zerarSwingConexao();   // v14.0
   zerarLooperConexao();  // v10.0
   limparPendentes();   // v3.14
   $('#btnConn').textContent = 'Conectar';
@@ -3049,6 +1895,17 @@ function disconnect(){
 }
 
 // v10.0 — sem conexão não há looper nem botão armado (o modo volta a ser lido ao conectar)
+// v14.0 — Swing (firmware v49: "SWING=nn C|G|M", "WS=", "WX=")
+const swing = { val: 0, dir: 1, estado: 'C', conhecido: false, drag: false };   // val: -50..+50; dir: -1 adiantar | +1 atrasar
+let gravarSwingTimer = null, apagarSwingTimer = null, padToggleTimer = null;
+function textoSwingAssinado(v){ return v > 0 ? '+' + v + '%' : v < 0 ? '−' + Math.abs(v) + '%' : '0%'; }
+function zerarSwingConexao(){
+  swing.val = 0; swing.dir = 1; swing.estado = 'C'; swing.conhecido = false; swing.drag = false;
+  clearTimeout(gravarSwingTimer); clearTimeout(apagarSwingTimer);
+  gravarSwingTimer = apagarSwingTimer = null;
+  renderSwing();
+}
+
 function zerarLooperConexao(){
   modoLooper = false; lp.pedido = false; lp.armado = false; clearTimeout(lp.timer); lp.timer = null; atSalvo = null; loop = null;   // v10.2 (v11.0: e a volta)
   renderLooper(); renderBarraStatus();
@@ -3132,9 +1989,80 @@ function handleLine(line){
     return;
   }
 
+  // v14.1 (firmware v49.1) — SWING=[-+]nn C|G|M, WS=1/0/ERRO e WX=1/0
+  if ((m = line.match(/^SWING=([+-]?\d+)\s+([CGM])$/))){
+    swing.val = Math.max(-50, Math.min(50, +m[1]));
+    if (swing.val < 0) swing.dir = -1;
+    else if (swing.val > 0) swing.dir = 1;
+    swing.estado = m[2];
+    swing.conhecido = true;
+    renderSwing();
+    return;
+  }
+  if ((m = line.match(/^WS=(\d+|ERRO)$/))){
+    clearTimeout(gravarSwingTimer); gravarSwingTimer = null;
+    const desc = swing.val === 0 ? '0% reto' : ((swing.val < 0 ? 'adiantar ' : 'atrasar ') + textoSwingAssinado(swing.val));
+    if (m[1] === 'ERRO'){
+      infoSwing('✕ Erro ao gravar o swing no pedal ' + horaAgora(), true);
+      avisoStatus('Erro ao gravar o swing no pedal', 'err', 6000);
+    } else if (m[1] === '0'){
+      infoSwing('✓ Swing já estava gravado no pedal ' + horaAgora() + ' — nada mudou', false);
+      avisoStatus('O swing já estava gravado igual no pedal — nada mudou', 'on', 4000);
+    } else {
+      infoSwing('✓ Swing (' + desc + ') gravado no pedal ' + horaAgora() + ' — vale ao ligar', false);
+      avisoStatus('Swing (' + desc + ') gravado na flash do pedal', 'on', 4500);
+    }
+    return;
+  }
+  if ((m = line.match(/^WX=(\d+)$/))){
+    clearTimeout(apagarSwingTimer); apagarSwingTimer = null;
+    infoSwing(m[1] === '0' ? '✓ Nenhum swing estava gravado — o pedal já está em 0% (reto)'
+                           : '✓ Swing apagado da flash ' + horaAgora() + ' — voltou a 0% (reto)', false);
+    avisoStatus(m[1] === '0' ? 'Não havia swing gravado — 0% (reto)' : 'Swing apagado da flash — voltou a 0% (reto)', 'on', 4500);
+    return;
+  }
+
+  // v13.0 (firmware v48) — CS=1 / CS=0 / CS=ERRO, CX=1 / CX=0 e CS?=1 / CS?=0: cena completa de boot na flash
+  if ((m = line.match(/^CS=(\d+|ERRO)$/))){
+    clearTimeout(gravarCenaTimer); gravarCenaTimer = null;
+    if (m[1] === 'ERRO'){
+      infoCenaPedal('✕ Erro ao gravar a cena no pedal ' + horaAgora(), true);
+      avisoStatus('Erro ao gravar a cena no pedal', 'err', 6000);
+    } else if (m[1] === '0'){
+      infoCenaPedal('✓ Cena já estava gravada no pedal ' + horaAgora() + ' — nada mudou', false);
+      avisoStatus('A cena já estava gravada igual no pedal — nada mudou', 'on', 4000);
+    } else {
+      infoCenaPedal('✓ Cena gravada no pedal ' + horaAgora() + ' — ao ligar ele abre neste estado', false);
+      avisoStatus('Cena gravada no pedal — ao ligar ele abre neste estado', 'on', 5000);
+    }
+    return;
+  }
+  if ((m = line.match(/^CX=(\d+)$/))){
+    clearTimeout(apagarCenaTimer); apagarCenaTimer = null;
+    if (m[1] === '0'){
+      infoCenaPedal('✓ Nenhuma cena estava gravada no pedal ' + horaAgora(), false);
+      avisoStatus('Não havia cena gravada — o pedal já liga no padrão das chaves', 'on', 4500);
+    } else {
+      infoCenaPedal('✓ Cena apagada do pedal ' + horaAgora() + ' — no próximo boot volta ao padrão', false);
+      avisoStatus('Cena apagada da flash — no próximo boot o pedal abre no padrão', 'on', 5000);
+    }
+    return;
+  }
+  if ((m = line.match(/^CS\?=([01])$/))){
+    infoCenaPedal(m[1] === '1' ? 'Cena gravada na flash do pedal (abre nela ao ligar)' : 'Nenhuma cena gravada na flash do pedal', false);
+    return;
+  }
+
+  // v15.0 — "LPR=VANEIRA" / "LPR=-" (firmware v50): ritmo do FR reconhecido no AT/LOOPER
+  if ((m = line.match(/^LPR=(.*)$/))){
+    const r = m[1].trim();
+    if (loop){ loop.ritmo = (r && r !== '-') ? r : null; renderVolta(); }
+    return;
+  }
   // v11.0 — "LOOP=..." (firmware v46): a volta e as camadas (na entrada do modo, no E? e a cada mudança)
   if ((m = line.match(/^LOOP=(OUVE|TOCA) C(\d) S([01]{4}) V([01])$/))){
-    loop = { toca: m[1] === 'TOCA', camadas: +m[2], slots: m[3].split('').map(x => x === '1'), verde: m[4] === '1' };
+    const ritmoAnt = loop ? loop.ritmo : null;
+    loop = { toca: m[1] === 'TOCA', camadas: +m[2], slots: m[3].split('').map(x => x === '1'), verde: m[4] === '1', ritmo: (m[1] === 'TOCA' || m[4] === '1') ? ritmoAnt : null };
     // v11.2 — parado e sem o verde: o visor perde o BPM, como no pedal. Com o verde aceso (V1) ele fica: o
     // firmware v46.2 mostra o BPM que entendeu, e manda a linha "BPM=" logo antes desta.
     if (!loop.toca && !loop.verde) visorZerarBpm();
@@ -3564,6 +2492,37 @@ function apagarVolumesDoPedal(){
   }, 2000);
 }
 
+/* v13.0 — GRAVAR E APAGAR A CENA COMPLETA NA FLASH DO PEDAL ("CS" e "CX", firmware v48) */
+let gravarCenaTimer = null, apagarCenaTimer = null;
+function infoCenaPedal(txt, erro){
+  const p = $('#cenaPedalInfo'); if (!p) return;
+  p.textContent = txt; p.classList.toggle('err', !!erro);
+}
+function gravarCenaNoPedal(){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (!confirm('Gravar a cena completa atual na flash do pedal?\n\nAo ligar da tomada, a StompBox vai abrir direto neste estado (os 6 slots, modo atual, escolha SHIFT do AT, ONE PEDAL, PAD, submodos, volume geral, todos os volumes de timbre e BPM).\n\nO som do pedal corta por um instante — faça entre músicas.')) return;
+  send('CS');
+  avisoStatus('Gravando a cena no pedal…', 'busy', 3000);
+  clearTimeout(gravarCenaTimer);
+  gravarCenaTimer = setTimeout(() => {
+    gravarCenaTimer = null;
+    avisoStatus('O pedal não respondeu — gravar a cena precisa do firmware v48', 'err', 6000);
+    infoCenaPedal('✕ O pedal não respondeu ' + horaAgora() + ' — precisa do firmware v48', true);
+  }, 2500);
+}
+function apagarCenaDoPedal(){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (!confirm('Apagar a cena de inicialização gravada na flash do pedal?\n\nO estado atual continua tocando normal; no próximo boot o pedal volta a abrir pelo padrão das chaves.\n\nO som do pedal corta por um instante — faça entre músicas.')) return;
+  send('CX');
+  avisoStatus('Apagando a cena do pedal…', 'busy', 3000);
+  clearTimeout(apagarCenaTimer);
+  apagarCenaTimer = setTimeout(() => {
+    apagarCenaTimer = null;
+    avisoStatus('O pedal não respondeu — apagar a cena precisa do firmware v48', 'err', 6000);
+    infoCenaPedal('✕ O pedal não respondeu ' + horaAgora() + ' — precisa do firmware v48', true);
+  }, 2500);
+}
+
 /* v3.19 — MODO DA STOMPBOX ("Cnn", firmware v37). As chaves daqui mostram o
    que o PEDAL diz; o toque só pede. Chave 2 à esquerda, chave 1 à direita:
    lendo da esquerda pra direita sai o número do modo. */
@@ -3682,13 +2641,14 @@ function renderVolta(){
   const grav = [1, 2, 3, 4].filter(s => loop.slots[s - 1]), lista = listaPt(grav);
   const cheio = loop.camadas >= LP_MAX_CAMADAS;
   vb.classList.toggle('verde', loop.verde);
+  const tagRitmo = loop.ritmo ? ' · ritmo ' + loop.ritmo + ' (acentos + swing)' : '';
   let txt;
-  if (!loop.toca) txt = loop.verde ? 'Entendeu (LED verde): segure o último toque no pedal — a máquina assume a volta'
+  if (!loop.toca) txt = loop.verde ? 'Entendeu (LED verde' + tagRitmo + '): segure o último toque no pedal — a máquina assume a volta'
                                    : 'Ouvindo — toque a levada no pedal; quando o LED verde acender, segure o último toque';
-  else if (!modoLooper) txt = 'Tocando — ' + (grav.length ? (grav.length === 1 ? 'o slot ' + lista + ' está na volta e para' : 'os slots ' + lista + ' estão na volta e param') + '; ' : '')
+  else if (!modoLooper) txt = 'Tocando' + tagRitmo + ' — ' + (grav.length ? (grav.length === 1 ? 'o slot ' + lista + ' está na volta e para' : 'os slots ' + lista + ' estão na volta e param') + '; ' : '')
                               + 'os outros e o pad tocam por cima';
   else if (loop.verde && !cheio) txt = 'Camada nova entendida (LED verde): segure o último toque, o shift por meio segundo, ou toque em GRAVAR CAMADA';
-  else txt = 'Tocando · ' + loop.camadas + (loop.camadas === 1 ? ' camada' : ' camadas') + (cheio ? ' (o máximo)' : '') + ' — na volta: ' + (lista || '—')
+  else txt = 'Tocando · ' + loop.camadas + (loop.camadas === 1 ? ' camada' : ' camadas') + (cheio ? ' (o máximo)' : '') + tagRitmo + ' — na volta: ' + (lista || '—')
              + (cheio ? '; o resto só toca por cima' : '; toque uma camada nova nos outros slots ou no pad');
   est.textContent = txt;
   g.hidden = !modoLooper;
@@ -3977,8 +2937,12 @@ function renderVpt(){
     f.disabled = false;
     if (!vpt.drag) f.value = vpt.vol;
     $('#vNow').textContent = vpt.vol;
-    $('#vLabel').innerHTML = '<b>' + pad(vpt.timbre || 0, 2) + ' ' + (vpt.nome || '') + '</b> no slot ' +
-      (SLOT_NAMES[vpt.slot] || vpt.slot);
+    const lbl = $('#vLabel');
+    lbl.textContent = '';
+    const bEl = document.createElement('b');
+    bEl.textContent = pad(vpt.timbre || 0, 2) + ' ' + (vpt.nome || '');
+    lbl.appendChild(bEl);
+    lbl.appendChild(document.createTextNode(' no slot ' + (SLOT_NAMES[vpt.slot] || vpt.slot)));
   }
   document.querySelectorAll('[data-v]').forEach(b => b.disabled = (vpt.vol == null));
   document.querySelectorAll('#vPick button').forEach(b => {
@@ -4382,7 +3346,7 @@ $('#cenaSalvar').onclick = salvarCena;
    volta: confere o arquivo, pergunta, troca as configurações da página pelas
    do arquivo e recarrega. O que outras páginas do mesmo site guardam (o site
    é um só pra todas) fica de fora nos dois sentidos. */
-const BACKUP_FORMATO = 1, VERSAO_PAGINA = 'v10.0';
+const BACKUP_FORMATO = 1, VERSAO_PAGINA = 'v15.0';
 const CHAVE_ULTIMO_BACKUP = 'sb_ultimoBackup';   // só deste celular: não vai no arquivo
 const chaveDoBackup = k => (k.startsWith('sb_') && k !== CHAVE_ULTIMO_BACKUP) || k === CHAVE_REPERTORIO;
 function chavesDaPagina(){
@@ -4694,14 +3658,20 @@ $('#favSave').onclick = () => {
 function pintarFader(id){
   const el = document.getElementById(id);
   if (!el) return;
-  const zone = el.closest('.fader-zone');
-  if (!zone) return;
   const min = +el.min || 0, max = +el.max || 100;
   const p = Math.max(0, Math.min(1, (+el.value - min) / (max - min)));
+  const slim = el.closest('.swSlimZone');
+  if (slim){
+    slim.style.setProperty('--sw-p', p.toFixed(4));
+    slim.style.setProperty('--sw-cor', (typeof swing !== 'undefined' && swing.dir < 0) ? '#ffb347' : '#5aa9e6');
+    return;
+  }
+  const zone = el.closest('.fader-zone');
+  if (!zone) return;
   zone.style.setProperty('--level', (p * 100) + '%');
   zone.style.setProperty('--level-alpha', Math.max(.06, .16 + p * .22));
 }
-['mFader','vFader','volFader'].forEach(id => {   // v3.18: + a janela do segurar
+['mFader','vFader','volFader','swFader'].forEach(id => {   // v3.18: + a janela do segurar
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', () => pintarFader(id));
   pintarFader(id);
@@ -4718,16 +3688,17 @@ function pintarFader(id){
    o resto da página não precisou mudar. */
 const ALCA_LARGURA = 25;   // a largura da alça no CSS (::-webkit-slider-thumb)
 const ALCA_PEGA_PX = 26;   // distância do centro da alça que ainda conta como pegar
-function faderSoPelaAlca(input){
-  const zona = input.closest('.fader-zone');
+function faderSoPelaAlca(input, largAlca){
+  const alcaW = largAlca || ALCA_LARGURA;
+  const zona = input.closest('.fader-zone, .swSlimZone');
   if (!zona) return;
   let arrasto = null;
   const faixa = () => ({ min: +input.min, max: +input.max, passo: +input.step || 1 });
   zona.addEventListener('pointerdown', e => {
     if (input.disabled || arrasto) return;
     const r = input.getBoundingClientRect(), f = faixa();
-    const util = r.width - ALCA_LARGURA;
-    const xAlca = r.left + ALCA_LARGURA / 2 + util * ((+input.value - f.min) / (f.max - f.min));
+    const util = r.width - alcaW;
+    const xAlca = r.left + alcaW / 2 + util * ((+input.value - f.min) / (f.max - f.min));
     if (Math.abs(e.clientX - xAlca) > ALCA_PEGA_PX) return;   // fora da alça: ignora (a página rola)
     arrasto = { id: e.pointerId, x0: e.clientX, v0: +input.value, util: util };
     input.dataset.arrasto = '1';
@@ -4771,6 +3742,8 @@ faderSoPelaAlca($('#volFader'));   // v3.18
   $('#volFechar').onclick = fecharVolumeTimbre;
   $('#gravarVolumes').onclick = gravarVolumesNoPedal;   // v3.21
   $('#apagarVolumes').onclick = apagarVolumesDoPedal;   // v4.1
+  $('#gravarCenaPedal').onclick = gravarCenaNoPedal;    // v13.0
+  $('#apagarCenaPedal').onclick = apagarCenaDoPedal;    // v13.0
   // v4.2 — modo claro / escuro
   $('#btnTema').onclick = () => {   // v4.3 — troca a folha inteira
     const escuro = !document.documentElement.classList.contains('escuro');
@@ -4968,8 +3941,8 @@ function oledTextoCentradoSlot(t, txt, base){        // desenharTextoCentradoSlo
 }
 function oledBarra(t, e){                             // desenharBarraStatus()
   const modo = (e.modo === '10' && e.looper) ? 'LP' : ({ '00': 'SB', '01': 'MN', '10': 'AT', '11': 'FR' }[e.modo] || 'SB');   // v10.0 — LP = o looper (v45)
-  // v8.0 — no SB e no AT, o "ONE" (firmware v41); o "PAD" a página não sabe
-  const extra = (e.modo === '01' || e.modo === '11') ? (e.extra || '') : (e.one ? 'ONE' : '');
+  // v8.0 / v14.0 — no SB e no AT, o "ONE" (v41) e o "PAD" (v49 manda ZPAD= no E? e no ZD1/ZD0)
+  const extra = (e.modo === '01' || e.modo === '11') ? (e.extra || '') : (e.one ? (e.pad ? 'ONE PAD' : 'ONE') : (e.pad ? 'PAD' : ''));
   // v11.0 — o looper TOCANDO (firmware v46): o BPM depois do modo e, no LOOPER com camadas, quantas ("LP 120 C2").
   // Se não couber com o ONE, ele sai (como no pedal).
   // v11.2 (firmware v46.2) — o BPM saiu da barra (vai grande no canto da lista): na barra ficam só as camadas ("LP C2").
@@ -5105,6 +4078,12 @@ function oledTelaModo(t, e){
 // Os avisos (somem sozinhos: 1,5 s o do Bluetooth e o da flash; 0,6 s preset e volumes)
 function oledAvisoBT(t){ t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('BLUETOOTH', 8); t.tam = 2; t.centrado('CONECTADO', 28); }
 function oledAvisoOne(t, ligado){ t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('ONE PEDAL', 8); t.tam = 2; t.centrado(ligado ? 'LIGADO' : 'DESLIGADO', 28); }   // v8.0: desenharAvisoOne()
+function oledAvisoPad(t, ligado){ t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('PAD', 8); t.tam = 2; t.centrado(ligado ? 'LIGADO' : 'DESLIGADO', 28); }   // v14.0: desenharAvisoPad()
+function oledAvisoSwing(t, sw){
+  t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true;
+  t.tam = 1; t.centrado(sw < 0 ? 'SWING ADIANTA' : (sw > 0 ? 'SWING ATRASA' : 'SWING'), 4);
+  t.tam = 3; t.centrado((sw > 0 ? '+' + sw : String(sw)) + '%', 24);
+}   // v14.1: desenharAvisoSwing()
 function oledAvisoPreset(t, nome){ t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.centrado('PRESET', 8); t.tam = 2; t.centrado(nome, 28); }
 function oledAvisoVolumeTimbre(t, idx, v){
   t.limpar(); t.cor = 1; t.fonte = null; t.quebra = true; t.tam = 1; t.cursor(2, 4); t.imprimir(OLED_CURTOS[idx] || '');
@@ -5133,7 +4112,7 @@ function visorEstado(){
   const n = s => (state.slots[s] && state.slots[s].n != null) ? state.slots[s].n : null;
   return { modo: modoPedal || '00', extra: modoExtra, bt: !!rx, volume: state.master == null ? null : state.master,
            resetAnormal: !!(state.boot && state.boot !== 'POWERON'), slots: [n(1), n(2), n(3), n(4)], metro: n(5),
-           bpm: visor.bpm, moldura: visor.moldura, one: one.ativo ? one.slot : 0,   // v8.0
+           bpm: visor.bpm, moldura: visor.moldura, one: one.ativo ? one.slot : 0, pad: calib.pad === true,   // v8.0 / v14.0
            // v10.0 — firmware v45: o slot 2 do FR, o looper, o aviso da entrada do AT e o dono do ritmo
            v45: pedalV45(), metro2: n(6), looper: modoLooper, aviso: Date.now() < visor.atAvisoAte, frDono: visor.frDono,
            // v11.0 — firmware v46: o looper tocando e os slots que estão na volta
@@ -5190,6 +4169,29 @@ function visorLinha(line){
       : oledAvisoFlash(t, 'GRAVADO', v === '0' ? 'NADA MUDOU' : v + (v === '1' ? ' ALTERACAO' : ' ALTERACOES'), T), 1500);
     else visorAviso(t => oledAvisoFlash(t, 'APAGADO', v === '0' ? 'NADA GRAVADO' : v + (v === '1' ? ' APAGADO' : ' APAGADOS'), T), 1500);
   }
+  // v13.0 (firmware v48) — "CS"/"CX": o aviso OLED da cena na flash
+  else if ((m = line.match(/^C([SX])=(\S+)/)) && !calib.cal){
+    const T = 'CENA NA FLASH', v = m[2];
+    if (m[1] === 'S') visorAviso(t => v === 'ERRO' ? oledAvisoFlash(t, 'ERRO', 'NAO GRAVOU', T)
+      : oledAvisoFlash(t, 'GRAVADA', v === '0' ? 'NADA MUDOU' : 'ABRE NESTE ESTADO', T), 1500);
+    else visorAviso(t => oledAvisoFlash(t, 'APAGADA', v === '0' ? 'NADA GRAVADO' : 'VOLTA AO PADRAO', T), 1500);
+  }
+  // v14.0 (firmware v49) — avisos OLED do PAD ("ZD0"/"ZD1") e do SWING ("W=nn"/"W±"/"WS"/"WX")
+  else if ((m = line.match(/^ZPAD=([01])$/)) && !calib.cal && Date.now() - (visor.zdPedidoMs || 0) < 2000){
+    visor.zdPedidoMs = 0;
+    visorAviso(t => oledAvisoPad(t, m[1] === '1'), 600);
+  }
+  else if ((m = line.match(/^SWING=([+-]?\d+)\s+[CGM]$/)) && !calib.cal && Date.now() - (visor.swPedidoMs || 0) < 2000){
+    visor.swPedidoMs = 0;
+    visorAviso(t => oledAvisoSwing(t, +m[1]), 600);
+  }
+  else if ((m = line.match(/^W([SX])=(\S+)/)) && !calib.cal){
+    const T = 'SWING NA FLASH', v = m[2];
+    const detSw = swing.val === 0 ? 'RETO 0%' : ((swing.val < 0 ? 'ADIANTA ' : 'ATRASA +') + swing.val + '%');
+    if (m[1] === 'S') visorAviso(t => v === 'ERRO' ? oledAvisoFlash(t, 'ERRO', 'NAO GRAVOU', T)
+      : oledAvisoFlash(t, 'GRAVADO', v === '0' ? 'NADA MUDOU' : detSw, T), 1500);
+    else visorAviso(t => oledAvisoFlash(t, 'APAGADO', v === '0' ? 'NADA GRAVADO' : 'VOLTOU A 0%', T), 1500);
+  }
   else if ((m = line.match(/^VOL\s+GERAL\s+(\d+)/i))){
     // v5.1 (firmware v40) — a resposta a um "M?" (a página pergunta ao
     // conectar) não muda a tela do pedal. As outras — M+, M−, Mnn, M0 e o
@@ -5212,6 +4214,8 @@ function visorComando(cmd){
   ledSimComando(cmd);   // v5.1 — antes de mexer no "rodando": o LED olha o estado de antes do comando
   if (cmd === 'M?'){ visor.mPerguntas++; visor.mPerguntaMs = Date.now(); }   // v5.1 — a resposta não muda a tela (v40)
   if (/^T\d+$/.test(cmd)) visor.tPedido = Date.now();
+  if (/^ZD[01]$/i.test(cmd)) visor.zdPedidoMs = Date.now();
+  if (/^W(=?[+-]?\d+|[+-])$/i.test(cmd)) visor.swPedidoMs = Date.now();
   if (modoPedal !== '01' && modoPedal !== '11') return;
   const bt = modoPedal === '01' && modoExtra === 'CLICK BT';
   /* v10.0 — FR do firmware v45: o "D1"/"D2" é a pisada do slot. O que a página consegue acompanhar
@@ -5343,11 +4347,36 @@ const OFF_VOL = [200, 256, 256, 256, 200, 256, 256, 256, 256, 256, 256, 256, 256
 const OFF_ROTA = ['MUDO', 'CLICK LR', 'CLICK L', 'CLICK BT'], OFF_ROTA_PROX = [3, 2, 0, 1];   // CLICK_ROT_NOME, CLICK_PROXIMO
 const OFF_SIGLA = { '00': 'SB', '01': 'MN', '10': 'AT', '11': 'FR' };
 
-function pedalFalsoNovo(){   // como o pedal ao ligar
-  return { slots: [null, 0, 5, 12, 11], metro: 7, metro2: 13, looper: false, calibModo: false, calibPag: 0, atSalvo: 'LP',   // v10.2 — a escolha guardada do AT (v45.5)   // v10.0 (firmware v45): o slot 2 do FR nasce no TRI ABERTO; o looper; o modo calibração
-           modo: '00', rota: 0, tapSom: false,
-           nivel: 16, antesMute: 16, ajuste: {}, gravado: {}, bpm: 0, ultimoSlot: 1, one: 0, t0: Date.now(),   // v8.0: one 0 = desligado
-           calib: offCalibPadrao(), calibGravado: {} };   // v9.0 — a calibração do pad (firmware v42)
+let cenaFlashOffline = null;   // v13.0 — cena gravada por "CS" na StompBox simulada (vale ao religar a simulada)
+let swingFlashOffline = null;   // v14.0 — swing gravado por "WS" na StompBox simulada
+function offMontarCena(p){
+  const vol = [];
+  for (let i = 0; i < OFF_NUM; i++) vol.push(p.ajuste[i] || OFF_VOL[i]);
+  const padReal = p.calibModo ? !!p.padAntesCalib : !!p.pad;
+  return { slots: p.slots.slice(), metro: p.metro, metro2: p.metro2, modo: p.modo, looper: !!p.looper,
+           atSalvo: p.atSalvo, one: p.one, pad: padReal, rota: p.rota, tapSom: !!p.tapSom,
+           nivel: p.nivel, antesMute: p.antesMute, swing: p.swing || 0,
+           bpm: (p.bpm >= 30 && p.bpm <= 300) ? p.bpm : 0, vol: vol };
+}
+function pedalFalsoNovo(){   // como o pedal ao ligar (se houver cena gravada por "CS", abre direto nela!)
+  const swIni = swingFlashOffline != null ? swingFlashOffline : 0;
+  const base = { slots: [null, 0, 5, 12, 11], metro: 7, metro2: 13, looper: false, calibModo: false, calibPag: 0, atSalvo: 'LP',
+                 modo: '00', rota: 0, tapSom: false, pad: false, padAntesCalib: false,
+                 nivel: 16, antesMute: 16, swing: swIni, swingGravado: swingFlashOffline,
+                 ajuste: {}, gravado: {}, bpm: 0, ultimoSlot: 1, one: 0, t0: Date.now(),
+                 calib: offCalibPadrao(), calibGravado: {} };
+  if (cenaFlashOffline){
+    const c = cenaFlashOffline;
+    base.slots = c.slots.slice(); base.metro = c.metro; base.metro2 = c.metro2;
+    base.modo = c.modo; base.looper = c.looper; base.atSalvo = c.atSalvo;
+    base.one = c.one; base.pad = c.pad; base.padAntesCalib = c.pad; base.rota = c.rota; base.tapSom = c.tapSom;
+    base.nivel = c.nivel; base.antesMute = c.antesMute; base.swing = c.swing || 0;
+    base.bpm = (c.modo === '10') ? 0 : c.bpm;
+    for (let i = 0; i < c.vol.length && i < OFF_NUM; i++){
+      if (c.vol[i] !== OFF_VOL[i]) base.ajuste[i] = c.vol[i];
+    }
+  }
+  return base;
 }
 // v9.0 — a tabela CALIB do firmware v42: código -> [do código, mínimo, máximo]
 const OFF_CALIB = { PL: [500, 1, 4095], PN: [500, 0, 4095], PX: [3000, 1, 4095], PV: [20, 1, 256],
@@ -5360,14 +4389,22 @@ function offLinhaCalib(p, k){   // "ZPL=650 500 M", como o bleResponderCalib()
 function offCalib(p, c){        // os "Z" (processarCalibracaoBLE do firmware). Sem pad: nenhuma batida.
   let m;
   // v10.0 (firmware v45) — o "ZM1" liga o modo calibração no SB e no AT (e arma o pad); o "ZP" anda nas páginas
-  const zEstado = () => ['ZCAL=' + (p.calibModo ? 1 : 0), 'ZP=' + (p.calibModo ? p.calibPag : 0), 'ZPAD=' + (p.calibModo ? 1 : 0)];
-  if (c === 'Z?') return Object.keys(OFF_CALIB).map(k => offLinhaCalib(p, k)).concat(['ZPAD=' + (p.calibModo ? 1 : 0), 'ZCAL=' + (p.calibModo ? 1 : 0)]);
+  const padEfetivo = () => (p.calibModo || p.pad) ? 1 : 0;
+  const zEstado = () => ['ZCAL=' + (p.calibModo ? 1 : 0), 'ZP=' + (p.calibModo ? p.calibPag : 0), 'ZPAD=' + padEfetivo()];
+  if (c === 'Z?') return Object.keys(OFF_CALIB).map(k => offLinhaCalib(p, k)).concat(['ZPAD=' + padEfetivo(), 'ZCAL=' + (p.calibModo ? 1 : 0)]);
+  if (c === 'ZD?') return ['ZPAD=' + padEfetivo()];
+  if (c === 'ZD1'){ p.pad = true; p.padAntesCalib = true; return ['ZPAD=1']; }
+  if (c === 'ZD0'){
+    p.pad = false; p.padAntesCalib = false;
+    if (p.calibModo){ p.calibModo = false; p.calibPag = 0; return ['ZM=0', 'ZCAL=0', 'ZP=0', 'ZPAD=0']; }
+    return ['ZPAD=0'];
+  }
   if (c === 'ZP'){ if (p.calibModo) p.calibPag = p.calibPag % 3 + 1; return ['ZP=' + (p.calibModo ? p.calibPag : 0)]; }
   if (c === 'ZM1'){
-    if (!p.calibModo && (p.modo === '00' || p.modo === '10')){ p.calibModo = true; p.calibPag = 1; }
+    if (!p.calibModo && (p.modo === '00' || p.modo === '10')){ p.padAntesCalib = !!p.pad; p.pad = true; p.calibModo = true; p.calibPag = 1; }
     return ['ZM=1'].concat(zEstado());
   }
-  if (c === 'ZM0'){ p.calibModo = false; p.calibPag = 0; return ['ZM=0'].concat(zEstado()); }
+  if (c === 'ZM0'){ if (p.calibModo){ p.calibModo = false; p.calibPag = 0; p.pad = !!p.padAntesCalib; } return ['ZM=0'].concat(zEstado()); }
   if (c === 'ZS'){
     let n = 0;
     Object.keys(OFF_CALIB).forEach(k => {
@@ -5433,18 +4470,22 @@ function offTrocarTimbre(p, slot, delta, abs){
 function offAtSalvo(p, v){ if (p.atSalvo === v) return []; p.atSalvo = v; return ['ATSALVO=' + v]; }
 // v11.0 — como o firmware v46: na posição AT (o AT e o LOOPER) a linha da volta. A mentira não toca a volta
 // (o hold não existe pela página), então é sempre a de quem está ouvindo, sem o verde.
-const offLinhaLoop = () => 'LOOP=OUVE C0 S0000 V0';
+const offLinhasLoop = () => ['LOOP=OUVE C0 S0000 V0', 'LPR=-'];
 function pedalFalsoResponde(p, bruto){
   const c = String(bruto).trim().toUpperCase(), c0 = c[0] || '', c1 = c[1] || '';
   const metro = p.modo === '01' || p.modo === '11', comTap = p.modo !== '00';
   let m;
   if (c === 'PING') return ['PONG ' + (Date.now() - p.t0)];
   if (c === 'VER?') return ['VER=' + OFF_FIRMWARE.slice(1)];   // v9.0 — a versão que a mentira imita
+  if (c === 'AUD?') return ['AUD=0', 'AUDL W=0 F=0 M=0', 'AUDN N=1 L=1 A=23', 'AUD9 I=v5.x-sim', 'AUDK N=0 R=0 D=0', 'AUDK2 B=0 G=0', 'AUDB R=0 P=0 C=0'];
   if (c === 'K?') return offCatalogo();                         // v9.0
   if (c0 === 'Z') return offCalib(p, c);                        // v9.0 — antes do filtro de dígitos, como no firmware v42
+  const offLinhaSwing = () => 'SWING=' + (p.swing || 0) + ' ' + (p.swingGravado == null ? ((p.swing || 0) === 0 ? 'C' : 'M') : ((p.swing || 0) === p.swingGravado ? 'G' : 'M'));
   if (c === 'E?') return [offLinhaModo(p), offLinhaT(1, p.slots[1]), offLinhaT(2, p.slots[2]), offLinhaT(3, p.slots[3]),
-                          offLinhaT(4, p.slots[4]), offLinhaT(5, p.metro), offLinhaT(6, p.metro2), 'ONE=' + p.one, 'ATSALVO=' + p.atSalvo]
-                          .concat(p.modo === '10' ? [offLinhaLoop()] : []).concat(['BOOT=POWERON']);   // v10.2: a escolha do AT (v45.5) · v11.0: a volta (v46)   // v8.0: o ONE (v41) · v10.0: o T6 (v45)
+                          offLinhaT(4, p.slots[4]), offLinhaT(5, p.metro), offLinhaT(6, p.metro2), 'ONE=' + p.one, 'ATSALVO=' + p.atSalvo,
+                          'ZPAD=' + ((p.calibModo || p.pad) ? 1 : 0), offLinhaSwing()]
+                          .concat(p.modo === '10' ? offLinhasLoop() : ((p.modo === '01' || p.modo === '11') && p.bpm > 0 ? ['BPM=' + Math.round(p.bpm)] : []))
+                          .concat(['BOOT=POWERON']);   // v14.0: ZPAD= e SWING= no E? (v49)
   if (c0 === 'T'){                                      // andamento: Tnnn, T+ e T−
     if (c1 === '+' || c1 === '-'){
       if (!comTap || p.bpm <= 0) return [];
@@ -5483,19 +4524,31 @@ function pedalFalsoResponde(p, bruto){
     if (!(m = c.match(/^A(\d{1,2})/)) || +m[1] < 1 || +m[1] > OFF_NUM) return [];
     return ['A' + pad(+m[1], 2) + ' ' + offNome(+m[1] - 1)];
   }
-  if (c0 === 'C'){                                      // modo: troca (ou só pergunta) e confirma
+  if (c0 === 'C'){                                      // modo, camada do looper e cena na flash ("CS"/"CX"/"CS?", v48)
+    if (c === 'CS?') return ['CS?=' + (cenaFlashOffline ? 1 : 0)];
+    if (c === 'CS'){
+      const nova = offMontarCena(p);
+      if (cenaFlashOffline && JSON.stringify(cenaFlashOffline) === JSON.stringify(nova)) return ['CS=0'];
+      cenaFlashOffline = nova;
+      return ['CS=1'];
+    }
+    if (c === 'CX'){
+      const tinha = !!cenaFlashOffline;
+      cenaFlashOffline = null;
+      return ['CX=' + (tinha ? 1 : 0)];
+    }
     if (c1 === '?') return [offLinhaModo(p)];
     if (p.calibModo && (c1 === 'L' || /^C[01][01]/.test(c))) return [offLinhaModo(p)];   // v10.0 — na calibração o modo não troca: responde o de agora
     if (c1 === 'G') return ['ERR CG'];                  // v11.0 — "CG": a mentira não toca a volta, então não há camada
     if (c1 === 'L'){ const r = offAtSalvo(p, 'LP'), entra = !(p.modo === '10' && p.looper); p.modo = '10'; p.looper = true; p.bpm = 0;
-                     return r.concat([offLinhaModo(p)]).concat(entra ? [offLinhaLoop()] : []); }   // v10.0 — "CL": o AT com o looper (v10.2: e guarda; v11.0: a volta)
+                     return r.concat([offLinhaModo(p)]).concat(entra ? offLinhasLoop() : []); }   // v10.0 — "CL": o AT com o looper (v10.2: e guarda; v11.0: a volta)
     if (!/^C[01][01]/.test(c)) return [];
     const novo = c.slice(1, 3), eMetro = b => b === '01' || b === '11';
     if ((novo !== p.modo || p.looper) && !(eMetro(novo) && eMetro(p.modo))) p.bpm = 0;   // só entre MN e FR o andamento atravessa
     const r = novo === '10' ? offAtSalvo(p, 'AT') : [];   // v10.2 — "C10" guarda o AT comum
     const entra = novo === '10' && (p.modo !== '10' || p.looper);   // v11.0 — entrou no AT (o looper de uma camada): a volta
     p.modo = novo; p.looper = false;
-    return r.concat([offLinhaModo(p)]).concat(entra ? [offLinhaLoop()] : []);
+    return r.concat([offLinhaModo(p)]).concat(entra ? offLinhasLoop() : []);
   }
   if (c0 === 'V'){                                      // volumes dos timbres
     if (c1 === 'S'){                                    // gravar: conta o que mudou desde a última gravação
@@ -5522,6 +4575,30 @@ function pedalFalsoResponde(p, bruto){
     p.ajuste[i] = Math.max(1, Math.min(256, +m[3]));
     return [offVolTimbre(i, p.ajuste[i])];
   }
+  if (c0 === 'W'){                                      // v14.1 — swing bidirecional -50..+50 (firmware v49.1)
+    if (c === 'W?') return [offLinhaSwing()];
+    if (c === 'W+' || c === 'W-'){
+      p.swing = Math.max(-50, Math.min(50, (p.swing || 0) + (c1 === '+' ? 1 : -1)));
+      return [offLinhaSwing()];
+    }
+    if (c === 'WS'){
+      const v = p.swing || 0;
+      let mud = 0;
+      if (v !== 0){ if (p.swingGravado !== v){ p.swingGravado = v; swingFlashOffline = v; mud = 1; } }
+      else if (p.swingGravado != null){ p.swingGravado = null; swingFlashOffline = null; mud = 1; }
+      return ['WS=' + mud, offLinhaSwing()];
+    }
+    if (c === 'WX'){
+      const tinha = p.swingGravado != null ? 1 : 0;
+      p.swing = 0; p.swingGravado = null; swingFlashOffline = null;
+      return ['WX=' + tinha, offLinhaSwing()];
+    }
+    if ((m = c.match(/^W=?\s*([+-]?\d+)$/))){
+      p.swing = Math.max(-50, Math.min(50, +m[1]));
+      return [offLinhaSwing()];
+    }
+    return [];
+  }
   if (c0 === 'S'){                                      // submodo: rota do click (MN) / TAP SOM-MUDO (FR)
     if (c1 !== '+' && c1 !== '-') return [];
     if (p.modo === '01') p.rota = c1 === '+' ? OFF_ROTA_PROX[p.rota] : OFF_ROTA_PROX.indexOf(p.rota);
@@ -5531,10 +4608,9 @@ function pedalFalsoResponde(p, bruto){
   // timbre: "+", "−", "1+", "2−", "312", "100" (MUTE), "399" (o próximo)
   if (c0 === '+' || c0 === '-') return offTrocarTimbre(p, p.ultimoSlot, c0 === '+' ? 1 : -1, null);
   if ((m = c.match(/^([1-4])([+-])/))){ p.ultimoSlot = +m[1]; return offTrocarTimbre(p, +m[1], m[2] === '+' ? 1 : -1, null); }
-  const dig = c.replace(/\D/g, '');
-  if (dig.startsWith('9999') || dig.startsWith('8888') || dig.length < 3) return [];   // 9999/8888 = disparos
-  const slot = +dig[0], nn = +dig.slice(1, 3);
-  if (slot < 1 || slot > 4) return [];
+  if (c === '9999' || c === '8888') return [];   // disparos legados
+  if (!(m = c.match(/^([1-4])(\d\d)$/))) return [];   // v12.0 (firmware v47.0): 3 dígitos estritos
+  const slot = +m[1], nn = +m[2];
   p.ultimoSlot = slot;
   if (nn === 99) return offTrocarTimbre(p, slot, 1, null);
   return offTrocarTimbre(p, slot, 0, nn === 0 ? OFF_MUTE : nn - 1);
@@ -5553,7 +4629,7 @@ function offEntregar(linhas){
    Depois, a tela do pedal pronto, ainda sem o Bluetooth, e a página conecta:
    BLUETOOTH CONECTADO e o resto como na v6.1. As contas são em float, como
    no ESP32 (Math.fround), pra barra e o LED virarem no mesmo quadro. */
-const OFF_FIRMWARE = 'v46.3';                         // a versão que a StompBox de mentira imita (aparece no splash)
+const OFF_FIRMWARE = 'v50.0';                         // a versão que a StompBox de mentira imita (aparece no splash)
 const BOAS_VINDAS_MS = 3000, BOAS_VINDAS_FPS_MS = 50;  // BOAS_VINDAS_DURACAO_MS e BOAS_VINDAS_FPS_MS do firmware
 const OFF_CONECTA_MS = 800;                           // do pedal pronto até a página conectar
 // ABERTURA do firmware, por pino: {LED_PIN, LED2_PIN, LED3_PIN} — na montagem do Saulo, {azul, vermelho, verde}
@@ -5581,11 +4657,12 @@ function ledAbertura(progresso){                      // aberturaColorida()
 }
 // a tela do pedal pronto, do estado da StompBox de mentira (ainda sem o "BT" na barra)
 function offEstadoVisor(p){
+  const bArmado = (p.modo === '01' || p.modo === '11') && p.bpm > 0 ? p.bpm : 0;
   return { modo: p.modo, extra: p.modo === '01' ? OFF_ROTA[p.rota] : (p.modo === '11' ? (p.tapSom ? 'TAP SOM' : 'TAP MUDO') : ''),
            bt: false, volume: p.nivel, resetAnormal: false, slots: [1, 2, 3, 4].map(s => offNumero(p.slots[s])),
-           metro: offNumero(p.metro), bpm: 0, moldura: false, one: p.one,
+           metro: offNumero(p.metro), bpm: bArmado, moldura: bArmado > 0, one: p.one, pad: !!p.pad,
            v45: true, metro2: offNumero(p.metro2), looper: p.looper, aviso: false, frDono: 0,   // v10.0
-           v46: true, loopToca: false, loopCam: 0, loopSlots: null };                          // v11.0
+           v46: true, v462: true, loopToca: false, loopCam: 0, loopSlots: null };              // v11.0 / v12.0 / v13.0
 }
 function offStatus(){
   if (!offline.ativo) return;
@@ -5598,7 +4675,7 @@ function offQuadroSplash(){                           // uma volta do do{}while 
   const decorrido = Math.floor(performance.now() - offline.t0);
   let progresso = Math.fround(decorrido / BOAS_VINDAS_MS);
   if (progresso > 1) progresso = 1;
-  offline.tela = t => oledBoasVindas(t, progresso, false);
+  offline.tela = t => oledBoasVindas(t, progresso, !!(offline.pedal && offline.pedal.pad));
   ledAbertura(progresso);
   agendarVisor();
   offline.timer = setTimeout(decorrido < BOAS_VINDAS_MS ? offQuadroSplash : offFimDoBoot, BOAS_VINDAS_FPS_MS);
@@ -5685,12 +4762,13 @@ function desligarOffline(paraConectar){
   ledSimCor('');
   if (rx === rxOffline) rx = null;
   limparPendentes();
-  [modoTimer, submodoTimer, amostraTimer, gravarVolTimer, apagarVolTimer, vptTimer].forEach(t => clearTimeout(t));
-  modoTimer = submodoTimer = amostraTimer = gravarVolTimer = apagarVolTimer = vptTimer = null; modoPedido = null;
+  [modoTimer, submodoTimer, amostraTimer, gravarVolTimer, apagarVolTimer, gravarCenaTimer, apagarCenaTimer, gravarSwingTimer, apagarSwingTimer, padToggleTimer, vptTimer].forEach(t => clearTimeout(t));
+  modoTimer = submodoTimer = amostraTimer = gravarVolTimer = apagarVolTimer = gravarCenaTimer = apagarCenaTimer = gravarSwingTimer = apagarSwingTimer = padToggleTimer = vptTimer = null; modoPedido = null;
   clearTimeout(one.timer); one.timer = null; one.pedido = null;   // v8.0
   modoLooper = false; lp.pedido = false; lp.armado = false; clearTimeout(lp.timer); lp.timer = null; atSalvo = null; loop = null;   // v10.0 — o looper era da mentira
   clearTimeout(verTimer); verTimer = null; versaoPedal = null; versaoPedalTxt = ''; catRecebendo = null;   // v9.0
   zerarCalibConexao(); calib.val = {}; calib.padrao = {}; calib.estado = {};   // v9.0 — os números eram da mentira
+  zerarSwingConexao();   // v14.0
   const g = offline.guardado; offline.guardado = null;   // a página volta ao que mostrava antes
   if (g){
     state.slots = g.slots; state.bpm = g.bpm; state.preset = g.preset; state.master = g.master; state.masterDb = g.masterDb;
@@ -6167,7 +5245,7 @@ function lerVersaoECatalogo(){
   perguntarVersao();
 }
 // v10.0 — o que muda com o firmware v45: os slots do FR, o botão LOOPER e o visor
-function renderDaVersao(){ renderSlots(); renderGrid(); renderModo(); agendarVisor(); }
+function renderDaVersao(){ renderSlots(); renderGrid(); renderModo(); renderSwing(); agendarVisor(); }
 function receberVersao(txt){
   clearTimeout(verTimer); verTimer = null; verPedido = false;
   versaoPedalTxt = txt; versaoPedal = parseFloat(txt) || 0; versaoOrigem = 'lida';
@@ -6343,7 +5421,12 @@ function linhaDaCalib(line){
     calib.val[m[1]] = +m[2]; calib.padrao[m[1]] = +m[3]; calib.estado[m[1]] = m[4];
     renderCalib(); return true;
   }
-  if ((m = line.match(/^ZPAD=([01])$/))){ calib.pad = m[1] === '1'; renderCalib(); return true; }
+  if ((m = line.match(/^ZPAD=([01])$/))){
+    clearTimeout(padToggleTimer); padToggleTimer = null;
+    calib.pad = m[1] === '1';
+    renderCalib(); agendarVisor();
+    return true;
+  }
   if ((m = line.match(/^ZCAL=([01])$/))){ calib.cal = m[1] === '1'; if (!calib.cal) calib.pagina = 0; renderCalib(); agendarVisor(); return true; }
   // v10.0 (firmware v45) — "ZP=n": a página do modo calibração (0 = o pedal não está nele)
   if ((m = line.match(/^ZP=([0-3])$/))){ calib.pagina = +m[1]; renderCalib(); agendarVisor(); return true; }
@@ -6375,7 +5458,7 @@ function renderCalib(){
   if (!rx) txt = 'Sem conexão — conecte a StompBox (firmware v42 ou mais nova).';
   else if (versaoPedal == null) txt = 'Versão do firmware ainda não lida — toque em "Ler versão e catálogo do pedal".';
   else if (!pronta) txt = 'Firmware anterior à v42: a calibração pelo celular fica desligada. (No antigo, um "Z" com número trocaria timbre.)';
-  else if (offline.ativo) txt = 'Modo offline: a StompBox simulada guarda os números, mas não tem pad — nenhuma batida chega.';
+  else if (offline.ativo) txt = (calib.pad ? 'Modo offline · PAD ligado (aparece na barra do visor)' : 'Modo offline · PAD desligado') + ' — a simulada guarda os números, mas não tem sensor físico.';
   else if (calib.pad === false && pedalV45() && (modoPedal === '01' || modoPedal === '11'))   // v10.0
     txt = (calib.monitor ? 'No MN e no FR o pedal só manda as batidas, e o pad está desarmado: ' : 'Pad desarmado, e ') + 'o modo calibração só entra no SB e no AT. Mude o modo e toque em "Mostrar as batidas".';
   else if (calib.pad === false && pedalV45())   // v10.0 — a v45 arma o pad pelo próprio botão
@@ -6406,6 +5489,26 @@ function renderCalib(){
   mon.disabled = !pronta;
   mon.setAttribute('aria-pressed', calib.monitor ? 'true' : 'false');
   mon.textContent = calib.monitor ? 'Mostrando as batidas' : 'Mostrar as batidas';
+  // v14.0 — Botão PAD ON/OFF (firmware v49+)
+  const pb = $('#padBtn'), pi = $('#padBtnInfo');
+  if (pb && pi){
+    const podePad = !!rx && (offline.ativo || versaoPedal == null || versaoPedal >= 49 || calib.pad !== null);
+    const ligado = calib.pad === true;
+    pb.disabled = !podePad;
+    pb.classList.toggle('on', ligado);
+    pb.setAttribute('aria-pressed', ligado ? 'true' : 'false');
+    if (!rx) pi.textContent = 'Sem conexão — conecte a StompBox para ativar ou desativar o pad por aqui';
+    else if (versaoPedal != null && versaoPedal > 0 && versaoPedal < 49 && !offline.ativo)
+      pi.textContent = (calib.pad === true ? 'Pad armado no boot' : calib.pad === false ? 'Pad desarmado' : 'Estado não lido') + ' — ativar/desativar sem reiniciar precisa do firmware v49';
+    else if (calib.cal && !calib.monitor)
+      pi.textContent = 'Modo calibração pelo boot — o pad fica armado até o próximo reset';
+    else if (ligado)
+      pi.textContent = 'Ligado — pele, aro e pedal de zona (chimbal) ativos; toque em PAD para desativar';
+    else if (calib.pad === false)
+      pi.textContent = 'Desligado — o pedal de zona funciona como gatilho direto; toque em PAD para armar';
+    else
+      pi.textContent = 'Toque em PAD para ativar ou desativar o pad (firmware v49+)';
+  }
   renderBatidas();
 }
 function renderBatidas(){
@@ -6428,6 +5531,143 @@ function renderBatidas(){
                              : (calib.monitor ? 'bata no pad…' : '');
   });
 }
+$('#padBtn').onclick = () => {
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (versaoPedal != null && versaoPedal > 0 && versaoPedal < 49 && !offline.ativo){
+    avisoStatus('Ativar/desativar o PAD pela página precisa do firmware v49', 'err', 5000);
+    return;
+  }
+  const alvo = !(calib.pad === true);
+  send(alvo ? 'ZD1' : 'ZD0');
+  clearTimeout(padToggleTimer);
+  padToggleTimer = setTimeout(() => {
+    padToggleTimer = null;
+    avisoStatus('O pedal não confirmou o comando do PAD — precisa do firmware v49', 'err', 5000);
+  }, 1200);
+};
+
+/* ---------- v14.1 — SWING BIDIRECIONAL (ADIANTAR / ATRASAR) NO ANDAMENTO + NVS ---------- */
+function infoSwing(txt, erro){
+  const p = $('#swingInfo'); if (!p) return;
+  p.textContent = txt; p.classList.toggle('err', !!erro);
+}
+function rotuloSwing(v, dir){
+  const mag = Math.abs(v), d = v < 0 ? -1 : (v > 0 ? 1 : (dir || 1));
+  if (mag === 0) return 'reto · FR e AT/LP';
+  if (d < 0) return mag <= 10 ? 'adiantando fino · FR e AT/LP' : mag >= 31 && mag <= 35 ? 'adiantando (tresillo)' : 'adiantando · FR e AT/LP';
+  return mag >= 31 && mag <= 35 ? 'atrasando (tercina)' : 'atrasando · FR e AT/LP';
+}
+function renderSwing(){
+  const f = $('#swFader'); if (!f) return;
+  const v = swing.val, mag = Math.abs(v), dir = swing.dir < 0 ? -1 : 1;
+  const valEl = $('#swVal');
+  valEl.textContent = textoSwingAssinado(v);
+  valEl.classList.toggle('adianta', v < 0);
+  $('#swRot').textContent = rotuloSwing(v, dir);
+  if (!swing.drag) f.value = mag;
+  pintarFader('swFader');
+  const maxEl = $('#swEscalaMax');
+  if (maxEl) maxEl.textContent = dir < 0 ? '−50% · adiantar' : '+50% · atrasar';
+  const est = $('#swEstado');
+  if (est){
+    est.className = swing.estado === 'G' ? 'gravado' : swing.estado === 'M' ? 'mudado' : '';
+    est.textContent = !rx ? '−50% a +50%'
+      : swing.estado === 'G' ? 'gravado no pedal'
+      : swing.estado === 'M' ? 'mudado, não gravado'
+      : 'do código (0%)';
+  }
+  document.querySelectorAll('[data-sw-dir]').forEach(b => {
+    const ativo = +b.dataset.swDir === dir;
+    b.classList.toggle('cur', ativo);
+    b.setAttribute('aria-checked', ativo ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-sw-pre]').forEach(b => b.classList.toggle('cur', +b.dataset.swPre === mag));
+  const ok = !!rx && (offline.ativo || versaoPedal == null || versaoPedal >= 49 || swing.conhecido);
+  f.disabled = !ok;
+  document.querySelectorAll('[data-sw],[data-sw-pre],[data-sw-dir]').forEach(b => { b.disabled = !ok; });
+  $('#gravarSwing').disabled = !ok;
+  $('#apagarSwing').disabled = !ok;
+}
+function enviarSwingAssinado(v){
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  v = Math.max(-50, Math.min(50, Math.round(v)));
+  if (v < 0 && versaoPedal != null && versaoPedal > 0 && versaoPedal < 49.1 && !offline.ativo){
+    avisoStatus('Adiantar o swing precisa do firmware v49.1', 'err', 5000);
+    return;
+  }
+  if (v < 0) swing.dir = -1;
+  else if (v > 0) swing.dir = 1;
+  swing.val = v; renderSwing();
+  send('W=' + v);
+}
+function enviarSwingIntensidade(mag){
+  mag = Math.max(0, Math.min(50, Math.round(mag)));
+  enviarSwingAssinado(mag === 0 ? 0 : (swing.dir < 0 ? -mag : mag));
+}
+{
+  const swF = $('#swFader');
+  swF.addEventListener('arrastoinicio', () => { swing.drag = true; });
+  swF.addEventListener('arrastofim', () => { swing.drag = false; });
+  swF.addEventListener('input', () => {
+    const m = +swF.value, vPrev = m === 0 ? 0 : (swing.dir < 0 ? -m : m);
+    const valEl = $('#swVal');
+    valEl.textContent = textoSwingAssinado(vPrev);
+    valEl.classList.toggle('adianta', vPrev < 0);
+    $('#swRot').textContent = rotuloSwing(vPrev, swing.dir);
+  });
+  swF.addEventListener('change', () => { swing.drag = false; enviarSwingIntensidade(+swF.value); });
+  faderSoPelaAlca(swF, 14);
+}
+document.querySelectorAll('[data-sw-dir]').forEach(b => {
+  b.onclick = () => {
+    if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+    const novoDir = +b.dataset.swDir < 0 ? -1 : 1;
+    if (novoDir < 0 && versaoPedal != null && versaoPedal > 0 && versaoPedal < 49.1 && !offline.ativo){
+      avisoStatus('Adiantar o swing precisa do firmware v49.1', 'err', 5000);
+      return;
+    }
+    swing.dir = novoDir;
+    const mag = Math.abs(swing.val);
+    if (mag > 0) enviarSwingAssinado(novoDir * mag);   // troca na hora entre −X% e +X% pra comparar de ouvido!
+    else renderSwing();
+  };
+});
+document.querySelectorAll('[data-sw]').forEach(b => {
+  b.onclick = () => {
+    if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+    const mag = Math.max(0, Math.min(50, Math.abs(swing.val) + (b.dataset.sw === '+' ? 1 : -1)));
+    enviarSwingIntensidade(mag);
+  };
+});
+document.querySelectorAll('[data-sw-pre]').forEach(b => {
+  b.onclick = () => enviarSwingIntensidade(+b.dataset.swPre);
+});
+$('#gravarSwing').onclick = () => {
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  const desc = swing.val === 0 ? '0% (reto)' : ((swing.val < 0 ? 'adiantar ' : 'atrasar ') + textoSwingAssinado(swing.val));
+  if (!confirm('Gravar o swing atual (' + desc + ') na flash do pedal?\n\nEle passa a valer ao ligar, nos ritmos do modo FR. O som corta por um instante — use entre músicas.')) return;
+  infoSwing('', false);
+  send('WS');
+  avisoStatus('Gravando o swing no pedal…', 'busy', 3000);
+  clearTimeout(gravarSwingTimer);
+  gravarSwingTimer = setTimeout(() => {
+    gravarSwingTimer = null;
+    infoSwing('✕ O pedal não respondeu ' + horaAgora() + ' — precisa do firmware v49', true);
+  }, 2500);
+};
+$('#apagarSwing').onclick = () => {
+  if (!rx){ avisoStatus('Sem conexão — nada enviado', 'err'); return; }
+  if (!confirm('Apagar o swing gravado na flash e voltar a 0% (reto) na hora?\n\nO som corta por um instante — use entre músicas.')) return;
+  infoSwing('', false);
+  send('WX');
+  avisoStatus('Zerando o swing na flash…', 'busy', 3000);
+  clearTimeout(apagarSwingTimer);
+  apagarSwingTimer = setTimeout(() => {
+    apagarSwingTimer = null;
+    infoSwing('✕ O pedal não respondeu ' + horaAgora() + ' — precisa do firmware v49', true);
+  }, 2500);
+};
+
 $('#calibLer').onclick = () => { if (calibPronta()) send('Z?'); };
 $('#calibMonitor').onclick = () => { if (calibPronta()) send(calib.monitor ? 'ZM0' : 'ZM1'); };
 $('#calibZerar').onclick = () => { calib.bat.PL = []; calib.bat.AR = []; renderBatidas(); };
@@ -6459,7 +5699,7 @@ $('#term').value = localStorage.getItem('sb_term') || '';
 ticks($('#mTicks'), MAX_M);
 ticks($('#vTicks'), 9);
 renderSortBar();
-renderSlots(); renderGrid(); renderTempo(); renderMaster();
+renderSlots(); renderGrid(); renderTempo(); renderSwing(); renderMaster();
 renderVpt(); renderPick(); renderPresets(); renderFire(); renderCena(); renderMeusPresets();
 renderCatalogoPedal(); renderCalib();   // v9.0
 (() => {   // v7.0 — a linha do último arquivo; voltando de um "Restaurar do arquivo", o aviso
